@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interwell R&D Tools</title>
+
+  <style>
+    :root {
+      --primary: #000000;
+      --secondary: #7c43bd;
+      --bg: #f5f5f7;
+      --border: #d1d1d1;
+      --text: #333;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* HEADER */
+    header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      height: 60px;
+      box-sizing: border-box;
+    }
+
+    header img {
+      height: 40px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    header .meta {
+      font-size: 0.8rem;
+      color: #666;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    /* MAIN CONTENT */
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      color: var(--primary);
+    }
+
+    /* TOOL LINKS */
+    .tool-link {
+      display: block;
+      padding: 15px;
+      margin-top: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-decoration: none;
+      color: #000;
+      transition: all 0.2s;
+    }
+
+    .tool-link .title {
+      font-weight: 600;
+      color: #000;
+    }
+
+    .tool-link .description {
+      font-size: 0.9rem;
+      color: #000;
+      margin-top: 5px;
+    }
+
+    /* HOVER */
+    .tool-link:hover {
+      background: var(--secondary);
+      border-color: var(--secondary);
+    }
+
+    .tool-link:hover .title,
+    .tool-link:hover .description {
+      color: #fff;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <img src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo">
+
+    <div>
+      <h1>Interwell P&A-R&D Tools</h1>
+      <div style="font-size: 0.8rem; color: #888;">Calculators and visualisation tools for RockSolid products.</div>
+    </div>
+
+    <div class="meta">
+      <div>By Darren J. Wilkinson</div>
+      <div>Updated: 20.03.2026</div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <div class="card">
+      <h2>Available Tools</h2>
+
+      <a class="tool-link" href="https://steinspon.github.io/WAP/" target="_blank">
+        <div class="title">Well Architecture Plotter</div>
+        <div class="description">
+          Build and visualize radial cross sections of wellbores.
+        </div>
+      </a>
+
+      <a class="tool-link" href="https://steinspon.github.io/BSLC/" target="_blank">
+        <div class="title">Barrier Sealing Length Calculator</div>
+        <div class="description">
+          Calculate and visualise barrier lengths as a function of inclination, borehole size.
+        </div>
+      </a>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
