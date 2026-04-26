@@ -1,0 +1,3180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Annotating Tool</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --bg-accent: #f5f7fa;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --surface-3: #f1f5f9;
+      --border: #d8dee6;
+      --border-strong: #cbd5e1;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #1f5fae;
+      --primary-strong: #174b8b;
+      --danger: #c53030;
+      --danger-soft: #fff3f3;
+      --focus: #60a5fa;
+      --radius-lg: 14px;
+      --radius-md: 11px;
+      --space-1: 6px;
+      --space-2: 10px;
+      --space-3: 14px;
+      --space-4: 18px;
+      --space-5: 24px;
+      --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.05);
+      --field-bg: #ffffff;
+      --field-border: #cbd5e1;
+      --field-text: #111827;
+      --toolbar-bg: #f8fafc;
+    }
+
+    body.night-mode {
+      --bg: #0e1117;
+      --bg-accent: #0e1117;
+      --surface: #161b22;
+      --surface-2: #111821;
+      --surface-3: #1f2937;
+      --border: #30363d;
+      --border-strong: #30363d;
+      --text: #e6edf3;
+      --muted: #9aa4af;
+      --primary: #58a6ff;
+      --primary-strong: #79b8ff;
+      --danger: #f85149;
+      --danger-soft: #332227;
+      --focus: #8cc0ff;
+      --shadow-sm: 0 18px 45px rgba(0, 0, 0, 0.38);
+      --field-bg: #131a24;
+      --field-border: #30363d;
+      --field-text: #e6edf3;
+      --toolbar-bg: #111821;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+      color: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    :focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .wrap.app-shell {
+      min-height: 100vh;
+      padding: var(--space-4);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .app-header {
+      display: grid;
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      flex-shrink: 0;
+    }
+    .app-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .app-logo {
+      height: 40px;
+      width: auto;
+      flex-shrink: 0;
+    }
+    .app-title-wrap { min-width: 0; }
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.18rem;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+    .app-header p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .app-header p a {
+      color: inherit;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .app-header p a:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+    .app-meta {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.45;
+      white-space: nowrap;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .header-actions > button,
+    .header-actions .menu-group > button {
+      min-height: 38px;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    button {
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      background: var(--surface);
+      cursor: pointer;
+      transition: background .14s ease, border-color .14s ease, color .14s ease, transform .12s ease;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+    button.primary:hover {
+      background: var(--primary-strong);
+      border-color: var(--primary-strong);
+    }
+    button.ghost {
+      background: transparent;
+      border-color: var(--border);
+    }
+    button.danger {
+      border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+      background: var(--danger-soft);
+      color: color-mix(in srgb, var(--danger) 86%, var(--text));
+    }
+    .button-short {
+      min-height: 32px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .menu-group { position: relative; }
+    .menu-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 220px;
+      padding: 7px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: 0 14px 26px rgba(13, 26, 43, 0.2);
+      display: none;
+      z-index: 50;
+    }
+    .menu-group.is-open .menu-popover { display: grid; gap: 2px; }
+    .menu-popover button {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border-color: transparent;
+      transform: none;
+    }
+    .menu-popover button:hover { background: var(--surface-2); }
+
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-2);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .theme-switch input[type="checkbox"] {
+      width: 16px;
+      min-height: 16px;
+      accent-color: var(--primary);
+      margin: 0;
+    }
+
+    .app-layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: var(--space-4);
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      justify-content: start;
+    }
+    .controls-panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      overflow-y: auto;
+      padding: var(--space-3);
+      min-height: 0;
+    }
+    .controls-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    details.section-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: var(--surface-2);
+      overflow: clip;
+    }
+    .section-card > summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      cursor: pointer;
+      padding: 10px 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+      font-weight: 800;
+      border-bottom: 1px solid transparent;
+      user-select: none;
+    }
+    .section-card > summary::-webkit-details-marker { display: none; }
+    .section-card[open] > summary {
+      border-bottom-color: var(--border);
+      background: var(--surface-3);
+    }
+    .summary-icon {
+      font-size: 11px;
+      color: var(--muted);
+      transition: transform .14s ease;
+    }
+    .section-card[open] .summary-icon { transform: rotate(90deg); }
+    .section-inner {
+      padding: 12px;
+    }
+
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    input[type="text"], input[type="number"], textarea, select {
+      width: 100%;
+      min-height: 36px;
+      padding: 7px 10px;
+      border: 1px solid var(--field-border);
+      border-radius: 9px;
+      background: var(--field-bg);
+      color: var(--field-text);
+      font-size: 13px;
+    }
+    input[type="color"] {
+      width: 100%;
+      min-height: 36px;
+      border: 1px solid var(--field-border);
+      border-radius: 9px;
+      background: var(--field-bg);
+      padding: 2px 4px;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    .inline {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .inline-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .inline-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .tool-grid button {
+      min-height: 62px;
+      padding: 8px 6px;
+      display: grid;
+      grid-template-rows: auto auto auto;
+      justify-items: center;
+      align-content: center;
+      gap: 3px;
+      background: var(--surface);
+      border-color: var(--border);
+    }
+    .tool-grid button svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .tool-grid button .tool-label {
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .tool-grid button .tool-shortcut {
+      font-size: 10px;
+      color: var(--muted);
+      line-height: 1;
+    }
+    .tool-grid button.active,
+    .tool-grid button[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+      border-color: color-mix(in srgb, var(--primary) 55%, var(--border-strong));
+      color: var(--primary);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 45%, transparent);
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .hint-block {
+      border: 1px dashed var(--border-strong);
+      border-radius: 9px;
+      padding: 8px 10px;
+      background: color-mix(in srgb, var(--surface-3) 70%, transparent);
+    }
+    .hint-block summary {
+      list-style: none;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .hint-block summary::-webkit-details-marker { display: none; }
+    .hint-block[open] summary { margin-bottom: 7px; }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 0;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 16px;
+      min-height: 16px;
+      accent-color: var(--primary);
+      margin: 0;
+    }
+
+    .viz-panel {
+      width: fit-content;
+      justify-self: start;
+      max-width: 100%;
+      min-width: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-sm);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+      min-height: 0;
+    }
+    .workspace-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--toolbar-bg);
+      flex-wrap: wrap;
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+    .workspace-toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .status-bar {
+      flex: 1 1 260px;
+      min-height: 32px;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 7px 10px;
+      background: var(--surface);
+      font-variant-numeric: tabular-nums;
+      display: flex;
+      align-items: center;
+    }
+
+    .canvas-shell {
+      flex: 0 0 auto;
+      min-height: 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #dce3ea;
+      overflow: auto;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 14px;
+    }
+    #workCanvas {
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
+      background: #e5e7eb;
+      touch-action: none;
+      cursor: crosshair;
+      border-radius: 6px;
+    }
+    .inline-callout-editor {
+      position: absolute;
+      display: none;
+      z-index: 30;
+      box-sizing: border-box;
+      width: auto !important;
+      min-height: 0 !important;
+      margin: 0;
+      border-radius: 0;
+      outline: none;
+      resize: none;
+      overflow: hidden;
+      white-space: pre-wrap;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 1200px) {
+      .app-layout {
+        grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+      }
+      .tool-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 1040px) {
+      .app-layout {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+      .controls-panel, .viz-panel {
+        width: 100%;
+        justify-self: stretch;
+      }
+      .controls-panel {
+        max-height: none;
+      }
+      .viz-panel {
+        min-height: 58vh;
+      }
+    }
+    @media (max-width: 760px) {
+      .wrap.app-shell {
+        padding: var(--space-3);
+      }
+      .app-header-top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .app-meta {
+        text-align: left;
+        white-space: normal;
+      }
+      .header-actions {
+        justify-content: flex-start;
+      }
+      .inline, .inline-3, .inline-actions {
+        grid-template-columns: 1fr;
+      }
+      .tool-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .canvas-shell {
+        padding: 8px;
+      }
+      .workspace-toolbar {
+        align-items: flex-start;
+      }
+      .status-bar {
+        flex-basis: 100%;
+      }
+    }
+    @media (max-width: 480px) {
+      .tool-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap app-shell">
+    <header class="app-header">
+      <div class="app-header-top">
+        <div class="app-brand">
+          <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo">
+          <div class="app-title-wrap">
+            <h1>Image Annotating Tool</h1>
+            <p><a href="index.html">HOME</a> | <a href="wap.html">WAP</a> | <a href="bslc.html">BSLC</a> | <a href="iat.html">IAT</a></p>
+          </div>
+        </div>
+        <div class="app-meta">
+          <div>By Darren Wilkinson</div>
+          <div>Updated: 26.04.2026</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="menu-group" id="importMenu">
+          <button type="button" id="importMenuButton">Import</button>
+          <div class="menu-popover" id="importMenuPanel">
+            <button type="button" id="importSettingsBtn">Settings JSON</button>
+          </div>
+        </div>
+        <div class="menu-group" id="exportMenu">
+          <button type="button" class="primary" id="exportMenuButton">Export</button>
+          <div class="menu-popover" id="exportMenuPanel">
+            <button type="button" id="exportSettingsBtn">Settings JSON</button>
+            <button type="button" id="exportPngBtn">Flattened PNG</button>
+            <button type="button" id="exportSvgBtn">Flattened SVG</button>
+          </div>
+        </div>
+        <label class="theme-switch" for="nightMode">
+          <input id="nightMode" type="checkbox">
+          <span>Night Mode</span>
+        </label>
+        <input id="importSettingsFile" type="file" accept=".json,application/json" hidden>
+      </div>
+    </header>
+
+    <div class="app-layout">
+      <aside class="controls-panel">
+        <div class="controls-stack">
+          <details class="section-card" open>
+            <summary><span>Image</span><span class="summary-icon">▶</span></summary>
+            <div class="section-inner">
+              <div class="field">
+                <label for="imageFileInput">Upload Photo</label>
+                <input id="imageFileInput" type="file" accept="image/*">
+              </div>
+              <div class="field inline-actions">
+                <button type="button" id="fitImageBtn" class="primary">Fit Image</button>
+                <button type="button" id="clearImageBtn">Clear</button>
+              </div>
+              <div class="field inline-actions">
+                <button type="button" id="setZeroViewBtn">Set Zero View</button>
+                <button type="button" id="resetZeroViewBtn">Reset To Zero</button>
+              </div>
+              <div class="small-note" id="imageMeta">No image loaded.</div>
+            </div>
+          </details>
+
+          <details class="section-card" open>
+            <summary><span>Tools</span><span class="summary-icon">▶</span></summary>
+            <div class="section-inner">
+              <div class="tool-grid" id="toolGrid">
+                <button type="button" data-tool="pan" class="active" aria-pressed="true" title="Pan / Select" aria-label="Pan / Select">
+                  <svg viewBox="0 0 24 24"><path d="M7 11V6a1 1 0 0 1 2 0v5"/><path d="M9 11V5a1 1 0 0 1 2 0v6"/><path d="M11 11V6a1 1 0 0 1 2 0v5"/><path d="M13 11V8a1 1 0 0 1 2 0v6l-2 4H8l-3-6a1.2 1.2 0 0 1 2.2-1l1 2"/></svg>
+                  <span class="tool-label">Select</span>
+                  <span class="tool-shortcut">S</span>
+                </button>
+                <button type="button" data-tool="callout" aria-pressed="false" title="Add Callout" aria-label="Add Callout">
+                  <svg viewBox="0 0 24 24"><path d="M5 6h14v9H9l-4 3v-3H5z"/></svg>
+                  <span class="tool-label">Callout</span>
+                  <span class="tool-shortcut">C</span>
+                </button>
+                <button type="button" data-tool="line" aria-pressed="false" title="Add Line" aria-label="Add Line">
+                  <svg viewBox="0 0 24 24"><path d="M5 19L19 5"/><circle cx="5" cy="19" r="1.5"/><circle cx="19" cy="5" r="1.5"/></svg>
+                  <span class="tool-label">Line</span>
+                  <span class="tool-shortcut">L</span>
+                </button>
+                <button type="button" data-tool="path" aria-pressed="false" title="Add Path" aria-label="Add Path">
+                  <svg viewBox="0 0 24 24"><path d="M4 16L9 10L14 14L20 7"/><circle cx="4" cy="16" r="1.5"/><circle cx="9" cy="10" r="1.5"/><circle cx="14" cy="14" r="1.5"/><circle cx="20" cy="7" r="1.5"/></svg>
+                  <span class="tool-label">Path</span>
+                  <span class="tool-shortcut">P</span>
+                </button>
+                <button type="button" data-tool="polygon" aria-pressed="false" title="Add Polygon" aria-label="Add Polygon">
+                  <svg viewBox="0 0 24 24"><path d="M8 5L17 7L20 15L12 20L4 15L5 8Z"/></svg>
+                  <span class="tool-label">Polygon</span>
+                  <span class="tool-shortcut">G</span>
+                </button>
+                <button type="button" data-tool="rect" aria-pressed="false" title="Add Rectangle" aria-label="Add Rectangle">
+                  <svg viewBox="0 0 24 24"><rect x="5" y="6" width="14" height="12"/></svg>
+                  <span class="tool-label">Rectangle</span>
+                  <span class="tool-shortcut">R</span>
+                </button>
+                <button type="button" data-tool="circle" aria-pressed="false" title="Add Circle" aria-label="Add Circle">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/></svg>
+                  <span class="tool-label">Circle</span>
+                  <span class="tool-shortcut">O</span>
+                </button>
+              </div>
+              <details class="hint-block" style="margin-top:10px;">
+                <summary><span>How To Use</span><span class="summary-icon">▶</span></summary>
+                <div class="small-note">
+                  Click to place. For line/rect/circle: click start then end. For path/polygon: click to add points, double-click or Enter to finish, Esc to cancel. Polygon closes when clicking near its first point.
+                </div>
+                <div class="small-note" style="margin-top:6px;">
+                  Callout anchors snap to corners and edge-centers of lines/paths/polygons/rectangles, and to circle circumferences.
+                </div>
+              </details>
+            </div>
+          </details>
+
+          <details class="section-card">
+            <summary><span>Calibration</span><span class="summary-icon">▶</span></summary>
+            <div class="section-inner">
+              <div class="field inline-actions">
+                <button type="button" id="setCalABtn">Set Point A</button>
+                <button type="button" id="setCalBBtn">Set Point B</button>
+              </div>
+              <div class="field inline">
+                <input id="calDistanceInput" type="number" min="0" step="any" value="100">
+                <select id="calUnitSelect">
+                  <option value="mm">mm</option>
+                  <option value="cm" selected>cm</option>
+                  <option value="m">m</option>
+                  <option value="km">km</option>
+                  <option value="in">in</option>
+                  <option value="ft">ft</option>
+                  <option value="yd">yd</option>
+                  <option value="mi">mi</option>
+                </select>
+              </div>
+              <div class="field">
+                <button type="button" class="primary" id="applyCalibrationBtn">Apply Calibration</button>
+              </div>
+              <div class="field inline">
+                <div>
+                  <label for="rulerDistanceInput">Scale Marked Distance</label>
+                  <input id="rulerDistanceInput" type="number" min="0.001" step="any" value="10">
+                </div>
+                <div>
+                  <label for="rulerDistanceUnitSelect">Scale Distance Unit</label>
+                  <select id="rulerDistanceUnitSelect">
+                    <option value="mm">mm</option>
+                    <option value="cm" selected>cm</option>
+                    <option value="m">m</option>
+                    <option value="km">km</option>
+                    <option value="in">in</option>
+                    <option value="ft">ft</option>
+                    <option value="yd">yd</option>
+                    <option value="mi">mi</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field inline">
+                <div>
+                  <label for="rulerPaddingInput">Scale Padding (px)</label>
+                  <input id="rulerPaddingInput" type="number" min="0" step="1" value="16">
+                </div>
+                <div>
+                  <label for="rulerJustifySelect">Scale Justify</label>
+                  <select id="rulerJustifySelect">
+                    <option value="left" selected>Left</option>
+                    <option value="center">Center</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+              </div>
+              <label class="checkbox-row" for="showScaleBarCheckbox" style="margin-top:4px;">
+                <input id="showScaleBarCheckbox" type="checkbox" checked>
+                <span>Show Scale</span>
+              </label>
+              <div class="small-note" id="calibrationStatus">Set points A and B on image.</div>
+            </div>
+          </details>
+
+          <details class="section-card" open>
+            <summary><span>Annotation Style</span><span class="summary-icon">▶</span></summary>
+            <div class="section-inner">
+              <div class="field inline-3">
+                <div>
+                  <label for="lineColorInput">Line</label>
+                  <input id="lineColorInput" type="color" value="#FFFF00">
+                </div>
+                <div>
+                  <label for="shapeFillColorInput">Shape Fill</label>
+                  <input id="shapeFillColorInput" type="color" value="#111827">
+                </div>
+                <div>
+                  <label for="textColorInput">Text</label>
+                  <input id="textColorInput" type="color" value="#FFFF00">
+                </div>
+              </div>
+              <div class="field inline">
+                <div>
+                  <label for="calloutFillColorInput">Callout Fill</label>
+                  <input id="calloutFillColorInput" type="color" value="#000000">
+                </div>
+                <div>
+                  <label for="shapeFillOpacityInput">Shape Fill Opacity (%)</label>
+                  <input id="shapeFillOpacityInput" type="number" min="0" max="100" step="1" value="40">
+                </div>
+              </div>
+              <div class="field">
+                <label class="checkbox-row" for="shapeFillEnabledCheckbox">
+                  <input id="shapeFillEnabledCheckbox" type="checkbox">
+                  <span>Shape Fill On</span>
+                </label>
+              </div>
+              <div class="field inline">
+                <div>
+                  <label for="lineWidthInput">Line Width</label>
+                  <input id="lineWidthInput" type="number" min="0.5" step="0.5" value="5">
+                </div>
+                <div>
+                  <label for="fontSizeInput">Font Size</label>
+                  <input id="fontSizeInput" type="number" min="8" step="1" value="28">
+                </div>
+              </div>
+              <div class="field">
+                <label for="calloutAlignSelect">Callout Align</label>
+                <select id="calloutAlignSelect">
+                  <option value="left">Left</option>
+                  <option value="center" selected>Center</option>
+                  <option value="right">Right</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="calloutTextInput">Selected Callout Text</label>
+                <textarea id="calloutTextInput" placeholder="Select a callout to edit text"></textarea>
+              </div>
+              <div class="field inline-actions">
+                <button type="button" id="deleteSelectedBtn" class="danger">Delete Selected</button>
+                <button type="button" id="clearAnnotationsBtn">Clear All</button>
+              </div>
+            </div>
+          </details>
+
+          <details class="section-card">
+            <summary><span>View & Canvas</span><span class="summary-icon">▶</span></summary>
+            <div class="section-inner">
+              <div class="field inline">
+                <div>
+                  <label for="aspectRatioInput">Canvas Aspect Ratio (W/H)</label>
+                  <input id="aspectRatioInput" type="number" step="0.01" min="0.2" value="2.00">
+                </div>
+                <div>
+                  <label for="imagePaddingInput">Image Padding (px)</label>
+                  <input id="imagePaddingInput" type="number" min="0" step="1" value="0">
+                </div>
+              </div>
+              <label class="checkbox-row" for="monoCheckbox">
+                <input id="monoCheckbox" type="checkbox">
+                <span>Monochrome image</span>
+              </label>
+            </div>
+          </details>
+
+          <details class="section-card">
+            <summary><span>Image Title</span><span class="summary-icon">▶</span></summary>
+            <div class="section-inner">
+              <div class="field">
+                <label for="imageTitleInput">Title Text</label>
+                <input id="imageTitleInput" type="text" placeholder="Enter image title">
+              </div>
+              <div class="field inline">
+                <div>
+                  <label for="imageTitleFontSizeInput">Font Size</label>
+                  <input id="imageTitleFontSizeInput" type="number" min="8" step="1" value="44">
+                </div>
+                <div>
+                  <label for="imageTitleTextColorInput">Font Color</label>
+                  <input id="imageTitleTextColorInput" type="color" value="#FFFFFF">
+                </div>
+              </div>
+              <div class="field">
+                <label for="imageTitleFillColorInput">Rectangle Fill</label>
+                <input id="imageTitleFillColorInput" type="color" value="#000000">
+              </div>
+            </div>
+          </details>
+        </div>
+      </aside>
+
+      <section class="viz-panel" id="vizPanel">
+        <div class="workspace-toolbar" id="workspaceToolbar">
+          <div class="workspace-toolbar-group">
+            <button type="button" id="wsFitBtn" class="button-short">Fit</button>
+            <button type="button" id="wsSetZeroBtn" class="button-short">Set Zero</button>
+            <button type="button" id="wsResetZeroBtn" class="button-short">Reset Zero</button>
+            <button type="button" id="wsLockViewBtn" class="button-short ghost" aria-pressed="false">Lock View</button>
+          </div>
+          <div class="status-bar" id="statusBar">Ready.</div>
+          <div class="workspace-toolbar-group">
+            <button type="button" id="wsExportPngBtn" class="button-short">Export PNG</button>
+          </div>
+        </div>
+        <div class="canvas-shell" id="canvasShell">
+          <canvas id="workCanvas" width="1200" height="900"></canvas>
+          <textarea id="inlineCalloutInput" class="inline-callout-editor"></textarea>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const els = {
+      imageFileInput: document.getElementById('imageFileInput'),
+      fitImageBtn: document.getElementById('fitImageBtn'),
+      clearImageBtn: document.getElementById('clearImageBtn'),
+      setZeroViewBtn: document.getElementById('setZeroViewBtn'),
+      resetZeroViewBtn: document.getElementById('resetZeroViewBtn'),
+      imageMeta: document.getElementById('imageMeta'),
+      toolGrid: document.getElementById('toolGrid'),
+      calDistanceInput: document.getElementById('calDistanceInput'),
+      calUnitSelect: document.getElementById('calUnitSelect'),
+      applyCalibrationBtn: document.getElementById('applyCalibrationBtn'),
+      setCalABtn: document.getElementById('setCalABtn'),
+      setCalBBtn: document.getElementById('setCalBBtn'),
+      calibrationStatus: document.getElementById('calibrationStatus'),
+      rulerDistanceInput: document.getElementById('rulerDistanceInput'),
+      rulerJustifySelect: document.getElementById('rulerJustifySelect'),
+      rulerPaddingInput: document.getElementById('rulerPaddingInput'),
+      rulerDistanceUnitSelect: document.getElementById('rulerDistanceUnitSelect'),
+      showScaleBarCheckbox: document.getElementById('showScaleBarCheckbox'),
+      lineColorInput: document.getElementById('lineColorInput'),
+      shapeFillColorInput: document.getElementById('shapeFillColorInput'),
+      calloutFillColorInput: document.getElementById('calloutFillColorInput'),
+      shapeFillOpacityInput: document.getElementById('shapeFillOpacityInput'),
+      shapeFillEnabledCheckbox: document.getElementById('shapeFillEnabledCheckbox'),
+      textColorInput: document.getElementById('textColorInput'),
+      lineWidthInput: document.getElementById('lineWidthInput'),
+      fontSizeInput: document.getElementById('fontSizeInput'),
+      calloutAlignSelect: document.getElementById('calloutAlignSelect'),
+      calloutTextInput: document.getElementById('calloutTextInput'),
+      deleteSelectedBtn: document.getElementById('deleteSelectedBtn'),
+      clearAnnotationsBtn: document.getElementById('clearAnnotationsBtn'),
+      aspectRatioInput: document.getElementById('aspectRatioInput'),
+      imagePaddingInput: document.getElementById('imagePaddingInput'),
+      monoCheckbox: document.getElementById('monoCheckbox'),
+      imageTitleInput: document.getElementById('imageTitleInput'),
+      imageTitleFontSizeInput: document.getElementById('imageTitleFontSizeInput'),
+      imageTitleTextColorInput: document.getElementById('imageTitleTextColorInput'),
+      imageTitleFillColorInput: document.getElementById('imageTitleFillColorInput'),
+      statusBar: document.getElementById('statusBar'),
+      workspaceToolbar: document.getElementById('workspaceToolbar'),
+      vizPanel: document.getElementById('vizPanel'),
+      canvasShell: document.getElementById('canvasShell'),
+      canvas: document.getElementById('workCanvas'),
+      inlineCalloutInput: document.getElementById('inlineCalloutInput'),
+      importMenu: document.getElementById('importMenu'),
+      importMenuButton: document.getElementById('importMenuButton'),
+      exportMenu: document.getElementById('exportMenu'),
+      exportMenuButton: document.getElementById('exportMenuButton'),
+      importSettingsBtn: document.getElementById('importSettingsBtn'),
+      exportSettingsBtn: document.getElementById('exportSettingsBtn'),
+      exportPngBtn: document.getElementById('exportPngBtn'),
+      exportSvgBtn: document.getElementById('exportSvgBtn'),
+      wsFitBtn: document.getElementById('wsFitBtn'),
+      wsSetZeroBtn: document.getElementById('wsSetZeroBtn'),
+      wsResetZeroBtn: document.getElementById('wsResetZeroBtn'),
+      wsLockViewBtn: document.getElementById('wsLockViewBtn'),
+      wsExportPngBtn: document.getElementById('wsExportPngBtn'),
+      importSettingsFile: document.getElementById('importSettingsFile'),
+      nightMode: document.getElementById('nightMode')
+    };
+    const ctx = els.canvas.getContext('2d');
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+
+    const state = {
+      image: null,
+      imageDataUrl: null,
+      imageName: '',
+      imageW: 0,
+      imageH: 0,
+      activeTool: 'pan',
+      annotations: [],
+      selected: null,
+      selectedIds: new Set(),
+      view: { scale: 1, panX: 0, panY: 0 },
+      viewLocked: false,
+      viewZero: { scale: 1, panX: 0, panY: 0 },
+      calibration: {
+        A: null,
+        B: null,
+        realDistance: 100,
+        unit: 'cm',
+        pxPerUnit: null,
+        pxPerMeter: null
+      },
+      settings: {
+        aspectRatio: 2.00,
+        monochrome: false,
+        lineColor: '#FFFF00',
+        shapeFillColor: '#111827',
+        shapeFillOpacity: 0.4,
+        calloutFillColor: '#000000',
+        shapeFillEnabled: false,
+        textColor: '#FFFF00',
+        lineWidth: 5,
+        fontSize: 28,
+        calloutTextAlign: 'center',
+        imagePadding: 0,
+        imageTitleText: '',
+        imageTitleFontSize: 44,
+        imageTitleTextColor: '#FFFFFF',
+        imageTitleFillColor: '#000000',
+        scaleBarEnabled: true,
+        scaleBarDistance: 10,
+        scaleBarDistanceUnit: 'cm',
+        scaleBarJustify: 'left',
+        scaleBarPadding: 16
+      },
+      pointer: {
+        isDown: false,
+        mode: null,
+        startScreen: null,
+        startWorld: null,
+        target: null,
+        pendingPoint: null,
+        pendingPoints: []
+      },
+      inlineEdit: { id: null, originalText: '' },
+      lastPickerHandle: null,
+      canvasDpr: 1,
+      canvasLogicalW: 1200,
+      canvasLogicalH: 900
+    };
+
+    function uid(prefix) {
+      return prefix + '-' + Math.random().toString(16).slice(2, 10);
+    }
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+    function dist(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    function midpoint(a, b) {
+      return { x: (a.x + b.x) * 0.5, y: (a.y + b.y) * 0.5 };
+    }
+    function nearestPointOnSegment(p, a, b) {
+      const vx = b.x - a.x;
+      const vy = b.y - a.y;
+      const len2 = vx * vx + vy * vy;
+      if (len2 <= 1e-12) return { x: a.x, y: a.y, t: 0 };
+      const t = clamp(((p.x - a.x) * vx + (p.y - a.y) * vy) / len2, 0, 1);
+      return { x: a.x + vx * t, y: a.y + vy * t, t };
+    }
+    function snapCalloutAnchor(worldPoint, excludeAnnotationId = null) {
+      const snapRadiusScreen = 12;
+      let best = null;
+      const consider = candidateWorld => {
+        if (!candidateWorld) return;
+        const d = dist(worldToScreen(worldPoint), worldToScreen(candidateWorld));
+        if (d > snapRadiusScreen) return;
+        if (!best || d < best.d) best = { p: candidateWorld, d };
+      };
+
+      state.annotations.forEach(a => {
+        if (!a || a.id === excludeAnnotationId) return;
+        if (a.type === 'line') {
+          const p1 = { x: a.x1, y: a.y1 };
+          const p2 = { x: a.x2, y: a.y2 };
+          consider(p1);
+          consider(p2);
+          consider(midpoint(p1, p2));
+        } else if (a.type === 'rect') {
+          const x1 = a.x1, y1 = a.y1, x2 = a.x2, y2 = a.y2;
+          const tl = { x: Math.min(x1, x2), y: Math.min(y1, y2) };
+          const br = { x: Math.max(x1, x2), y: Math.max(y1, y2) };
+          const tr = { x: br.x, y: tl.y };
+          const bl = { x: tl.x, y: br.y };
+          consider(tl);
+          consider(tr);
+          consider(br);
+          consider(bl);
+          consider(midpoint(tl, tr));
+          consider(midpoint(tr, br));
+          consider(midpoint(br, bl));
+          consider(midpoint(bl, tl));
+        } else if (a.type === 'path' && Array.isArray(a.points) && a.points.length >= 2) {
+          for (let i = 0; i < a.points.length; i++) consider(a.points[i]);
+          for (let i = 0; i < a.points.length - 1; i++) {
+            consider(midpoint(a.points[i], a.points[i + 1]));
+          }
+        } else if (a.type === 'polygon' && Array.isArray(a.points) && a.points.length >= 3) {
+          for (let i = 0; i < a.points.length; i++) consider(a.points[i]);
+          for (let i = 0; i < a.points.length; i++) {
+            const p1 = a.points[i];
+            const p2 = a.points[(i + 1) % a.points.length];
+            consider(midpoint(p1, p2));
+          }
+        } else if (a.type === 'circle') {
+          const c = { x: a.cx, y: a.cy };
+          const e = { x: a.ex, y: a.ey };
+          const r = dist(c, e);
+          if (r > 1e-9) {
+            const dir = { x: worldPoint.x - c.x, y: worldPoint.y - c.y };
+            const len = Math.sqrt(dir.x * dir.x + dir.y * dir.y);
+            if (len > 1e-9) {
+              consider({ x: c.x + (dir.x / len) * r, y: c.y + (dir.y / len) * r });
+            }
+          }
+        }
+      });
+
+      return best ? best.p : worldPoint;
+    }
+    function worldToScreen(pt) {
+      return {
+        x: pt.x * state.view.scale + state.view.panX,
+        y: pt.y * state.view.scale + state.view.panY
+      };
+    }
+    function screenToWorld(pt) {
+      return {
+        x: (pt.x - state.view.panX) / state.view.scale,
+        y: (pt.y - state.view.panY) / state.view.scale
+      };
+    }
+    const UNIT_TO_METERS = {
+      mm: 0.001,
+      cm: 0.01,
+      m: 1,
+      km: 1000,
+      in: 0.0254,
+      ft: 0.3048,
+      yd: 0.9144,
+      mi: 1609.344
+    };
+    const METRIC_UNITS = [
+      { key: 'mm', toMeters: UNIT_TO_METERS.mm },
+      { key: 'cm', toMeters: UNIT_TO_METERS.cm },
+      { key: 'm', toMeters: UNIT_TO_METERS.m },
+      { key: 'km', toMeters: UNIT_TO_METERS.km }
+    ];
+    const IMPERIAL_UNITS = [
+      { key: 'in', toMeters: UNIT_TO_METERS.in },
+      { key: 'ft', toMeters: UNIT_TO_METERS.ft },
+      { key: 'yd', toMeters: UNIT_TO_METERS.yd },
+      { key: 'mi', toMeters: UNIT_TO_METERS.mi }
+    ];
+    function getUnitMeters(unitKey) {
+      return UNIT_TO_METERS[unitKey] || 1;
+    }
+    function getCalibrationPxPerMeter() {
+      if (state.calibration.pxPerMeter && state.calibration.pxPerMeter > 0) {
+        return state.calibration.pxPerMeter;
+      }
+      if (state.calibration.pxPerUnit && state.calibration.pxPerUnit > 0) {
+        const meters = getUnitMeters(state.calibration.unit);
+        return state.calibration.pxPerUnit / Math.max(meters, 1e-12);
+      }
+      return null;
+    }
+    function isCalibrated() {
+      const v = getCalibrationPxPerMeter();
+      return !!v && v > 0;
+    }
+    function chooseNiceStep(target) {
+      const safe = Math.max(1e-12, target);
+      const exp = Math.floor(Math.log10(safe));
+      const f = safe / Math.pow(10, exp);
+      const nf = f <= 1 ? 1 : (f <= 2 ? 2 : (f <= 5 ? 5 : 10));
+      return nf * Math.pow(10, exp);
+    }
+    function formatRulerValue(v) {
+      if (Math.abs(v) < 1e-9) return '0';
+      const a = Math.abs(v);
+      const dp = a < 1 ? 3 : (a < 10 ? 2 : (a < 100 ? 1 : 0));
+      return parseFloat(v.toFixed(dp)).toString();
+    }
+    function normalizeCalloutLines(text) {
+      const raw = String(text ?? '').replace(/\r\n/g, '\n');
+      const lines = raw.split('\n');
+      if (lines.length === 0) return [''];
+      return lines;
+    }
+    function getCalloutTextAlign(value) {
+      return value === 'left' || value === 'right' ? value : 'center';
+    }
+    function getShapeFillOpacity(value) {
+      const n = parseFloat(value);
+      if (!isFinite(n)) return 0.4;
+      if (n > 1 && n <= 100) return clamp(n / 100, 0, 1);
+      return clamp(n, 0, 1);
+    }
+    function getDefaultStyleForType(type) {
+      if (type === 'callout') {
+        return {
+          lineColor: state.settings.lineColor,
+          lineWidth: state.settings.lineWidth,
+          fillColor: state.settings.calloutFillColor,
+          textColor: state.settings.textColor,
+          fontSize: state.settings.fontSize,
+          textAlign: getCalloutTextAlign(state.settings.calloutTextAlign)
+        };
+      }
+      if (type === 'rect' || type === 'circle') {
+        return {
+          lineColor: state.settings.lineColor,
+          lineWidth: state.settings.lineWidth,
+          fillColor: state.settings.shapeFillColor,
+          fillEnabled: !!state.settings.shapeFillEnabled,
+          fillOpacity: getShapeFillOpacity(state.settings.shapeFillOpacity)
+        };
+      }
+      if (type === 'polygon') {
+        return {
+          lineColor: state.settings.lineColor,
+          lineWidth: state.settings.lineWidth,
+          fillColor: state.settings.shapeFillColor,
+          fillEnabled: !!state.settings.shapeFillEnabled,
+          fillOpacity: getShapeFillOpacity(state.settings.shapeFillOpacity)
+        };
+      }
+      return {
+        lineColor: state.settings.lineColor,
+        lineWidth: state.settings.lineWidth
+      };
+    }
+    function ensureAnnotationStyle(a) {
+      if (!a || typeof a !== 'object') return;
+      const defaults = getDefaultStyleForType(a.type);
+      if (!a.style || typeof a.style !== 'object') a.style = {};
+      a.style = { ...defaults, ...a.style };
+      if ((a.type === 'rect' || a.type === 'circle' || a.type === 'polygon') && typeof a.style.fillEnabled !== 'boolean') {
+        a.style.fillEnabled = false;
+      }
+      if (a.type === 'rect' || a.type === 'circle' || a.type === 'polygon') {
+        a.style.fillOpacity = getShapeFillOpacity(a.style.fillOpacity);
+      }
+      if (a.type === 'callout') {
+        a.style.textAlign = getCalloutTextAlign(a.style.textAlign);
+      }
+    }
+    function normalizeAnnotationsStyles() {
+      state.annotations.forEach(a => {
+        if (!a || typeof a !== 'object') return;
+        if (!a.style && (a.lineColor || a.fillColor || a.textColor || a.lineWidth || a.fontSize)) {
+          a.style = {
+            lineColor: a.lineColor,
+            lineWidth: a.lineWidth,
+            fillColor: a.fillColor,
+            textColor: a.textColor,
+            fontSize: a.fontSize,
+            fillEnabled: a.fillEnabled,
+            fillOpacity: a.fillOpacity,
+            textAlign: a.textAlign
+          };
+        }
+        ensureAnnotationStyle(a);
+      });
+    }
+    function syncStyleControlsFromSelection() {
+      const selectedId = state.selected && state.selected.id;
+      const selected = selectedId ? getAnnotationById(selectedId) : null;
+      if (!selected) {
+        els.lineColorInput.value = state.settings.lineColor;
+        els.shapeFillColorInput.value = state.settings.shapeFillColor;
+        els.calloutFillColorInput.value = state.settings.calloutFillColor;
+        els.shapeFillOpacityInput.value = Math.round(getShapeFillOpacity(state.settings.shapeFillOpacity) * 100);
+        els.shapeFillEnabledCheckbox.checked = !!state.settings.shapeFillEnabled;
+        els.textColorInput.value = state.settings.textColor;
+        els.lineWidthInput.value = state.settings.lineWidth;
+        els.fontSizeInput.value = state.settings.fontSize;
+        els.calloutAlignSelect.value = getCalloutTextAlign(state.settings.calloutTextAlign);
+        return;
+      }
+      ensureAnnotationStyle(selected);
+      els.lineColorInput.value = selected.style.lineColor || state.settings.lineColor;
+      els.lineWidthInput.value = selected.style.lineWidth ?? state.settings.lineWidth;
+      if (selected.type === 'callout') {
+        els.calloutFillColorInput.value = selected.style.fillColor || state.settings.calloutFillColor;
+        els.textColorInput.value = selected.style.textColor || state.settings.textColor;
+        els.fontSizeInput.value = selected.style.fontSize ?? state.settings.fontSize;
+        els.calloutAlignSelect.value = getCalloutTextAlign(selected.style.textAlign);
+      } else {
+        els.calloutFillColorInput.value = state.settings.calloutFillColor;
+        els.textColorInput.value = state.settings.textColor;
+        els.fontSizeInput.value = state.settings.fontSize;
+        els.calloutAlignSelect.value = getCalloutTextAlign(state.settings.calloutTextAlign);
+      }
+      if (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'polygon') {
+        els.shapeFillColorInput.value = selected.style.fillColor || state.settings.shapeFillColor;
+        els.shapeFillEnabledCheckbox.checked = !!selected.style.fillEnabled;
+        els.shapeFillOpacityInput.value = Math.round(getShapeFillOpacity(selected.style.fillOpacity) * 100);
+      } else {
+        els.shapeFillColorInput.value = state.settings.shapeFillColor;
+        els.shapeFillEnabledCheckbox.checked = !!state.settings.shapeFillEnabled;
+        els.shapeFillOpacityInput.value = Math.round(getShapeFillOpacity(state.settings.shapeFillOpacity) * 100);
+      }
+    }
+
+    function setStatus(msg) {
+      els.statusBar.textContent = msg;
+    }
+    function syncViewLockButton() {
+      if (!els.wsLockViewBtn) return;
+      els.wsLockViewBtn.textContent = state.viewLocked ? 'Unlock View' : 'Lock View';
+      els.wsLockViewBtn.setAttribute('aria-pressed', state.viewLocked ? 'true' : 'false');
+      els.wsLockViewBtn.classList.toggle('primary', state.viewLocked);
+      els.wsLockViewBtn.classList.toggle('ghost', !state.viewLocked);
+    }
+    function getCalloutBoxGeometry(a) {
+      ensureAnnotationStyle(a);
+      const style = a.style;
+      const box = worldToScreen({ x: a.bx, y: a.by });
+      const fontSize = Math.max(8, style.fontSize ?? state.settings.fontSize);
+      const text = a.text || 'Callout';
+      const lines = normalizeCalloutLines(text);
+      const padX = 10;
+      const padY = 6;
+      const lineHeight = Math.max(fontSize * 1.2, fontSize + 2);
+      let textW = 0;
+      lines.forEach(line => { textW = Math.max(textW, measureTextPx(line, fontSize, 'Inter, sans-serif', false)); });
+      const boxW = textW + padX * 2;
+      const boxH = lineHeight * lines.length + padY * 2;
+      return { boxX: box.x, boxY: box.y, boxW, boxH, fontSize, padX, padY, lines, lineHeight };
+    }
+    function endInlineCalloutEdit(commit = true) {
+      if (!state.inlineEdit.id) return;
+      const a = getAnnotationById(state.inlineEdit.id);
+      if (a && a.type === 'callout') {
+        if (commit) {
+          a.text = els.inlineCalloutInput.value;
+          els.calloutTextInput.value = a.text;
+        } else {
+          a.text = state.inlineEdit.originalText;
+          els.calloutTextInput.value = a.text;
+        }
+      }
+      state.inlineEdit = { id: null, originalText: '' };
+      els.inlineCalloutInput.style.display = 'none';
+      render();
+    }
+    function syncInlineCalloutEditor() {
+      if (!state.inlineEdit.id) return;
+      const a = getAnnotationById(state.inlineEdit.id);
+      if (!a || a.type !== 'callout') {
+        state.inlineEdit = { id: null, originalText: '' };
+        els.inlineCalloutInput.style.display = 'none';
+        return;
+      }
+      ensureAnnotationStyle(a);
+      const g = getCalloutBoxGeometry(a);
+      const canvasRect = els.canvas.getBoundingClientRect();
+      const shellRect = els.canvasShell.getBoundingClientRect();
+      const offsetX = canvasRect.left - shellRect.left;
+      const offsetY = canvasRect.top - shellRect.top;
+      const style = a.style;
+      const borderW = Math.max(1, style.lineWidth ?? state.settings.lineWidth);
+      const py = Math.max(1, g.padY);
+      els.inlineCalloutInput.style.left = `${offsetX + g.boxX}px`;
+      els.inlineCalloutInput.style.top = `${offsetY + g.boxY}px`;
+      els.inlineCalloutInput.style.width = `${Math.max(20, g.boxW)}px`;
+      els.inlineCalloutInput.style.height = `${Math.max(18, g.boxH)}px`;
+      els.inlineCalloutInput.style.fontSize = `${g.fontSize}px`;
+      els.inlineCalloutInput.style.lineHeight = `${g.lineHeight}px`;
+      els.inlineCalloutInput.style.fontFamily = 'Inter, sans-serif';
+      els.inlineCalloutInput.style.textAlign = getCalloutTextAlign(style.textAlign || state.settings.calloutTextAlign);
+      els.inlineCalloutInput.style.color = style.textColor || state.settings.textColor;
+      els.inlineCalloutInput.style.background = style.fillColor || state.settings.calloutFillColor;
+      els.inlineCalloutInput.style.border = `${borderW}px solid ${style.lineColor || state.settings.lineColor}`;
+      els.inlineCalloutInput.style.padding = `${py}px ${g.padX}px`;
+    }
+    function beginInlineCalloutEdit(callout, selectAll = false) {
+      if (!callout || callout.type !== 'callout') return;
+      ensureAnnotationStyle(callout);
+      state.inlineEdit = { id: callout.id, originalText: callout.text || '' };
+      els.inlineCalloutInput.value = callout.text || '';
+      els.inlineCalloutInput.style.display = 'block';
+      syncInlineCalloutEditor();
+      els.inlineCalloutInput.focus();
+      if (selectAll) els.inlineCalloutInput.setSelectionRange(0, els.inlineCalloutInput.value.length);
+    }
+    function getCanvasLogicalSize() {
+      return {
+        w: state.canvasLogicalW,
+        h: state.canvasLogicalH
+      };
+    }
+    function setTool(tool) {
+      state.activeTool = tool;
+      state.pointer.pendingPoint = null;
+      state.pointer.pendingPoints = [];
+      [...els.toolGrid.querySelectorAll('button[data-tool]')].forEach(btn => {
+        const isActive = btn.dataset.tool === tool;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+      if (tool === 'path' || tool === 'polygon') {
+        setStatus('Tool: ' + tool + ' (click points, Enter/double-click to finish, Esc to cancel)');
+      } else {
+        setStatus('Tool: ' + tool);
+      }
+      render();
+    }
+    function closeMenus() {
+      els.importMenu.classList.remove('is-open');
+      els.exportMenu.classList.remove('is-open');
+    }
+    function supportsFilePickers() {
+      return typeof window.showSaveFilePicker === 'function' && typeof window.showOpenFilePicker === 'function';
+    }
+    function buildPickerBaseOptions() {
+      const base = { id: 'iat-shared-location' };
+      if (state.lastPickerHandle) {
+        base.startIn = state.lastPickerHandle;
+      }
+      return base;
+    }
+    async function saveBlobWithPicker(blob, suggestedName, types) {
+      if (!supportsFilePickers()) return false;
+      try {
+        const handle = await window.showSaveFilePicker({
+          ...buildPickerBaseOptions(),
+          suggestedName,
+          types
+        });
+        state.lastPickerHandle = handle;
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        setStatus(`Saved: ${suggestedName}`);
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          setStatus('Save cancelled.');
+          return true;
+        }
+        return false;
+      }
+    }
+    async function openSettingsWithPicker() {
+      if (!supportsFilePickers()) return false;
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          ...buildPickerBaseOptions(),
+          multiple: false,
+          types: [{ description: 'JSON settings', accept: { 'application/json': ['.json'] } }]
+        });
+        if (!handle) return true;
+        state.lastPickerHandle = handle;
+        const file = await handle.getFile();
+        const text = await file.text();
+        importSettingsFromObject(JSON.parse(text));
+        setStatus(`Imported settings: ${file.name}`);
+        return true;
+      } catch (err) {
+        if (err && err.name === 'AbortError') {
+          setStatus('Import cancelled.');
+          return true;
+        }
+        alert('Could not import JSON settings file.');
+        return true;
+      }
+    }
+    function toggleMenu(menuEl) {
+      const open = !menuEl.classList.contains('is-open');
+      closeMenus();
+      if (open) menuEl.classList.add('is-open');
+    }
+
+    function applyCanvasSizeFromAspect() {
+      const aspect = clamp(parseFloat(els.aspectRatioInput.value) || 2.00, 0.2, 4);
+      state.settings.aspectRatio = aspect;
+      const hostW = Math.max(320, (els.vizPanel.parentElement?.clientWidth || els.vizPanel.clientWidth) - 2);
+      const panelW = Math.max(320, hostW - 24);
+      let targetW;
+      if (window.innerWidth <= 1100) {
+        targetW = panelW;
+      } else {
+        targetW = Math.round(window.innerWidth * 0.625 + 62);
+      }
+      targetW = Math.round(targetW * 0.56);
+      targetW = clamp(targetW, Math.min(260, panelW), panelW);
+      const logicalW = targetW;
+      const logicalH = Math.max(220, Math.round(logicalW / aspect));
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      state.canvasDpr = dpr;
+      state.canvasLogicalW = logicalW;
+      state.canvasLogicalH = logicalH;
+
+      const shellStyle = window.getComputedStyle(els.canvasShell);
+      const shellPadX = (parseFloat(shellStyle.paddingLeft) || 0) + (parseFloat(shellStyle.paddingRight) || 0);
+      const shellPadY = (parseFloat(shellStyle.paddingTop) || 0) + (parseFloat(shellStyle.paddingBottom) || 0);
+      const shellW = clamp(Math.round(logicalW + shellPadX), Math.min(280, panelW), panelW);
+      const shellH = Math.round(logicalH + shellPadY);
+
+      const panelStyle = window.getComputedStyle(els.vizPanel);
+      const panelPadX = (parseFloat(panelStyle.paddingLeft) || 0) + (parseFloat(panelStyle.paddingRight) || 0);
+      const panelBorderX = (parseFloat(panelStyle.borderLeftWidth) || 0) + (parseFloat(panelStyle.borderRightWidth) || 0);
+      const panelOuterW = clamp(Math.round(shellW + panelPadX + panelBorderX), Math.min(300, hostW), hostW);
+
+      if (els.workspaceToolbar) {
+        els.workspaceToolbar.style.width = `${shellW}px`;
+      }
+      els.canvasShell.style.width = `${shellW}px`;
+      els.canvasShell.style.height = `${shellH}px`;
+      els.vizPanel.style.width = (window.innerWidth <= 1040) ? '100%' : `${panelOuterW}px`;
+      els.canvas.style.width = `${logicalW}px`;
+      els.canvas.style.height = `${logicalH}px`;
+      els.canvas.width = Math.round(logicalW * dpr);
+      els.canvas.height = Math.round(logicalH * dpr);
+      render();
+    }
+
+    function fitImageToView() {
+      if (!state.image) return;
+      const pad = Math.max(0, state.settings.imagePadding);
+      const bounds = {
+        x: -pad,
+        y: -pad,
+        w: state.imageW + pad * 2,
+        h: state.imageH + pad * 2
+      };
+      const size = getCanvasLogicalSize();
+      const vw = size.w;
+      const vh = size.h;
+      const sx = vw / Math.max(bounds.w, 1);
+      const sy = vh / Math.max(bounds.h, 1);
+      const imageAspect = bounds.w / Math.max(bounds.h, 1e-9);
+      const canvasAspect = vw / Math.max(vh, 1e-9);
+      let fitScale = Math.min(sx, sy);
+      if (pad === 0 && Math.abs(imageAspect - canvasAspect) < 0.01) {
+        fitScale = Math.max(sx, sy);
+      }
+      state.view.scale = Math.max(0.02, fitScale);
+      state.view.panX = vw / 2 - (bounds.x + bounds.w / 2) * state.view.scale;
+      state.view.panY = vh / 2 - (bounds.y + bounds.h / 2) * state.view.scale;
+      render();
+    }
+
+    function setZeroView() {
+      state.viewZero = { ...state.view };
+      setStatus(`Zero view stored (scale ${state.viewZero.scale.toFixed(3)}).`);
+    }
+
+    function resetToZeroView() {
+      state.view = { ...state.viewZero };
+      setStatus('Reset to zero view.');
+      render();
+    }
+
+    function drawCanvasBackground() {
+      const size = getCanvasLogicalSize();
+      const dpr = state.canvasDpr;
+      ctx.save();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = '#e5e7eb';
+      ctx.fillRect(0, 0, size.w, size.h);
+
+      const step = 24;
+      const majorEvery = 5;
+      for (let i = 0, x = 0; x <= size.w + 0.5; i++, x += step) {
+        ctx.strokeStyle = (i % majorEvery === 0) ? '#cbd5e1' : '#d1d5db';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(Math.round(x) + 0.5, 0);
+        ctx.lineTo(Math.round(x) + 0.5, size.h);
+        ctx.stroke();
+      }
+      for (let j = 0, y = 0; y <= size.h + 0.5; j++, y += step) {
+        ctx.strokeStyle = (j % majorEvery === 0) ? '#cbd5e1' : '#d1d5db';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, Math.round(y) + 0.5);
+        ctx.lineTo(size.w, Math.round(y) + 0.5);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawImageLayer() {
+      const dpr = state.canvasDpr;
+      drawCanvasBackground();
+      if (!state.image) return;
+
+      ctx.save();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.translate(state.view.panX, state.view.panY);
+      ctx.scale(state.view.scale, state.view.scale);
+      ctx.filter = state.settings.monochrome ? 'grayscale(100%)' : 'none';
+      ctx.drawImage(state.image, 0, 0, state.imageW, state.imageH);
+      ctx.filter = 'none';
+      ctx.restore();
+    }
+
+    function drawCalibration() {
+      const A = state.calibration.A;
+      const B = state.calibration.B;
+      if (!A && !B) return;
+      if (isCalibrated()) return;
+      ctx.save();
+      ctx.setTransform(state.canvasDpr, 0, 0, state.canvasDpr, 0, 0);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#4fd1c5';
+      ctx.fillStyle = '#4fd1c5';
+      ctx.font = '24px Inter, sans-serif';
+      ctx.textBaseline = 'middle';
+      if (A && B) {
+        const sA = worldToScreen(A);
+        const sB = worldToScreen(B);
+        ctx.beginPath();
+        ctx.moveTo(sA.x, sA.y);
+        ctx.lineTo(sB.x, sB.y);
+        ctx.stroke();
+      }
+      if (A) {
+        const s = worldToScreen(A);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('A', s.x + 8, s.y);
+      }
+      if (B) {
+        const s = worldToScreen(B);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('B', s.x + 8, s.y);
+      }
+      ctx.restore();
+    }
+
+    function measureTextPx(text, fontSize, fontFamily = 'Inter, sans-serif', bold = false) {
+      const safeSize = Math.max(1, Number(fontSize) || 1);
+      measureCtx.font = `${bold ? 'bold ' : ''}${safeSize}px ${fontFamily}`;
+      return measureCtx.measureText(String(text ?? '')).width;
+    }
+    function worldToScreenScaled(pt, exportScale = 1) {
+      const s = worldToScreen(pt);
+      return { x: s.x * exportScale, y: s.y * exportScale };
+    }
+    function getScaleBarGeometry(exportScale = 1, measureFn = measureTextPx) {
+      if (!state.settings.scaleBarEnabled) return null;
+      const pxPerMeterImage = getCalibrationPxPerMeter();
+      if (!pxPerMeterImage || pxPerMeterImage <= 0) return null;
+      const distanceValue = Math.max(0, parseFloat(state.settings.scaleBarDistance) || 0);
+      const distanceUnit = state.settings.scaleBarDistanceUnit || state.calibration.unit || 'cm';
+      if (distanceValue <= 0) return null;
+      const inset = Math.max(0, parseFloat(state.settings.scaleBarPadding) || 0);
+      const size = getCanvasLogicalSize();
+      const canvasW = size.w * exportScale;
+      const canvasH = size.h * exportScale;
+      const rulerH = Math.max(54 * exportScale, 72 * exportScale);
+      const fontSize = 22 * exportScale;
+      const unitFontSize = 22 * exportScale;
+
+      const pxPerMeterScreen = pxPerMeterImage * state.view.scale * exportScale;
+      const unitMeters = getUnitMeters(distanceUnit);
+      const unitText = distanceUnit;
+      const pxPerUnitScreen = pxPerMeterScreen * unitMeters;
+      if (!isFinite(pxPerUnitScreen) || pxPerUnitScreen <= 0) return null;
+      const markedW = Math.max(1, distanceValue * pxPerUnitScreen);
+      const majorUnits = chooseNiceStep(distanceValue / 5);
+      const minorUnits = majorUnits / 5;
+      const minorScreen = minorUnits * pxPerUnitScreen;
+      const majorScreen = majorUnits * pxPerUnitScreen;
+
+      const unitBoxW = Math.max(60 * exportScale, measureFn(unitText, unitFontSize, 'Arial, sans-serif', true) + 24 * exportScale);
+      const leftPad = Math.max(24 * exportScale, (measureFn('0', fontSize, 'Arial, sans-serif', false) * 0.5) + 8 * exportScale);
+      const rightGap = leftPad;
+      const rulerW = leftPad + markedW + rightGap + unitBoxW;
+
+      let xStart = inset * exportScale;
+      if (state.settings.scaleBarJustify === 'center') {
+        xStart = (canvasW - rulerW) * 0.5;
+      } else if (state.settings.scaleBarJustify === 'right') {
+        xStart = canvasW - inset * exportScale - rulerW;
+      }
+      xStart = clamp(xStart, 0, Math.max(0, canvasW - rulerW));
+      const xEnd = xStart + rulerW;
+      const yTop = clamp(canvasH - inset * exportScale - rulerH, 0, Math.max(0, canvasH - rulerH));
+
+      const scaleStart = xStart + leftPad;
+      const scaleEnd = scaleStart + markedW;
+      const scaleW = markedW;
+      if (scaleW <= 1 || minorScreen <= 0 || majorScreen <= 0) return null;
+      const labelLeftBound = xStart + 4 * exportScale;
+      const labelRightBound = scaleEnd;
+      const tickTopPad = 8 * exportScale;
+      const tickTop = yTop + tickTopPad;
+
+      const ticks = [];
+      for (let px = 0; px <= scaleW + 1e-9; px += minorScreen) {
+        const x = scaleStart + px;
+        if (x < scaleStart || x > scaleEnd) continue;
+        const isMajor = Math.abs((px / majorScreen) - Math.round(px / majorScreen)) < 0.001;
+        const tick = isMajor ? 33 * exportScale : 15 * exportScale;
+        let label = null;
+        let labelW = 0;
+        if (isMajor) {
+          const val = px / Math.max(pxPerUnitScreen, 1e-9);
+          const txt = formatRulerValue(val);
+          const w = measureFn(txt, fontSize, 'Arial, sans-serif', false);
+          if (x - w * 0.5 >= labelLeftBound && x + w * 0.5 <= labelRightBound) {
+            label = txt;
+            labelW = w;
+          }
+        }
+        ticks.push({ x, tick, label, labelW });
+      }
+      if (!ticks.some(t => Math.abs(t.x - scaleEnd) <= 0.5 * exportScale)) {
+        const endLabel = formatRulerValue(distanceValue);
+        ticks.push({
+          x: scaleEnd,
+          tick: 33 * exportScale,
+          label: endLabel,
+          labelW: measureFn(endLabel, fontSize, 'Arial, sans-serif', false)
+        });
+      } else {
+        ticks.forEach(t => {
+          if (Math.abs(t.x - scaleEnd) <= 0.5 * exportScale) {
+            t.tick = 33 * exportScale;
+            t.label = formatRulerValue(distanceValue);
+            t.labelW = measureFn(t.label, fontSize, 'Arial, sans-serif', false);
+          }
+        });
+      }
+      ticks.sort((a, b) => a.x - b.x);
+
+      // Cull overlapping major labels to keep text readable.
+      const minLabelGap = 6 * exportScale;
+      const endIdx = ticks.findIndex(t => Math.abs(t.x - scaleEnd) <= 0.5 * exportScale);
+      let lastRight = -Infinity;
+      for (let i = 0; i < ticks.length; i++) {
+        if (i === endIdx) continue;
+        const t = ticks[i];
+        if (!t.label) continue;
+        const left = t.x - t.labelW * 0.5;
+        const right = t.x + t.labelW * 0.5;
+        if (left <= lastRight + minLabelGap) {
+          t.label = null;
+          t.labelW = 0;
+        } else {
+          lastRight = right;
+        }
+      }
+      if (endIdx >= 0) {
+        const endTick = ticks[endIdx];
+        if (endTick.label) {
+          let endLeft = endTick.x - endTick.labelW * 0.5;
+          while (endLeft <= lastRight + minLabelGap) {
+            let removed = false;
+            for (let i = endIdx - 1; i >= 0; i--) {
+              if (ticks[i].label) {
+                ticks[i].label = null;
+                ticks[i].labelW = 0;
+                removed = true;
+                break;
+              }
+            }
+            if (!removed) break;
+            lastRight = -Infinity;
+            for (let i = 0; i < endIdx; i++) {
+              const t = ticks[i];
+              if (!t.label) continue;
+              const right = t.x + t.labelW * 0.5;
+              lastRight = Math.max(lastRight, right);
+            }
+            endLeft = endTick.x - endTick.labelW * 0.5;
+          }
+        }
+      }
+      return {
+        xStart,
+        xEnd,
+        scaleStart,
+        scaleEnd,
+        tickTop,
+        yTop,
+        rulerH,
+        rulerW,
+        unitText,
+        unitBoxW,
+        labelY: yTop + rulerH - 10 * exportScale,
+        fontSize,
+        unitFontSize,
+        ticks
+      };
+    }
+    function drawBottomScaleBarToContext(targetCtx, exportScale = 1, pixelRatio = 1) {
+      const g = getScaleBarGeometry(exportScale, (txt, size, family, bold) => {
+        targetCtx.font = `${bold ? 'bold ' : ''}${size}px ${family}`;
+        return targetCtx.measureText(txt).width;
+      });
+      if (!g) return;
+      targetCtx.save();
+      targetCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      targetCtx.fillStyle = '#FFFFFF';
+      targetCtx.fillRect(g.xStart, g.yTop, g.rulerW, g.rulerH);
+      targetCtx.strokeStyle = '#000000';
+      targetCtx.lineWidth = 1 * exportScale;
+      targetCtx.strokeRect(g.xStart + 0.5 * exportScale, g.yTop + 0.5 * exportScale, Math.max(0, g.rulerW - 1 * exportScale), Math.max(0, g.rulerH - 1 * exportScale));
+      targetCtx.font = `${g.fontSize}px Arial, sans-serif`;
+      targetCtx.fillStyle = '#000000';
+      targetCtx.textAlign = 'center';
+      targetCtx.textBaseline = 'alphabetic';
+      targetCtx.beginPath();
+      targetCtx.moveTo(g.scaleStart, g.tickTop);
+      targetCtx.lineTo(g.scaleEnd, g.tickTop);
+      targetCtx.stroke();
+      g.ticks.forEach(t => {
+        targetCtx.beginPath();
+        targetCtx.moveTo(t.x, g.tickTop);
+        targetCtx.lineTo(t.x, g.tickTop + t.tick);
+        targetCtx.stroke();
+        if (t.label) targetCtx.fillText(t.label, t.x, g.labelY);
+      });
+      const boxX = g.xEnd - g.unitBoxW;
+      targetCtx.fillStyle = '#FFFFFF';
+      targetCtx.fillRect(boxX, g.yTop, g.unitBoxW, g.rulerH);
+      targetCtx.strokeStyle = '#000';
+      targetCtx.strokeRect(boxX + 0.5 * exportScale, g.yTop + 0.5 * exportScale, Math.max(0, g.unitBoxW - 1 * exportScale), Math.max(0, g.rulerH - 1 * exportScale));
+      targetCtx.fillStyle = '#000';
+      targetCtx.font = `bold ${g.unitFontSize}px Arial, sans-serif`;
+      targetCtx.textAlign = 'center';
+      targetCtx.textBaseline = 'middle';
+      targetCtx.fillText(g.unitText, boxX + g.unitBoxW / 2, g.yTop + g.rulerH / 2);
+      targetCtx.restore();
+    }
+    function getImageTitleGeometry(exportScale = 1, measureFn = measureTextPx) {
+      if (!state.image) return null;
+      const text = (state.settings.imageTitleText || '').trim();
+      if (!text) return null;
+      const fontSize = Math.max(8, parseFloat(state.settings.imageTitleFontSize) || 44) * exportScale;
+      const padX = 12 * exportScale;
+      const padY = 8 * exportScale;
+      const textW = measureFn(text, fontSize, 'Inter, sans-serif', true);
+      const boxW = textW + padX * 2;
+      const boxH = fontSize + padY * 2;
+      return {
+        text,
+        x: 0,
+        y: 0,
+        boxW,
+        boxH,
+        fontSize,
+        padX,
+        textColor: state.settings.imageTitleTextColor || '#FFFFFF',
+        fillColor: state.settings.imageTitleFillColor || '#000000'
+      };
+    }
+    function drawImageTitleToContext(targetCtx, exportScale = 1, pixelRatio = 1) {
+      const g = getImageTitleGeometry(exportScale, (txt, size, family, bold) => {
+        targetCtx.font = `${bold ? 'bold ' : ''}${size}px ${family}`;
+        return targetCtx.measureText(txt).width;
+      });
+      if (!g) return;
+      targetCtx.save();
+      targetCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      targetCtx.fillStyle = g.fillColor;
+      targetCtx.fillRect(g.x, g.y, g.boxW, g.boxH);
+      targetCtx.fillStyle = g.textColor;
+      targetCtx.font = `700 ${g.fontSize}px Inter, sans-serif`;
+      targetCtx.textAlign = 'left';
+      targetCtx.textBaseline = 'middle';
+      targetCtx.fillText(g.text, g.x + g.padX, g.y + g.boxH / 2);
+      targetCtx.restore();
+    }
+    function drawCalloutToContext(targetCtx, a, selected = false, exportScale = 1, pixelRatio = 1) {
+      ensureAnnotationStyle(a);
+      const style = a.style;
+      targetCtx.save();
+      targetCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      const anchor = worldToScreenScaled({ x: a.ax, y: a.ay }, exportScale);
+      const box = worldToScreenScaled({ x: a.bx, y: a.by }, exportScale);
+      const fontSize = Math.max(8, style.fontSize ?? state.settings.fontSize) * exportScale;
+      const text = a.text || 'Callout';
+      const lines = normalizeCalloutLines(text);
+      const textAlign = getCalloutTextAlign(style.textAlign || state.settings.calloutTextAlign);
+      targetCtx.font = `${fontSize}px Inter, sans-serif`;
+      let textW = 0;
+      lines.forEach(line => { textW = Math.max(textW, targetCtx.measureText(line).width); });
+      const padX = 10 * exportScale;
+      const padY = 6 * exportScale;
+      const lineHeight = Math.max(fontSize * 1.2, fontSize + 2 * exportScale);
+      const boxW = textW + padX * 2;
+      const boxH = lineHeight * lines.length + padY * 2;
+      const cx = box.x + boxW * 0.5;
+      const cy = box.y + boxH * 0.5;
+      targetCtx.strokeStyle = style.lineColor || state.settings.lineColor;
+      targetCtx.lineWidth = Math.max(0.5, style.lineWidth ?? state.settings.lineWidth) * exportScale;
+      targetCtx.beginPath();
+      targetCtx.moveTo(anchor.x, anchor.y);
+      targetCtx.lineTo(cx, cy);
+      targetCtx.stroke();
+      targetCtx.fillStyle = style.fillColor || state.settings.calloutFillColor;
+      targetCtx.fillRect(box.x, box.y, boxW, boxH);
+      targetCtx.strokeRect(box.x, box.y, boxW, boxH);
+      targetCtx.fillStyle = style.textColor || state.settings.textColor;
+      targetCtx.textAlign = textAlign;
+      targetCtx.textBaseline = 'middle';
+      const textX = textAlign === 'left' ? (box.x + padX) : (textAlign === 'right' ? (box.x + boxW - padX) : (box.x + boxW / 2));
+      let textY = box.y + padY + lineHeight * 0.5;
+      lines.forEach(line => {
+        targetCtx.fillText(line, textX, textY);
+        textY += lineHeight;
+      });
+      if (selected) {
+        targetCtx.strokeStyle = '#58a6ff';
+        targetCtx.setLineDash([6 * exportScale, 4 * exportScale]);
+        targetCtx.strokeRect(box.x - 3 * exportScale, box.y - 3 * exportScale, boxW + 6 * exportScale, boxH + 6 * exportScale);
+        targetCtx.setLineDash([]);
+      }
+      targetCtx.restore();
+    }
+    function drawShapeAnnotationToContext(targetCtx, a, selected = false, exportScale = 1, pixelRatio = 1) {
+      ensureAnnotationStyle(a);
+      const style = a.style;
+      targetCtx.save();
+      targetCtx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      targetCtx.strokeStyle = style.lineColor || state.settings.lineColor;
+      const fillOpacity = getShapeFillOpacity(style.fillOpacity);
+      targetCtx.fillStyle = style.fillColor || state.settings.shapeFillColor;
+      targetCtx.lineWidth = Math.max(0.5, style.lineWidth ?? state.settings.lineWidth) * exportScale;
+      if (a.type === 'line') {
+        const p1 = worldToScreenScaled({ x: a.x1, y: a.y1 }, exportScale);
+        const p2 = worldToScreenScaled({ x: a.x2, y: a.y2 }, exportScale);
+        targetCtx.beginPath();
+        targetCtx.moveTo(p1.x, p1.y);
+        targetCtx.lineTo(p2.x, p2.y);
+        targetCtx.stroke();
+      } else if (a.type === 'path' && Array.isArray(a.points) && a.points.length >= 2) {
+        targetCtx.beginPath();
+        const p0 = worldToScreenScaled(a.points[0], exportScale);
+        targetCtx.moveTo(p0.x, p0.y);
+        for (let i = 1; i < a.points.length; i++) {
+          const p = worldToScreenScaled(a.points[i], exportScale);
+          targetCtx.lineTo(p.x, p.y);
+        }
+        targetCtx.stroke();
+      } else if (a.type === 'polygon' && Array.isArray(a.points) && a.points.length >= 3) {
+        targetCtx.beginPath();
+        const p0 = worldToScreenScaled(a.points[0], exportScale);
+        targetCtx.moveTo(p0.x, p0.y);
+        for (let i = 1; i < a.points.length; i++) {
+          const p = worldToScreenScaled(a.points[i], exportScale);
+          targetCtx.lineTo(p.x, p.y);
+        }
+        targetCtx.closePath();
+        if (style.fillEnabled) {
+          targetCtx.save();
+          targetCtx.globalAlpha = fillOpacity;
+          targetCtx.fill();
+          targetCtx.restore();
+        }
+        targetCtx.stroke();
+      } else if (a.type === 'rect') {
+        const p1 = worldToScreenScaled({ x: a.x1, y: a.y1 }, exportScale);
+        const p2 = worldToScreenScaled({ x: a.x2, y: a.y2 }, exportScale);
+        const x = Math.min(p1.x, p2.x);
+        const y = Math.min(p1.y, p2.y);
+        const w = Math.abs(p2.x - p1.x);
+        const h = Math.abs(p2.y - p1.y);
+        if (style.fillEnabled) {
+          targetCtx.save();
+          targetCtx.globalAlpha = fillOpacity;
+          targetCtx.fillRect(x, y, w, h);
+          targetCtx.restore();
+        }
+        targetCtx.strokeRect(x, y, w, h);
+      } else if (a.type === 'circle') {
+        const c = worldToScreenScaled({ x: a.cx, y: a.cy }, exportScale);
+        const e = worldToScreenScaled({ x: a.ex, y: a.ey }, exportScale);
+        const r = Math.max(2 * exportScale, dist(c, e));
+        targetCtx.beginPath();
+        targetCtx.arc(c.x, c.y, r, 0, Math.PI * 2);
+        if (style.fillEnabled) {
+          targetCtx.save();
+          targetCtx.globalAlpha = fillOpacity;
+          targetCtx.fill();
+          targetCtx.restore();
+        }
+        targetCtx.stroke();
+      }
+      if (selected) {
+        targetCtx.strokeStyle = '#58a6ff';
+        targetCtx.setLineDash([6 * exportScale, 4 * exportScale]);
+        if (a.type === 'line') {
+          const p1 = worldToScreenScaled({ x: a.x1, y: a.y1 }, exportScale);
+          const p2 = worldToScreenScaled({ x: a.x2, y: a.y2 }, exportScale);
+          targetCtx.beginPath();
+          targetCtx.moveTo(p1.x, p1.y);
+          targetCtx.lineTo(p2.x, p2.y);
+          targetCtx.stroke();
+        } else if ((a.type === 'path' || a.type === 'polygon') && Array.isArray(a.points) && a.points.length >= 2) {
+          targetCtx.beginPath();
+          const p0 = worldToScreenScaled(a.points[0], exportScale);
+          targetCtx.moveTo(p0.x, p0.y);
+          for (let i = 1; i < a.points.length; i++) {
+            const p = worldToScreenScaled(a.points[i], exportScale);
+            targetCtx.lineTo(p.x, p.y);
+          }
+          if (a.type === 'polygon' && a.points.length >= 3) targetCtx.closePath();
+          targetCtx.stroke();
+        }
+        targetCtx.setLineDash([]);
+      }
+      targetCtx.restore();
+    }
+    function renderCleanToContext(targetCtx, exportScale = 1) {
+      const size = getCanvasLogicalSize();
+      const outW = Math.round(size.w * exportScale);
+      const outH = Math.round(size.h * exportScale);
+      targetCtx.save();
+      targetCtx.setTransform(1, 0, 0, 1, 0, 0);
+      targetCtx.fillStyle = '#000000';
+      targetCtx.fillRect(0, 0, outW, outH);
+      targetCtx.restore();
+      if (state.image) {
+        targetCtx.save();
+        targetCtx.setTransform(1, 0, 0, 1, 0, 0);
+        targetCtx.translate(state.view.panX * exportScale, state.view.panY * exportScale);
+        targetCtx.scale(state.view.scale * exportScale, state.view.scale * exportScale);
+        targetCtx.filter = state.settings.monochrome ? 'grayscale(100%)' : 'none';
+        targetCtx.drawImage(state.image, 0, 0, state.imageW, state.imageH);
+        targetCtx.filter = 'none';
+        targetCtx.restore();
+      }
+      drawImageTitleToContext(targetCtx, exportScale, 1);
+      drawBottomScaleBarToContext(targetCtx, exportScale, 1);
+      state.annotations.forEach(a => {
+        if (a.type === 'callout') drawCalloutToContext(targetCtx, a, false, exportScale, 1);
+        else drawShapeAnnotationToContext(targetCtx, a, false, exportScale, 1);
+      });
+    }
+    function escapeXml(raw) {
+      return String(raw ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+    function buildLayeredSvgString() {
+      const size = getCanvasLogicalSize();
+      const w = size.w;
+      const h = size.h;
+      const parts = [];
+      const push = line => parts.push(line);
+      push('<?xml version="1.0" encoding="UTF-8"?>');
+      push(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`);
+      push(`<rect x="0" y="0" width="${w}" height="${h}" fill="#000000" />`);
+      push('<defs>');
+      push('<clipPath id="viewClip"><rect x="0" y="0" width="' + w + '" height="' + h + '" /></clipPath>');
+      if (state.settings.monochrome) {
+        push('<filter id="monoFilter"><feColorMatrix type="saturate" values="0" /></filter>');
+      }
+      push('</defs>');
+      push('<g id="layer-image" data-layer="image">');
+      if (state.imageDataUrl) {
+        const filterAttr = state.settings.monochrome ? ' filter="url(#monoFilter)"' : '';
+        const transform = `matrix(${state.view.scale} 0 0 ${state.view.scale} ${state.view.panX} ${state.view.panY})`;
+        push('<g id="image-viewport-clip" clip-path="url(#viewClip)">');
+        push(`<image id="base-image" href="${escapeXml(state.imageDataUrl)}" x="0" y="0" width="${state.imageW}" height="${state.imageH}" transform="${transform}"${filterAttr} />`);
+        push('</g>');
+      }
+      push('</g>');
+      const titleGeom = getImageTitleGeometry(1, (txt, sizePx, family, bold) => measureTextPx(txt, sizePx, family, bold));
+      if (titleGeom) {
+        push('<g id="layer-image-title" data-layer="image-title">');
+        push(`<rect id="image-title-bg" x="${titleGeom.x}" y="${titleGeom.y}" width="${titleGeom.boxW}" height="${titleGeom.boxH}" fill="${titleGeom.fillColor}" />`);
+        push(`<text id="image-title-text" x="${titleGeom.x + titleGeom.padX}" y="${titleGeom.y + titleGeom.boxH / 2}" text-anchor="start" dominant-baseline="middle" font-size="${titleGeom.fontSize}" font-family="Inter, sans-serif" font-weight="700" fill="${titleGeom.textColor}">${escapeXml(titleGeom.text)}</text>`);
+        push('</g>');
+      }
+      const g = getScaleBarGeometry(1, (txt, sizePx, family, bold) => measureTextPx(txt, sizePx, family, bold));
+      if (g) {
+        push('<g id="layer-scalebar" data-layer="scalebar">');
+        push(`<rect id="scalebar-body" x="${g.xStart}" y="${g.yTop}" width="${g.rulerW}" height="${g.rulerH}" fill="#FFFFFF" stroke="#000000" stroke-width="1" />`);
+        push(`<line x1="${g.scaleStart}" y1="${g.tickTop}" x2="${g.scaleEnd}" y2="${g.tickTop}" stroke="#000000" stroke-width="1" />`);
+        g.ticks.forEach(t => {
+          push(`<line x1="${t.x}" y1="${g.tickTop}" x2="${t.x}" y2="${g.tickTop + t.tick}" stroke="#000000" stroke-width="1" />`);
+          if (t.label) {
+            push(`<text x="${t.x}" y="${g.labelY}" text-anchor="middle" font-size="${g.fontSize}" font-family="Arial, sans-serif" fill="#000000">${escapeXml(t.label)}</text>`);
+          }
+        });
+        const boxX = g.xEnd - g.unitBoxW;
+        push(`<rect id="scalebar-unit-box" x="${boxX}" y="${g.yTop}" width="${g.unitBoxW}" height="${g.rulerH}" fill="#FFFFFF" stroke="#000000" stroke-width="1" />`);
+        push(`<text id="scalebar-unit-label" x="${boxX + g.unitBoxW / 2}" y="${g.yTop + g.rulerH / 2}" text-anchor="middle" dominant-baseline="middle" font-size="${g.unitFontSize}" font-family="Arial, sans-serif" font-weight="700" fill="#000000">${escapeXml(g.unitText)}</text>`);
+        push('</g>');
+      }
+      push('<g id="layer-annotations" data-layer="annotations">');
+      state.annotations.forEach(a => {
+        ensureAnnotationStyle(a);
+        const style = a.style || {};
+        const stroke = style.lineColor || state.settings.lineColor;
+        const strokeW = Math.max(0.5, style.lineWidth ?? state.settings.lineWidth);
+        const annId = escapeXml(String(a.id || uid('ann')));
+        push(`<g id="annotation-${annId}" data-annotation-type="${escapeXml(a.type)}">`);
+        if (a.type === 'callout') {
+          const anchor = worldToScreen({ x: a.ax, y: a.ay });
+          const box = worldToScreen({ x: a.bx, y: a.by });
+          const fontSize = Math.max(8, style.fontSize ?? state.settings.fontSize);
+          const text = a.text || 'Callout';
+          const lines = normalizeCalloutLines(text);
+          const textAlign = getCalloutTextAlign(style.textAlign || state.settings.calloutTextAlign);
+          const padX = 10;
+          const padY = 6;
+          const lineHeight = Math.max(fontSize * 1.2, fontSize + 2);
+          let textW = 0;
+          lines.forEach(line => { textW = Math.max(textW, measureTextPx(line, fontSize, 'Inter, sans-serif', false)); });
+          const boxW = textW + padX * 2;
+          const boxH = lineHeight * lines.length + padY * 2;
+          const cx = box.x + boxW * 0.5;
+          const cy = box.y + boxH * 0.5;
+          const fill = style.fillColor || state.settings.calloutFillColor;
+          const textColor = style.textColor || state.settings.textColor;
+          const anchorAttr = textAlign === 'left' ? 'start' : (textAlign === 'right' ? 'end' : 'middle');
+          const textX = textAlign === 'left' ? (box.x + padX) : (textAlign === 'right' ? (box.x + boxW - padX) : (box.x + boxW / 2));
+          push(`<line x1="${anchor.x}" y1="${anchor.y}" x2="${cx}" y2="${cy}" stroke="${stroke}" stroke-width="${strokeW}" />`);
+          push(`<rect x="${box.x}" y="${box.y}" width="${boxW}" height="${boxH}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" />`);
+          push(`<text x="${textX}" y="${box.y + padY + lineHeight * 0.5}" text-anchor="${anchorAttr}" dominant-baseline="middle" font-size="${fontSize}" font-family="Inter, sans-serif" fill="${textColor}">`);
+          lines.forEach((line, idx) => {
+            const dy = idx === 0 ? '0' : `${lineHeight}`;
+            push(`<tspan x="${textX}" dy="${dy}">${escapeXml(line)}</tspan>`);
+          });
+          push('</text>');
+        } else if (a.type === 'line') {
+          const p1 = worldToScreen({ x: a.x1, y: a.y1 });
+          const p2 = worldToScreen({ x: a.x2, y: a.y2 });
+          push(`<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="${stroke}" stroke-width="${strokeW}" />`);
+        } else if (a.type === 'path' && Array.isArray(a.points) && a.points.length >= 2) {
+          const pts = a.points.map(p => {
+            const s = worldToScreen(p);
+            return `${s.x},${s.y}`;
+          }).join(' ');
+          push(`<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="${strokeW}" />`);
+        } else if (a.type === 'polygon' && Array.isArray(a.points) && a.points.length >= 3) {
+          const pts = a.points.map(p => {
+            const s = worldToScreen(p);
+            return `${s.x},${s.y}`;
+          }).join(' ');
+          const fillOn = !!style.fillEnabled;
+          const fill = style.fillColor || state.settings.shapeFillColor;
+          const fillOpacity = getShapeFillOpacity(style.fillOpacity);
+          const fillAttr = fillOn ? `fill="${fill}" fill-opacity="${fillOpacity}"` : 'fill="none"';
+          push(`<polygon points="${pts}" ${fillAttr} stroke="${stroke}" stroke-width="${strokeW}" />`);
+        } else if (a.type === 'rect') {
+          const p1 = worldToScreen({ x: a.x1, y: a.y1 });
+          const p2 = worldToScreen({ x: a.x2, y: a.y2 });
+          const x = Math.min(p1.x, p2.x);
+          const y = Math.min(p1.y, p2.y);
+          const rw = Math.abs(p2.x - p1.x);
+          const rh = Math.abs(p2.y - p1.y);
+          const fillOn = !!style.fillEnabled;
+          const fill = style.fillColor || state.settings.shapeFillColor;
+          const fillOpacity = getShapeFillOpacity(style.fillOpacity);
+          const fillAttr = fillOn ? `fill="${fill}" fill-opacity="${fillOpacity}"` : 'fill="none"';
+          push(`<rect x="${x}" y="${y}" width="${rw}" height="${rh}" ${fillAttr} stroke="${stroke}" stroke-width="${strokeW}" />`);
+        } else if (a.type === 'circle') {
+          const c = worldToScreen({ x: a.cx, y: a.cy });
+          const e = worldToScreen({ x: a.ex, y: a.ey });
+          const r = Math.max(2, dist(c, e));
+          const fillOn = !!style.fillEnabled;
+          const fill = style.fillColor || state.settings.shapeFillColor;
+          const fillOpacity = getShapeFillOpacity(style.fillOpacity);
+          const fillAttr = fillOn ? `fill="${fill}" fill-opacity="${fillOpacity}"` : 'fill="none"';
+          push(`<circle cx="${c.x}" cy="${c.y}" r="${r}" ${fillAttr} stroke="${stroke}" stroke-width="${strokeW}" />`);
+        }
+        push('</g>');
+      });
+      push('</g>');
+      push('</svg>');
+      return parts.join('\n');
+    }
+
+    function drawBottomScaleBar() {
+      drawBottomScaleBarToContext(ctx, 1, state.canvasDpr);
+    }
+
+    function drawCallout(a, selected) {
+      drawCalloutToContext(ctx, a, selected, 1, state.canvasDpr);
+    }
+
+    function drawShapeAnnotation(a, selected) {
+      drawShapeAnnotationToContext(ctx, a, selected, 1, state.canvasDpr);
+    }
+
+    function drawHandles(a) {
+      if (!isSelectedId(a.id)) return;
+      ctx.save();
+      ctx.setTransform(state.canvasDpr, 0, 0, state.canvasDpr, 0, 0);
+      const drawHandle = (p, color = '#58a6ff') => {
+        const s = worldToScreen(p);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      };
+      if (a.type === 'callout') {
+        drawHandle({ x: a.ax, y: a.ay }, '#f59e0b');
+        drawHandle({ x: a.bx, y: a.by }, '#58a6ff');
+      } else if (a.type === 'line') {
+        drawHandle({ x: a.x1, y: a.y1 });
+        drawHandle({ x: a.x2, y: a.y2 });
+      } else if (a.type === 'rect') {
+        drawHandle({ x: a.x1, y: a.y1 });
+        drawHandle({ x: a.x2, y: a.y2 });
+      } else if (a.type === 'circle') {
+        drawHandle({ x: a.cx, y: a.cy });
+        drawHandle({ x: a.ex, y: a.ey });
+      } else if ((a.type === 'path' || a.type === 'polygon') && Array.isArray(a.points)) {
+        a.points.forEach((pt, idx) => drawHandle(pt, idx === 0 ? '#f59e0b' : '#58a6ff'));
+      }
+      ctx.restore();
+    }
+
+    function render() {
+      drawImageLayer();
+      drawCalibration();
+      drawImageTitleToContext(ctx, 1, state.canvasDpr);
+      drawBottomScaleBar();
+      state.annotations.forEach(a => {
+        const selected = isSelectedId(a.id);
+        if (a.type === 'callout') drawCallout(a, selected);
+        else drawShapeAnnotation(a, selected);
+        drawHandles(a);
+      });
+      if (state.pointer.pendingPoint) {
+        ctx.save();
+        ctx.setTransform(state.canvasDpr, 0, 0, state.canvasDpr, 0, 0);
+        const p = worldToScreen(state.pointer.pendingPoint);
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+      if ((state.activeTool === 'path' || state.activeTool === 'polygon') && Array.isArray(state.pointer.pendingPoints) && state.pointer.pendingPoints.length > 0) {
+        ctx.save();
+        ctx.setTransform(state.canvasDpr, 0, 0, state.canvasDpr, 0, 0);
+        ctx.strokeStyle = '#22c55e';
+        ctx.fillStyle = '#22c55e';
+        ctx.lineWidth = 2;
+        const first = worldToScreen(state.pointer.pendingPoints[0]);
+        ctx.beginPath();
+        ctx.moveTo(first.x, first.y);
+        for (let i = 1; i < state.pointer.pendingPoints.length; i++) {
+          const p = worldToScreen(state.pointer.pendingPoints[i]);
+          ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+        state.pointer.pendingPoints.forEach((pt, idx) => {
+          const sp = worldToScreen(pt);
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = idx === 0 ? '#f59e0b' : '#22c55e';
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+      syncInlineCalloutEditor();
+    }
+
+    function hitTest(ptScreen) {
+      const r = 8;
+      for (let i = state.annotations.length - 1; i >= 0; i--) {
+        const a = state.annotations[i];
+        if (a.type === 'callout') {
+          const anchor = worldToScreen({ x: a.ax, y: a.ay });
+          if (dist(anchor, ptScreen) <= r) return { id: a.id, part: 'anchor' };
+          const g = getCalloutBoxGeometry(a);
+          if (ptScreen.x >= g.boxX && ptScreen.x <= g.boxX + g.boxW && ptScreen.y >= g.boxY && ptScreen.y <= g.boxY + g.boxH) {
+            return { id: a.id, part: 'box', boxW: g.boxW, boxH: g.boxH };
+          }
+        } else if (a.type === 'line') {
+          const p1 = worldToScreen({ x: a.x1, y: a.y1 });
+          const p2 = worldToScreen({ x: a.x2, y: a.y2 });
+          if (dist(p1, ptScreen) <= r) return { id: a.id, part: 'p1' };
+          if (dist(p2, ptScreen) <= r) return { id: a.id, part: 'p2' };
+          const len = dist(p1, p2);
+          if (len > 0) {
+            const u = ((ptScreen.x - p1.x) * (p2.x - p1.x) + (ptScreen.y - p1.y) * (p2.y - p1.y)) / (len * len);
+            if (u >= 0 && u <= 1) {
+              const proj = { x: p1.x + u * (p2.x - p1.x), y: p1.y + u * (p2.y - p1.y) };
+              if (dist(proj, ptScreen) <= 7) return { id: a.id, part: 'body' };
+            }
+          }
+        } else if ((a.type === 'path' || a.type === 'polygon') && Array.isArray(a.points) && a.points.length >= 2) {
+          const pts = a.points.map(p => worldToScreen(p));
+          for (let j = 0; j < pts.length; j++) {
+            if (dist(pts[j], ptScreen) <= r) return { id: a.id, part: 'vertex', vertexIndex: j };
+          }
+          const segmentCount = (a.type === 'polygon' && pts.length >= 3) ? pts.length : (pts.length - 1);
+          for (let j = 0; j < segmentCount; j++) {
+            const p1 = pts[j];
+            const p2 = pts[(j + 1) % pts.length];
+            const len = dist(p1, p2);
+            if (len <= 0) continue;
+            const u = ((ptScreen.x - p1.x) * (p2.x - p1.x) + (ptScreen.y - p1.y) * (p2.y - p1.y)) / (len * len);
+            if (u >= 0 && u <= 1) {
+              const proj = { x: p1.x + u * (p2.x - p1.x), y: p1.y + u * (p2.y - p1.y) };
+              if (dist(proj, ptScreen) <= 7) return { id: a.id, part: 'body' };
+            }
+          }
+        } else if (a.type === 'rect') {
+          const p1 = worldToScreen({ x: a.x1, y: a.y1 });
+          const p2 = worldToScreen({ x: a.x2, y: a.y2 });
+          if (dist(p1, ptScreen) <= r) return { id: a.id, part: 'p1' };
+          if (dist(p2, ptScreen) <= r) return { id: a.id, part: 'p2' };
+          const x = Math.min(p1.x, p2.x), y = Math.min(p1.y, p2.y);
+          const w = Math.abs(p2.x - p1.x), h = Math.abs(p2.y - p1.y);
+          if (ptScreen.x >= x && ptScreen.x <= x + w && ptScreen.y >= y && ptScreen.y <= y + h) {
+            return { id: a.id, part: 'body' };
+          }
+        } else if (a.type === 'circle') {
+          const c = worldToScreen({ x: a.cx, y: a.cy });
+          const e = worldToScreen({ x: a.ex, y: a.ey });
+          if (dist(c, ptScreen) <= r) return { id: a.id, part: 'center' };
+          if (dist(e, ptScreen) <= r) return { id: a.id, part: 'edge' };
+          const rr = dist(c, e);
+          if (Math.abs(dist(c, ptScreen) - rr) <= 7) return { id: a.id, part: 'body' };
+        }
+      }
+      return null;
+    }
+
+    function getAnnotationById(id) {
+      return state.annotations.find(a => a.id === id) || null;
+    }
+    function isSelectedId(id) {
+      return state.selectedIds && state.selectedIds.has(id);
+    }
+    function clearSelection() {
+      state.selected = null;
+      state.selectedIds = new Set();
+      els.calloutTextInput.value = '';
+      endInlineCalloutEdit(true);
+      syncStyleControlsFromSelection();
+    }
+    function setSingleSelection(id) {
+      if (!id) {
+        clearSelection();
+        return;
+      }
+      state.selected = { id };
+      state.selectedIds = new Set([id]);
+      const a = getAnnotationById(id);
+      if (a && a.type === 'callout') {
+        els.calloutTextInput.value = a.text || '';
+      } else {
+        els.calloutTextInput.value = '';
+      }
+      syncStyleControlsFromSelection();
+    }
+    function toggleShiftSelection(id) {
+      const target = getAnnotationById(id);
+      if (!target) return;
+      if (!state.selected || !state.selected.id || state.selectedIds.size === 0) {
+        setSingleSelection(id);
+        return;
+      }
+      const primary = getAnnotationById(state.selected.id);
+      if (!primary || primary.type !== target.type) {
+        setStatus('Shift multi-select supports only one annotation type at a time.');
+        return;
+      }
+      if (state.selectedIds.has(id)) {
+        state.selectedIds.delete(id);
+        if (state.selectedIds.size === 0) {
+          clearSelection();
+          return;
+        }
+        if (!state.selectedIds.has(state.selected.id)) {
+          const firstId = state.selectedIds.values().next().value;
+          state.selected = { id: firstId };
+        }
+      } else {
+        state.selectedIds.add(id);
+      }
+      const selectedPrimary = state.selected ? getAnnotationById(state.selected.id) : null;
+      if (selectedPrimary && selectedPrimary.type === 'callout' && state.selectedIds.size === 1) {
+        els.calloutTextInput.value = selectedPrimary.text || '';
+      } else {
+        els.calloutTextInput.value = '';
+        endInlineCalloutEdit(true);
+      }
+      syncStyleControlsFromSelection();
+    }
+
+    function editCalloutText(callout) {
+      beginInlineCalloutEdit(callout, true);
+    }
+
+    function applyCalibration() {
+      const A = state.calibration.A;
+      const B = state.calibration.B;
+      const realD = Math.max(0, parseFloat(els.calDistanceInput.value) || 0);
+      state.calibration.realDistance = realD;
+      state.calibration.unit = els.calUnitSelect.value;
+      const unitMeters = getUnitMeters(state.calibration.unit);
+      if (!A || !B || realD <= 0) {
+        state.calibration.pxPerUnit = null;
+        state.calibration.pxPerMeter = null;
+        els.calibrationStatus.textContent = 'Set A/B and positive real distance.';
+        return;
+      }
+      const px = dist(A, B);
+      state.calibration.pxPerUnit = px / realD;
+      state.calibration.pxPerMeter = px / Math.max(realD * unitMeters, 1e-12);
+      els.calibrationStatus.textContent = `Calibrated: ${state.calibration.pxPerMeter.toFixed(4)} px/m`;
+    }
+    function finalizePendingPathLike() {
+      const tool = state.activeTool;
+      const pts = Array.isArray(state.pointer.pendingPoints) ? state.pointer.pendingPoints : [];
+      if (tool === 'path') {
+        if (pts.length < 2) return false;
+        const a = {
+          id: uid('path'),
+          type: 'path',
+          points: pts.map(p => ({ x: p.x, y: p.y })),
+          style: getDefaultStyleForType('path')
+        };
+        state.annotations.push(a);
+        setSingleSelection(a.id);
+        state.pointer.pendingPoints = [];
+        render();
+        return true;
+      }
+      if (tool === 'polygon') {
+        if (pts.length < 3) return false;
+        const a = {
+          id: uid('polygon'),
+          type: 'polygon',
+          points: pts.map(p => ({ x: p.x, y: p.y })),
+          style: getDefaultStyleForType('polygon')
+        };
+        state.annotations.push(a);
+        setSingleSelection(a.id);
+        state.pointer.pendingPoints = [];
+        render();
+        return true;
+      }
+      return false;
+    }
+    function cancelPendingPathLike() {
+      if (!Array.isArray(state.pointer.pendingPoints) || state.pointer.pendingPoints.length === 0) return false;
+      state.pointer.pendingPoints = [];
+      render();
+      return true;
+    }
+
+    function addAnnotationFromTool(worldPoint) {
+      const tool = state.activeTool;
+      if (tool === 'calA') {
+        state.calibration.A = worldPoint;
+        state.calibration.pxPerUnit = null;
+        state.calibration.pxPerMeter = null;
+        applyCalibration();
+        return;
+      }
+      if (tool === 'calB') {
+        state.calibration.B = worldPoint;
+        state.calibration.pxPerUnit = null;
+        state.calibration.pxPerMeter = null;
+        applyCalibration();
+        return;
+      }
+      if (tool === 'callout') {
+        const snapped = snapCalloutAnchor(worldPoint);
+        const a = {
+          id: uid('callout'),
+          type: 'callout',
+          ax: snapped.x,
+          ay: snapped.y,
+          bx: snapped.x + 24,
+          by: snapped.y + 24,
+          text: 'Callout',
+          style: getDefaultStyleForType('callout')
+        };
+        state.annotations.push(a);
+        setSingleSelection(a.id);
+        beginInlineCalloutEdit(a, true);
+        return;
+      }
+      if (tool === 'line' || tool === 'rect' || tool === 'circle') {
+        if (!state.pointer.pendingPoint) {
+          state.pointer.pendingPoint = worldPoint;
+        } else {
+          const p0 = state.pointer.pendingPoint;
+          let a = null;
+          if (tool === 'line') {
+            a = {
+              id: uid(tool),
+              type: tool,
+              x1: p0.x,
+              y1: p0.y,
+              x2: worldPoint.x,
+              y2: worldPoint.y,
+              style: getDefaultStyleForType('line')
+            };
+          } else if (tool === 'rect') {
+            a = {
+              id: uid('rect'),
+              type: 'rect',
+              x1: p0.x,
+              y1: p0.y,
+              x2: worldPoint.x,
+              y2: worldPoint.y,
+              style: getDefaultStyleForType('rect')
+            };
+          } else if (tool === 'circle') {
+            a = {
+              id: uid('circle'),
+              type: 'circle',
+              cx: p0.x,
+              cy: p0.y,
+              ex: worldPoint.x,
+              ey: worldPoint.y,
+              style: getDefaultStyleForType('circle')
+            };
+          }
+          if (a) {
+            state.annotations.push(a);
+            setSingleSelection(a.id);
+          }
+          state.pointer.pendingPoint = null;
+        }
+      }
+      if (tool === 'path' || tool === 'polygon') {
+        if (!Array.isArray(state.pointer.pendingPoints)) state.pointer.pendingPoints = [];
+        const pts = state.pointer.pendingPoints;
+        if (tool === 'polygon' && pts.length >= 2) {
+          const snapRadiusWorld = 10 / Math.max(0.0001, state.view.scale);
+          if (dist(pts[0], worldPoint) <= snapRadiusWorld) {
+            finalizePendingPathLike();
+            return;
+          }
+        }
+        pts.push({ x: worldPoint.x, y: worldPoint.y });
+      }
+    }
+
+    function onPointerDown(ev) {
+      const rect = els.canvas.getBoundingClientRect();
+      const p = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+      const world = screenToWorld(p);
+      state.pointer.isDown = true;
+      state.pointer.startScreen = p;
+      state.pointer.startWorld = world;
+
+      if (state.activeTool !== 'pan' && state.activeTool !== 'select') {
+        addAnnotationFromTool(world);
+        render();
+        return;
+      }
+
+      const hit = hitTest(p);
+      if (hit) {
+        if (ev.shiftKey) {
+          toggleShiftSelection(hit.id);
+          state.pointer.isDown = false;
+          state.pointer.mode = null;
+          state.pointer.target = null;
+          render();
+          return;
+        }
+        setSingleSelection(hit.id);
+        const a = getAnnotationById(hit.id);
+        state.pointer.mode = 'drag-annotation';
+        state.pointer.target = { hit, snapshot: JSON.parse(JSON.stringify(a)) };
+        if (a && a.type === 'callout') {
+          els.calloutTextInput.value = a.text || '';
+          beginInlineCalloutEdit(a, false);
+        } else {
+          els.calloutTextInput.value = '';
+          endInlineCalloutEdit(true);
+        }
+      } else {
+        clearSelection();
+        if (state.viewLocked) {
+          state.pointer.mode = null;
+          state.pointer.isDown = false;
+        } else {
+          state.pointer.mode = 'pan';
+        }
+      }
+      render();
+    }
+
+    function onCanvasDoubleClick(ev) {
+      if ((state.activeTool === 'path' || state.activeTool === 'polygon') && Array.isArray(state.pointer.pendingPoints) && state.pointer.pendingPoints.length > 1) {
+        finalizePendingPathLike();
+        return;
+      }
+      const rect = els.canvas.getBoundingClientRect();
+      const p = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+      const hit = hitTest(p);
+      if (!hit) return;
+      const a = getAnnotationById(hit.id);
+      if (!a || a.type !== 'callout') return;
+      setSingleSelection(a.id);
+      beginInlineCalloutEdit(a, true);
+    }
+
+    function deleteSelectedAnnotation() {
+      if (!state.selectedIds || state.selectedIds.size === 0) return false;
+      const targets = new Set(state.selectedIds);
+      const before = state.annotations.length;
+      state.annotations = state.annotations.filter(a => !targets.has(a.id));
+      const deleted = state.annotations.length !== before;
+      if (!deleted) return false;
+      clearSelection();
+      render();
+      return true;
+    }
+
+    function onPointerMove(ev) {
+      if (!state.pointer.isDown) return;
+      const rect = els.canvas.getBoundingClientRect();
+      const p = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+      const world = screenToWorld(p);
+
+      if (state.pointer.mode === 'pan') {
+        const dx = p.x - state.pointer.startScreen.x;
+        const dy = p.y - state.pointer.startScreen.y;
+        state.view.panX += dx;
+        state.view.panY += dy;
+        state.pointer.startScreen = p;
+        render();
+        return;
+      }
+
+      if (state.pointer.mode === 'drag-annotation' && state.pointer.target) {
+        const { hit, snapshot } = state.pointer.target;
+        const a = getAnnotationById(hit.id);
+        if (!a) return;
+        const dw = { x: world.x - state.pointer.startWorld.x, y: world.y - state.pointer.startWorld.y };
+        if (a.type === 'callout') {
+          if (hit.part === 'anchor') {
+            const raw = { x: snapshot.ax + dw.x, y: snapshot.ay + dw.y };
+            const snapped = snapCalloutAnchor(raw, a.id);
+            a.ax = snapped.x;
+            a.ay = snapped.y;
+          } else if (hit.part === 'box') {
+            a.bx = snapshot.bx + dw.x;
+            a.by = snapshot.by + dw.y;
+          }
+        } else if (a.type === 'line') {
+          if (hit.part === 'p1') {
+            a.x1 = snapshot.x1 + dw.x;
+            a.y1 = snapshot.y1 + dw.y;
+          } else if (hit.part === 'p2') {
+            a.x2 = snapshot.x2 + dw.x;
+            a.y2 = snapshot.y2 + dw.y;
+          } else {
+            a.x1 = snapshot.x1 + dw.x;
+            a.y1 = snapshot.y1 + dw.y;
+            a.x2 = snapshot.x2 + dw.x;
+            a.y2 = snapshot.y2 + dw.y;
+          }
+        } else if (a.type === 'rect') {
+          if (hit.part === 'p1') {
+            a.x1 = snapshot.x1 + dw.x;
+            a.y1 = snapshot.y1 + dw.y;
+          } else if (hit.part === 'p2') {
+            a.x2 = snapshot.x2 + dw.x;
+            a.y2 = snapshot.y2 + dw.y;
+          } else {
+            a.x1 = snapshot.x1 + dw.x;
+            a.y1 = snapshot.y1 + dw.y;
+            a.x2 = snapshot.x2 + dw.x;
+            a.y2 = snapshot.y2 + dw.y;
+          }
+        } else if (a.type === 'circle') {
+          if (hit.part === 'center') {
+            const ox = snapshot.ex - snapshot.cx;
+            const oy = snapshot.ey - snapshot.cy;
+            a.cx = snapshot.cx + dw.x;
+            a.cy = snapshot.cy + dw.y;
+            a.ex = a.cx + ox;
+            a.ey = a.cy + oy;
+          } else if (hit.part === 'edge') {
+            a.ex = snapshot.ex + dw.x;
+            a.ey = snapshot.ey + dw.y;
+          } else {
+            a.cx = snapshot.cx + dw.x;
+            a.cy = snapshot.cy + dw.y;
+            a.ex = snapshot.ex + dw.x;
+            a.ey = snapshot.ey + dw.y;
+          }
+        } else if ((a.type === 'path' || a.type === 'polygon') && Array.isArray(a.points) && Array.isArray(snapshot.points)) {
+          if (hit.part === 'vertex' && Number.isInteger(hit.vertexIndex) && snapshot.points[hit.vertexIndex]) {
+            a.points[hit.vertexIndex].x = snapshot.points[hit.vertexIndex].x + dw.x;
+            a.points[hit.vertexIndex].y = snapshot.points[hit.vertexIndex].y + dw.y;
+          } else {
+            a.points = snapshot.points.map(p => ({ x: p.x + dw.x, y: p.y + dw.y }));
+          }
+        }
+        render();
+      }
+    }
+
+    function onPointerUp() {
+      state.pointer.isDown = false;
+      state.pointer.mode = null;
+      state.pointer.target = null;
+    }
+
+    function onWheel(ev) {
+      ev.preventDefault();
+      if (state.viewLocked) return;
+      const rect = els.canvas.getBoundingClientRect();
+      const p = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+      const before = screenToWorld(p);
+      const zoom = Math.exp((-ev.deltaY / 100) * 0.16);
+      state.view.scale = clamp(state.view.scale * zoom, 0.03, 50);
+      const after = worldToScreen(before);
+      state.view.panX += p.x - after.x;
+      state.view.panY += p.y - after.y;
+      render();
+    }
+
+    function loadImageFromDataUrl(dataUrl, name = 'image', options = {}) {
+      const { syncAspect = true, fitView = true } = options;
+      const img = new Image();
+      img.onload = () => {
+        state.image = img;
+        state.imageDataUrl = dataUrl;
+        state.imageName = name;
+        state.imageW = img.naturalWidth;
+        state.imageH = img.naturalHeight;
+        els.imageMeta.textContent = `${name} - ${state.imageW} x ${state.imageH}px`;
+        if (syncAspect && state.imageW > 0 && state.imageH > 0) {
+          const aspect = state.imageW / state.imageH;
+          state.settings.aspectRatio = aspect;
+          els.aspectRatioInput.value = aspect.toFixed(6);
+          applyCanvasSizeFromAspect();
+        }
+        if (fitView) fitImageToView();
+        else render();
+      };
+      img.src = dataUrl;
+    }
+
+    function exportCurrentViewPng() {
+      const size = getCanvasLogicalSize();
+      const exportScale = 3;
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = Math.max(1, Math.round(size.w * exportScale));
+      exportCanvas.height = Math.max(1, Math.round(size.h * exportScale));
+      const exportCtx = exportCanvas.getContext('2d');
+      if (!exportCtx) return;
+      renderCleanToContext(exportCtx, exportScale);
+      exportCanvas.toBlob(async blob => {
+        if (!blob) return;
+        const filename = (state.imageName || 'annotation') + '_annotated.png';
+        const picked = await saveBlobWithPicker(blob, filename, [{ description: 'PNG image', accept: { 'image/png': ['.png'] } }]);
+        if (picked) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 800);
+      }, 'image/png');
+    }
+
+    async function exportCurrentViewSvg() {
+      const svg = buildLayeredSvgString();
+      const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+      const filename = (state.imageName || 'annotation') + '_annotated.svg';
+      const picked = await saveBlobWithPicker(blob, filename, [{ description: 'SVG image', accept: { 'image/svg+xml': ['.svg'] } }]);
+      if (picked) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 800);
+    }
+
+    async function exportSettings() {
+      const payload = {
+        imageName: state.imageName,
+        imageDataUrl: state.imageDataUrl,
+        imageW: state.imageW,
+        imageH: state.imageH,
+        view: state.view,
+        viewZero: state.viewZero,
+        viewLocked: !!state.viewLocked,
+        nightMode: !!els.nightMode.checked,
+        calibration: state.calibration,
+        settings: state.settings,
+        annotations: state.annotations
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+      const filename = (state.imageName || 'iat') + '_settings.json';
+      const picked = await saveBlobWithPicker(blob, filename, [{ description: 'JSON settings', accept: { 'application/json': ['.json'] } }]);
+      if (picked) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 800);
+    }
+
+    function importSettingsFromObject(data) {
+      if (!data || typeof data !== 'object') return;
+      if (data.settings) {
+        state.settings = { ...state.settings, ...data.settings };
+      }
+      if (Object.prototype.hasOwnProperty.call(state.settings, 'imageOutline')) {
+        delete state.settings.imageOutline;
+      }
+      if (state.settings.fillColor && !state.settings.shapeFillColor) {
+        state.settings.shapeFillColor = state.settings.fillColor;
+      }
+      if (state.settings.fillColor && !state.settings.calloutFillColor) {
+        state.settings.calloutFillColor = state.settings.fillColor;
+      }
+      if (typeof state.settings.shapeFillEnabled !== 'boolean') {
+        state.settings.shapeFillEnabled = false;
+      }
+      state.settings.shapeFillOpacity = getShapeFillOpacity(state.settings.shapeFillOpacity);
+      state.settings.calloutTextAlign = getCalloutTextAlign(state.settings.calloutTextAlign);
+      if (!state.settings.scaleBarDistance || state.settings.scaleBarDistance <= 0) {
+        state.settings.scaleBarDistance = 10;
+      }
+      if (!state.settings.scaleBarDistanceUnit) {
+        state.settings.scaleBarDistanceUnit = state.calibration?.unit || 'cm';
+      }
+      if (data.calibration) {
+        state.calibration = { ...state.calibration, ...data.calibration };
+      }
+      if (!state.calibration.pxPerMeter && state.calibration.pxPerUnit && state.calibration.pxPerUnit > 0) {
+        state.calibration.pxPerMeter = state.calibration.pxPerUnit / Math.max(getUnitMeters(state.calibration.unit), 1e-12);
+      }
+      if (Array.isArray(data.annotations)) {
+        state.annotations = data.annotations;
+        normalizeAnnotationsStyles();
+      }
+      state.selected = null;
+      state.selectedIds = new Set();
+      endInlineCalloutEdit(true);
+      els.calloutTextInput.value = '';
+      if (data.view) {
+        state.view = { ...state.view, ...data.view };
+      }
+      if (data.viewZero) {
+        state.viewZero = { ...state.viewZero, ...data.viewZero };
+      }
+      if (typeof data.viewLocked === 'boolean') {
+        state.viewLocked = data.viewLocked;
+      }
+      syncViewLockButton();
+      if (typeof data.nightMode === 'boolean') {
+        els.nightMode.checked = data.nightMode;
+        document.body.classList.toggle('night-mode', data.nightMode);
+      }
+
+      els.aspectRatioInput.value = state.settings.aspectRatio;
+      els.imagePaddingInput.value = state.settings.imagePadding;
+      els.monoCheckbox.checked = !!state.settings.monochrome;
+      els.imageTitleInput.value = state.settings.imageTitleText ?? '';
+      els.imageTitleFontSizeInput.value = state.settings.imageTitleFontSize ?? 44;
+      els.imageTitleTextColorInput.value = state.settings.imageTitleTextColor ?? '#FFFFFF';
+      els.imageTitleFillColorInput.value = state.settings.imageTitleFillColor ?? '#000000';
+      els.lineColorInput.value = state.settings.lineColor;
+      els.shapeFillColorInput.value = state.settings.shapeFillColor;
+      els.calloutFillColorInput.value = state.settings.calloutFillColor;
+      els.shapeFillOpacityInput.value = Math.round(getShapeFillOpacity(state.settings.shapeFillOpacity) * 100);
+      els.shapeFillEnabledCheckbox.checked = !!state.settings.shapeFillEnabled;
+      els.textColorInput.value = state.settings.textColor;
+      els.lineWidthInput.value = state.settings.lineWidth;
+      els.fontSizeInput.value = state.settings.fontSize;
+      els.calloutAlignSelect.value = getCalloutTextAlign(state.settings.calloutTextAlign);
+      els.rulerDistanceInput.value = state.settings.scaleBarDistance ?? 10;
+      els.rulerJustifySelect.value = state.settings.scaleBarJustify ?? 'left';
+      els.rulerPaddingInput.value = state.settings.scaleBarPadding ?? 16;
+      els.rulerDistanceUnitSelect.value = state.settings.scaleBarDistanceUnit ?? 'cm';
+      els.showScaleBarCheckbox.checked = !!state.settings.scaleBarEnabled;
+      els.calDistanceInput.value = state.calibration.realDistance;
+      els.calUnitSelect.value = state.calibration.unit;
+      applyCanvasSizeFromAspect();
+      syncStyleControlsFromSelection();
+
+      if (data.imageDataUrl) {
+        const hasSavedView = !!(data.view && typeof data.view === 'object');
+        loadImageFromDataUrl(data.imageDataUrl, data.imageName || 'image', {
+          syncAspect: false,
+          fitView: !hasSavedView
+        });
+      } else {
+        render();
+      }
+      applyCalibration();
+    }
+
+    function wireEvents() {
+      els.toolGrid.addEventListener('click', ev => {
+        const btn = ev.target.closest('button[data-tool]');
+        if (!btn) return;
+        setTool(btn.dataset.tool);
+      });
+
+      els.importMenuButton.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleMenu(els.importMenu);
+      });
+      els.exportMenuButton.addEventListener('click', e => {
+        e.stopPropagation();
+        toggleMenu(els.exportMenu);
+      });
+      document.addEventListener('click', ev => {
+        if (!els.importMenu.contains(ev.target) && !els.exportMenu.contains(ev.target)) closeMenus();
+      });
+      document.addEventListener('keydown', ev => {
+        const inFormField = /^(INPUT|TEXTAREA|SELECT)$/i.test(document.activeElement?.tagName || '');
+        if (ev.key === 'Escape') {
+          if ((state.activeTool === 'path' || state.activeTool === 'polygon') && cancelPendingPathLike()) {
+            ev.preventDefault();
+          } else {
+            closeMenus();
+          }
+        }
+        if (ev.key === 'Enter' && (state.activeTool === 'path' || state.activeTool === 'polygon') &&
+            Array.isArray(state.pointer.pendingPoints) && state.pointer.pendingPoints.length > 1) {
+          finalizePendingPathLike();
+          ev.preventDefault();
+          return;
+        }
+        if ((ev.key === 'Delete' || ev.key === 'Backspace') && !inFormField) {
+          const deleted = deleteSelectedAnnotation();
+          if (deleted) ev.preventDefault();
+        }
+        if (!inFormField && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+          const k = ev.key.toLowerCase();
+          const toolShortcutMap = {
+            s: 'pan',
+            c: 'callout',
+            l: 'line',
+            p: 'path',
+            g: 'polygon',
+            r: 'rect',
+            o: 'circle'
+          };
+          if (toolShortcutMap[k]) {
+            setTool(toolShortcutMap[k]);
+            ev.preventDefault();
+          }
+        }
+      });
+
+      els.imageFileInput.addEventListener('change', ev => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => loadImageFromDataUrl(reader.result, file.name);
+        reader.readAsDataURL(file);
+      });
+      els.fitImageBtn.addEventListener('click', fitImageToView);
+      els.setZeroViewBtn.addEventListener('click', setZeroView);
+      els.resetZeroViewBtn.addEventListener('click', resetToZeroView);
+      if (els.wsFitBtn) els.wsFitBtn.addEventListener('click', fitImageToView);
+      if (els.wsSetZeroBtn) els.wsSetZeroBtn.addEventListener('click', setZeroView);
+      if (els.wsResetZeroBtn) els.wsResetZeroBtn.addEventListener('click', resetToZeroView);
+      if (els.wsLockViewBtn) {
+        els.wsLockViewBtn.addEventListener('click', () => {
+          state.viewLocked = !state.viewLocked;
+          if (state.viewLocked) {
+            state.pointer.isDown = false;
+            state.pointer.mode = null;
+            state.pointer.target = null;
+            setStatus('View locked: pan and zoom are disabled.');
+          } else {
+            setStatus('View unlocked: pan and zoom are enabled.');
+          }
+          syncViewLockButton();
+          render();
+        });
+      }
+      if (els.wsExportPngBtn) els.wsExportPngBtn.addEventListener('click', () => {
+        exportCurrentViewPng();
+      });
+      els.clearImageBtn.addEventListener('click', () => {
+        endInlineCalloutEdit(true);
+        state.image = null;
+        state.imageDataUrl = null;
+        state.imageName = '';
+        state.imageW = 0;
+        state.imageH = 0;
+        state.annotations = [];
+        state.selected = null;
+        state.selectedIds = new Set();
+        state.pointer.pendingPoint = null;
+        state.pointer.pendingPoints = [];
+        state.view = { scale: 1, panX: 0, panY: 0 };
+        state.viewZero = { scale: 1, panX: 0, panY: 0 };
+        els.imageMeta.textContent = 'No image loaded.';
+        syncStyleControlsFromSelection();
+        render();
+      });
+
+      els.setCalABtn.addEventListener('click', () => setTool('calA'));
+      els.setCalBBtn.addEventListener('click', () => setTool('calB'));
+      els.applyCalibrationBtn.addEventListener('click', () => {
+        applyCalibration();
+        render();
+      });
+      els.calDistanceInput.addEventListener('input', applyCalibration);
+      els.calUnitSelect.addEventListener('change', applyCalibration);
+
+      const styleInputs = [
+        els.lineColorInput, els.shapeFillColorInput, els.shapeFillOpacityInput, els.calloutFillColorInput, els.shapeFillEnabledCheckbox, els.textColorInput,
+        els.lineWidthInput, els.fontSizeInput, els.imagePaddingInput,
+        els.calloutAlignSelect, els.imageTitleInput, els.imageTitleFontSizeInput, els.imageTitleTextColorInput, els.imageTitleFillColorInput,
+        els.aspectRatioInput, els.monoCheckbox,
+        els.rulerDistanceInput, els.rulerJustifySelect, els.rulerPaddingInput, els.rulerDistanceUnitSelect, els.showScaleBarCheckbox
+      ];
+      styleInputs.forEach(input => {
+        const applyStyleChange = () => {
+          state.settings.lineColor = els.lineColorInput.value;
+          state.settings.shapeFillColor = els.shapeFillColorInput.value;
+          state.settings.shapeFillOpacity = clamp((parseFloat(els.shapeFillOpacityInput.value) || 0) / 100, 0, 1);
+          state.settings.calloutFillColor = els.calloutFillColorInput.value;
+          state.settings.shapeFillEnabled = !!els.shapeFillEnabledCheckbox.checked;
+          state.settings.textColor = els.textColorInput.value;
+          state.settings.lineWidth = Math.max(0.5, parseFloat(els.lineWidthInput.value) || 5);
+          state.settings.fontSize = Math.max(8, parseFloat(els.fontSizeInput.value) || 28);
+          state.settings.calloutTextAlign = getCalloutTextAlign(els.calloutAlignSelect.value);
+          state.settings.imagePadding = Math.max(0, parseFloat(els.imagePaddingInput.value) || 0);
+          state.settings.monochrome = !!els.monoCheckbox.checked;
+          state.settings.imageTitleText = els.imageTitleInput.value || '';
+          state.settings.imageTitleFontSize = Math.max(8, parseFloat(els.imageTitleFontSizeInput.value) || 44);
+          state.settings.imageTitleTextColor = els.imageTitleTextColorInput.value || '#FFFFFF';
+          state.settings.imageTitleFillColor = els.imageTitleFillColorInput.value || '#000000';
+          state.settings.scaleBarEnabled = !!els.showScaleBarCheckbox.checked;
+          state.settings.scaleBarDistance = Math.max(0, parseFloat(els.rulerDistanceInput.value) || 0);
+          state.settings.scaleBarJustify = els.rulerJustifySelect.value || 'left';
+          state.settings.scaleBarPadding = Math.max(0, parseFloat(els.rulerPaddingInput.value) || 0);
+          state.settings.scaleBarDistanceUnit = els.rulerDistanceUnitSelect.value || 'cm';
+          if (state.selectedIds && state.selectedIds.size > 0) {
+            const selectedItems = [...state.selectedIds]
+              .map(id => getAnnotationById(id))
+              .filter(Boolean);
+            const primary = state.selected ? getAnnotationById(state.selected.id) : null;
+            const targetType = primary ? primary.type : (selectedItems[0] ? selectedItems[0].type : null);
+            selectedItems.forEach(selected => {
+              if (targetType && selected.type !== targetType) return;
+              ensureAnnotationStyle(selected);
+              selected.style.lineColor = state.settings.lineColor;
+              selected.style.lineWidth = state.settings.lineWidth;
+              if (selected.type === 'callout') {
+                selected.style.fillColor = state.settings.calloutFillColor;
+                selected.style.textColor = state.settings.textColor;
+                selected.style.fontSize = state.settings.fontSize;
+                selected.style.textAlign = state.settings.calloutTextAlign;
+              } else if (selected.type === 'rect' || selected.type === 'circle' || selected.type === 'polygon') {
+                selected.style.fillColor = state.settings.shapeFillColor;
+                selected.style.fillEnabled = state.settings.shapeFillEnabled;
+                selected.style.fillOpacity = state.settings.shapeFillOpacity;
+              }
+            });
+          }
+          if (input === els.aspectRatioInput) applyCanvasSizeFromAspect();
+          render();
+        };
+        input.addEventListener('input', applyStyleChange);
+        input.addEventListener('change', applyStyleChange);
+      });
+
+      els.calloutTextInput.addEventListener('input', () => {
+        if (!state.selected) return;
+        const a = getAnnotationById(state.selected.id);
+        if (!a || a.type !== 'callout') return;
+        a.text = els.calloutTextInput.value;
+        if (state.inlineEdit.id === a.id) {
+          els.inlineCalloutInput.value = a.text;
+        }
+        render();
+      });
+      els.inlineCalloutInput.addEventListener('input', () => {
+        if (!state.inlineEdit.id) return;
+        const a = getAnnotationById(state.inlineEdit.id);
+        if (!a || a.type !== 'callout') return;
+        a.text = els.inlineCalloutInput.value;
+        if (state.selected && state.selected.id === a.id) {
+          els.calloutTextInput.value = a.text;
+        }
+        render();
+      });
+      els.inlineCalloutInput.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
+          ev.preventDefault();
+          endInlineCalloutEdit(true);
+          return;
+        }
+        if (ev.key === 'Escape') {
+          ev.preventDefault();
+          endInlineCalloutEdit(false);
+        }
+      });
+      els.inlineCalloutInput.addEventListener('blur', () => {
+        if (state.inlineEdit.id) endInlineCalloutEdit(true);
+      });
+      els.deleteSelectedBtn.addEventListener('click', () => {
+        deleteSelectedAnnotation();
+      });
+      els.clearAnnotationsBtn.addEventListener('click', () => {
+        endInlineCalloutEdit(true);
+        state.annotations = [];
+        state.selected = null;
+        state.selectedIds = new Set();
+        state.pointer.pendingPoint = null;
+        state.pointer.pendingPoints = [];
+        els.calloutTextInput.value = '';
+        syncStyleControlsFromSelection();
+        render();
+      });
+
+      els.canvas.addEventListener('mousedown', onPointerDown);
+      els.canvas.addEventListener('dblclick', onCanvasDoubleClick);
+      window.addEventListener('mousemove', onPointerMove);
+      window.addEventListener('mouseup', onPointerUp);
+      els.canvas.addEventListener('wheel', onWheel, { passive: false });
+
+      els.exportPngBtn.addEventListener('click', async () => {
+        await exportCurrentViewPng();
+        closeMenus();
+      });
+      els.exportSvgBtn.addEventListener('click', async () => {
+        await exportCurrentViewSvg();
+        closeMenus();
+      });
+      els.exportSettingsBtn.addEventListener('click', async () => {
+        await exportSettings();
+        closeMenus();
+      });
+      els.importSettingsBtn.addEventListener('click', async () => {
+        const opened = await openSettingsWithPicker();
+        if (!opened) els.importSettingsFile.click();
+        closeMenus();
+      });
+      els.importSettingsFile.addEventListener('change', ev => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            importSettingsFromObject(JSON.parse(reader.result));
+          } catch (err) {
+            alert('Could not import JSON settings file.');
+          } finally {
+            els.importSettingsFile.value = '';
+          }
+        };
+        reader.readAsText(file);
+      });
+
+      els.nightMode.addEventListener('change', e => {
+        document.body.classList.toggle('night-mode', e.target.checked);
+      });
+      const hour = new Date().getHours();
+      const isNight = (hour >= 19 || hour < 6);
+      els.nightMode.checked = isNight;
+      document.body.classList.toggle('night-mode', isNight);
+
+      window.addEventListener('resize', applyCanvasSizeFromAspect);
+    }
+
+    function init() {
+      wireEvents();
+      syncViewLockButton();
+      applyCanvasSizeFromAspect();
+      syncStyleControlsFromSelection();
+      setTool('pan');
+      setStatus('Upload an image to start. Pan with drag, zoom with mouse wheel.');
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
