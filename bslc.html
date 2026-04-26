@@ -411,9 +411,10 @@ button,input,select { font:inherit; }
 
 /* 2. Variables and layout */
 .wrap.app-shell {
-  max-width:1480px;
-  margin:0 auto;
-  padding:var(--space-xl);
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:var(--space-lg);
 }
 .app-header {
   display:grid;
@@ -457,6 +458,15 @@ button,input,select { font:inherit; }
   color:var(--muted);
   font-size:12px;
 }
+.app-header p a {
+  color:inherit;
+  text-decoration:none;
+  font-weight:600;
+}
+.app-header p a:hover {
+  color:var(--primary);
+  text-decoration:underline;
+}
 .app-meta {
   font-size:12px;
   color:var(--muted);
@@ -491,10 +501,20 @@ body.night-mode .app-header {
 }
 .main {
   min-width:0;
-  display:flex;
-  flex-direction:column;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-areas:
+    "kpi kpi"
+    "alerts alerts"
+    "plot chart"
+    "details .";
   gap:var(--space-lg);
 }
+.main > * { min-width:0; }
+.kpi-grid { grid-area:kpi; }
+.alerts-card { grid-area:alerts; }
+.plot-card { grid-area:plot; }
+#calculatedCard { grid-area:details; }
 
 /* 3. Cards */
 .card {
@@ -902,9 +922,8 @@ svg {
   font-variant-numeric:tabular-nums;
 }
 .chart-grid {
-  display:grid;
-  grid-template-columns:1fr;
-  gap:var(--space-lg);
+  grid-area:chart;
+  display:block;
 }
 
 /* 7. Tables and alerts */
@@ -976,7 +995,11 @@ svg {
   .header-actions { width:100%; justify-content:flex-start; }
   .grid { grid-template-columns:1fr; gap:var(--space-lg); }
   .sidebar { position:static; }
-  .main { order:1; }
+  .main {
+    order:1;
+    display:flex;
+    flex-direction:column;
+  }
   .sidebar { order:2; }
   .kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
@@ -991,6 +1014,35 @@ svg {
   .data-menu .menu-group,
   .data-menu .btn { width:100%; }
 }
+/* SUITE CONSISTENCY */
+:focus-visible {
+  outline:2px solid var(--primary);
+  outline-offset:2px;
+}
+.app-header {
+  margin-bottom:var(--space-lg);
+}
+.card,
+.group-card,
+.shell,
+.kpi-card {
+  border-radius:14px;
+  border-color:var(--border);
+  box-shadow:0 8px 24px rgba(15,23,42,.06);
+}
+.btn,
+input,
+select,
+button {
+  font-variant-numeric:tabular-nums;
+}
+.header-actions .menu-group > .btn,
+.theme-switch {
+  min-height:40px;
+}
+.menu-popover {
+  border-radius:12px;
+}
 </style>
  </head>
  <body>
@@ -1001,7 +1053,7 @@ svg {
       <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo"/>
       <div class="app-title-wrap">
        <h1>Barrier Sealing Length Calculator</h1>
-       <p>RockSolid R&D Tool</p>
+       <p><a href="index.html">HOME</a> | <a href="wap.html">WAP</a> | <a href="bslc.html">BSLC</a> | <a href="iat.html">IAT</a></p>
       </div>
      </div>
      <div class="app-meta">
@@ -1012,7 +1064,7 @@ svg {
     <div class="header-actions">
      <div class="menu-bar data-menu">
       <div class="menu-group" id="importMenu">
-       <button class="btn btn-secondary" id="importMenuButton" type="button" aria-expanded="false" aria-controls="importMenuPanel">Import Config</button>
+       <button class="btn btn-secondary" id="importMenuButton" type="button" aria-expanded="false" aria-controls="importMenuPanel">Import</button>
        <div class="menu-popover" id="importMenuPanel">
         <button class="btn btn-ghost" id="importSettings" type="button">Settings JSON</button>
        </div>
@@ -1302,7 +1354,7 @@ svg {
      <section class="chart-grid">
       <article class="card chart-card">
        <div class="card-head">
-        <h2>Volume Requirement Vs Inclination</h2>
+        <h2>Volume Requirement vs. Inclination</h2>
        </div>
        <div class="shell">
         <svg id="incChart" viewBox="0 0 900 430"></svg>
