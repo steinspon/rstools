@@ -118,6 +118,15 @@
       color: var(--muted);
       font-size: 12px;
     }
+    .app-header p a {
+      color: inherit;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .app-header p a:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
     .app-meta {
       font-size: 12px;
       color: var(--muted);
@@ -274,6 +283,35 @@
     button.success:hover { background: color-mix(in srgb, var(--success) 16%, #fff); }
     button.danger { background: color-mix(in srgb, var(--danger) 12%, #fff); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
     button.icon-btn { padding: 4px 8px; font-size: 12px; }
+    .layer-action-btn {
+      min-width: 0;
+      min-height: 30px;
+      padding: 4px 8px;
+      border: 1px solid var(--field-border);
+      border-radius: 8px;
+      background: var(--surface-alt);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      box-shadow: none;
+    }
+    .layer-action-btn.layer-icon-btn {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 4px 0;
+    }
+    .layer-action-btn:hover {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .layer-action-btn.is-active {
+      border-color: color-mix(in srgb, var(--primary) 45%, var(--field-border));
+      background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+      color: var(--primary);
+    }
     
     label { font-size: 14px; }
     .checkbox-row {
@@ -348,7 +386,8 @@
     .layer-advanced.show { display: grid; }
     
     .layer-advanced label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 2px; }
-    .layer-advanced input { width: 100%; box-sizing: border-box; }
+    .layer-advanced input,
+    .layer-advanced select { width: 100%; box-sizing: border-box; }
 
     /* CANVAS TOOLBAR */
     .toolbar {
@@ -588,6 +627,40 @@
         grid-template-columns: 1fr 1fr;
       }
     }
+    /* SUITE CONSISTENCY */
+    :focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    .app-header,
+    .controls-panel,
+    .viz-panel,
+    .section-card,
+    .plot-container,
+    .plot-wrapper,
+    .table-container {
+      border-color: var(--border);
+    }
+    .controls-panel,
+    .viz-panel {
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+    .section-card {
+      border-radius: 12px;
+    }
+    input,
+    select,
+    textarea,
+    button {
+      font-variant-numeric: tabular-nums;
+    }
+    .header-actions .menu-group > button,
+    .theme-switch {
+      min-height: 40px;
+    }
+    .menu-popover {
+      border-radius: 12px;
+    }
   </style>
 </head>
 <body>
@@ -599,7 +672,7 @@
         <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo">
         <div class="app-title-wrap">
           <h1>Well Architecture Plotter</h1>
-          <p>RockSolid R&D Tool</p>
+          <p><a href="index.html">HOME</a> | <a href="wap.html">WAP</a> | <a href="bslc.html">BSLC</a> | <a href="iat.html">IAT</a></p>
         </div>
       </div>
       <div class="app-meta">
@@ -793,6 +866,7 @@
 const config = {
   defaultLineColor: '#000000',
   defaultLineThickness: 0.25,
+  defaultLineType: 'solid',
   fillColorOptions: [
     { name: 'Caprock',   value: '#E4EBD7', textColor: '#000000' },
     { name: 'Cement',    value: '#E3DFEB', textColor: '#000000' },
@@ -1338,8 +1412,8 @@ function buildCircleEntry(diameterValue, fillColorValue, materialName) {
             <input type="color" class="fillColor" style="display:none; width:30px; height:30px; padding:0; border:none;">
         </div>
         
-        <button type="button" class="icon-btn" onclick="toggleAdvanced('${rowId}')">⚙️</button>
-        <button type="button" class="icon-btn danger" onclick="deleteEntry(this)">x</button>
+        <button type="button" class="icon-btn layer-action-btn layer-icon-btn toggle-advanced-btn" aria-label="Toggle advanced settings" title="Advanced settings" onclick="toggleAdvanced('${rowId}')">+</button>
+        <button type="button" class="icon-btn layer-action-btn layer-icon-btn" aria-label="Delete layer" title="Delete layer" onclick="deleteEntry(this)">✕</button>
       </div>
 
       <div class="layer-advanced">
@@ -1350,6 +1424,14 @@ function buildCircleEntry(diameterValue, fillColorValue, materialName) {
         <div>
            <label>Line Thk</label>
            <input type="number" class="lineThickness" value="${config.defaultLineThickness}" min="0" step="0.1">
+        </div>
+        <div>
+           <label>Line Type</label>
+           <select class="lineType">
+             <option value="solid" selected>Solid</option>
+             <option value="dashed">Dashed</option>
+             <option value="dotted">Dotted</option>
+           </select>
         </div>
         <div>
            <label>Ecc. Factor (0-1)</label>
@@ -1366,10 +1448,6 @@ function buildCircleEntry(diameterValue, fillColorValue, materialName) {
         <div>
            <label>Wavy Freq</label>
            <input type="number" class="wavinessFreq" value="8" min="1" step="1">
-        </div>
-        <div>
-           <label>Wavy Seed</label>
-           <input type="number" class="wavinessSeed" value="0" step="1">
         </div>
         <div>
             <label>Action</label>
@@ -1428,6 +1506,12 @@ function toggleAdvanced(rowId) {
     const row = document.getElementById(rowId);
     const adv = row.querySelector('.layer-advanced');
     adv.classList.toggle('show');
+    const toggleBtn = row.querySelector('.toggle-advanced-btn');
+    if (toggleBtn) {
+      const isOpen = adv.classList.contains('show');
+      toggleBtn.classList.toggle('is-active', isOpen);
+      toggleBtn.textContent = isOpen ? '▾' : '+';
+    }
 }
 
 function getRowDiameterMm(row) {
@@ -1568,7 +1652,7 @@ function getWavyRadiusPx(baseRadius, theta, data, pxPerMm) {
     if (maxAmpPx <= 0) return baseRadius;
 
     const freq = Math.max(1, Math.floor(parseFloat(data.wavinessFreq) || 8));
-    const seed = Math.floor(parseFloat(data.wavinessSeed) || 0);
+    const seed = 1;
     const p1 = seededUnit(seed + 11) * Math.PI * 2;
     const p2 = seededUnit(seed + 23) * Math.PI * 2;
     const p3 = seededUnit(seed + 47) * Math.PI * 2;
@@ -1607,6 +1691,30 @@ function buildWavyCirclePathD(cx, cy, baseRadius, data, pxPerMm, segments = 240)
         d += (i === 0 ? `M ${x.toFixed(3)} ${y.toFixed(3)}` : ` L ${x.toFixed(3)} ${y.toFixed(3)}`);
     }
     return d + ' Z';
+}
+
+function getLineDashValues(lineType, viewScale = 1) {
+    const scale = Math.max(0.001, Number(viewScale) || 1);
+    if (lineType === 'dashed') return [8 / scale, 5 / scale];
+    if (lineType === 'dotted') return [1 / scale, 4 / scale];
+    return [];
+}
+
+function applyCanvasLineStyle(ctx, data) {
+    const lineType = data?.lineType || 'solid';
+    ctx.setLineDash(getLineDashValues(lineType, view.scale));
+    ctx.lineCap = (lineType === 'dotted') ? 'round' : 'butt';
+}
+
+function resetCanvasLineStyle(ctx) {
+    ctx.setLineDash([]);
+    ctx.lineCap = 'butt';
+}
+
+function getSvgLineStyleAttrs(lineType) {
+    if (lineType === 'dashed') return ` stroke-dasharray="8 5"`;
+    if (lineType === 'dotted') return ` stroke-dasharray="1 4" stroke-linecap="round"`;
+    return '';
 }
 
 
@@ -1665,7 +1773,7 @@ function plotCircles(options = {}) {
         ctx.restore();
     }
 
-    function drawBottomRulerOverlay(zeroWorldX, pxPerMm, units) {
+        function drawBottomRulerOverlay(zeroWorldX, pxPerMm, units) {
         if (!showRuler || !isFinite(pxPerMm) || pxPerMm <= 0) return;
 
         const xStart = padding;
@@ -1735,6 +1843,17 @@ function plotCircles(options = {}) {
             }
         }
 
+        const rulerInnerLeft = xStart + 1;
+        const rulerInnerRight = xEnd - 1;
+        ctx.font = 'bold 11px Arial';
+        const unitText = displayUnit;
+        const unitPadX = 6;
+        const unitBoxWidth = Math.max(24, Math.ceil(ctx.measureText(unitText).width + unitPadX * 2));
+        const unitBoxX = Math.max(rulerInnerLeft + 1, rulerInnerRight - unitBoxWidth);
+        const labelLeftBound = rulerInnerLeft + 2;
+        const labelRightBound = unitBoxX - 3;
+        ctx.font = '11px Arial';
+
         const pxPerMinor = pxPerMm * minorMm;
         if (pxPerMinor > 0) {
             const minorMin = Math.ceil((xStart - zeroX) / pxPerMinor);
@@ -1755,6 +1874,7 @@ function plotCircles(options = {}) {
                 if (!majorTick && !midTick && !drawMinor) continue;
 
                 const x = zeroX + n * pxPerMinor;
+                if (x < rulerInnerLeft || x > rulerInnerRight) continue;
                 let tickLen = 4;
                 if (majorTick) tickLen = 12;
                 else if (midTick) tickLen = 8;
@@ -1767,16 +1887,30 @@ function plotCircles(options = {}) {
 
                 if (majorTick && (x - lastLabelX) >= minLabelPxGap) {
                     const mmValue = n * minorMm;
-                    ctx.fillText(formatTick(toDisplayValue(mmValue)), x, yBottom - 4);
-                    lastLabelX = x;
+                    const tickText = formatTick(toDisplayValue(mmValue));
+                    const halfLabelW = ctx.measureText(tickText).width / 2;
+                    const fitsInsideRuler = (x - halfLabelW >= labelLeftBound) && (x + halfLabelW <= labelRightBound);
+                    if (fitsInsideRuler) {
+                        ctx.fillText(tickText, x, yBottom - 4);
+                        lastLabelX = x;
+                    }
                 }
             }
         }
 
-        ctx.textAlign = 'right';
+        // White end-cap for unit text: masks any ticks/labels underneath for a clean ruler end.
+        const unitBoxW = xEnd - unitBoxX;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(unitBoxX, yTop, unitBoxW, rulerHeight);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(unitBoxX + 0.5, yTop + 0.5, Math.max(0, unitBoxW - 1), Math.max(0, rulerHeight - 1));
+
+        ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.font = 'bold 11px Arial';
-        ctx.fillText(displayUnit, xEnd - 6, yTop + (rulerHeight / 2));
+        ctx.fillStyle = '#000000';
+        ctx.fillText(unitText, unitBoxX + (unitBoxW / 2), yTop + (rulerHeight / 2));
 
         ctx.restore();
     }
@@ -1828,12 +1962,13 @@ function plotCircles(options = {}) {
             fillColor: fill,
             lineColor: row.querySelector('.lineColor').value,
             lineThickness: parseFloat(row.querySelector('.lineThickness').value),
+            lineType: row.querySelector('.lineType')?.value || config.defaultLineType,
             materialLabel: row.querySelector('.materialLabel').value || 'Layer ' + (idx+1),
             eccentricityFactor: parseFloat(row.querySelector('.eccentricityFactor').value),
             eccentricityAngle: parseFloat(row.querySelector('.eccentricityAngle').value),
             wavinessAmp: parseFloat(row.querySelector('.wavinessAmp')?.value) || 0,
             wavinessFreq: parseFloat(row.querySelector('.wavinessFreq')?.value) || 8,
-            wavinessSeed: parseFloat(row.querySelector('.wavinessSeed')?.value) || 0,
+            wavinessSeed: 1,
             tableTextColor: textColor,
             originalIndex: idx
         });
@@ -1908,11 +2043,13 @@ function plotCircles(options = {}) {
             ctx.fillStyle = data.fillColor;
             ctx.fill();
             ctx.strokeStyle = data.lineColor;
+            applyCanvasLineStyle(ctx, data);
 
             // Keep visual line width consistent regardless of zoom
             ctx.lineWidth = data.lineThickness / view.scale;
             if(ctx.lineWidth < 0.1) ctx.lineWidth = 0.1;
             ctx.stroke();
+            resetCanvasLineStyle(ctx);
 
             lastCenter = {x, y};
             smallestCenter = {x, y};
@@ -1999,6 +2136,7 @@ function plotCircles(options = {}) {
             ctx.strokeStyle = data.lineColor;
             ctx.lineWidth = data.lineThickness / view.scale;
             if(ctx.lineWidth < 0.1) ctx.lineWidth = 0.1;
+            applyCanvasLineStyle(ctx, data);
 
             // Top edge
             ctx.beginPath();
@@ -2022,6 +2160,7 @@ function plotCircles(options = {}) {
             ctx.moveTo(x1, layerCenterY - radius);
             ctx.lineTo(x1, layerCenterY + radius);
             ctx.stroke();
+            resetCanvasLineStyle(ctx);
 
             ctx.restore();
 
@@ -2487,12 +2626,13 @@ function getPlotState() {
             fillColor: fill,
             lineColor: row.querySelector('.lineColor').value,
             lineThickness: parseFloat(row.querySelector('.lineThickness').value) || 0.25,
+            lineType: row.querySelector('.lineType')?.value || config.defaultLineType,
             materialLabel: row.querySelector('.materialLabel').value || ('Layer ' + (idx + 1)),
             eccentricityFactor: parseFloat(row.querySelector('.eccentricityFactor').value) || 0,
             eccentricityAngle: parseFloat(row.querySelector('.eccentricityAngle').value) || 0,
             wavinessAmp: parseFloat(row.querySelector('.wavinessAmp')?.value) || 0,
             wavinessFreq: parseFloat(row.querySelector('.wavinessFreq')?.value) || 8,
-            wavinessSeed: parseFloat(row.querySelector('.wavinessSeed')?.value) || 0,
+            wavinessSeed: 1,
             tableTextColor: textColor,
             originalIndex: idx
         });
@@ -2588,7 +2728,7 @@ function buildPlotSvg(includeExportOutline = false) {
             const y = lastCenter.y + offset * Math.sin(angleRad);
             const strokeWidth = Math.max(0.1, data.lineThickness / view.scale);
             const d = buildWavyCirclePathD(x, y, radius, data, s.scalingFactor, 240);
-            parts.push(`<path d="${d}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"/>`);
+            parts.push(`<path d="${d}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"${getSvgLineStyleAttrs(data.lineType)}/>`);
             lastCenter = { x, y };
             lastRadius = radius;
         });
@@ -2612,7 +2752,7 @@ function buildPlotSvg(includeExportOutline = false) {
             const strokeWidth = Math.max(0.1, data.lineThickness / view.scale);
 
             parts.push(`<g transform="translate(${cx} ${cy}) rotate(${axisAngle * 180 / Math.PI})">`);
-            parts.push(`<rect x="${x0}" y="${centerOffsetY - radius}" width="${lengthPx}" height="${2 * radius}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"/>`);
+            parts.push(`<rect x="${x0}" y="${centerOffsetY - radius}" width="${lengthPx}" height="${2 * radius}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"${getSvgLineStyleAttrs(data.lineType)}/>`);
             parts.push(`</g>`);
             lastRadius = radius;
         });
@@ -2874,11 +3014,11 @@ function getSettingsObj() {
         fillColor: row.querySelector('.fillColorSelect').value === 'other' ? row.querySelector('.fillColor').value : row.querySelector('.fillColorSelect').value,
         lineColor: row.querySelector('.lineColor').value,
         lineThickness: row.querySelector('.lineThickness').value,
+        lineType: row.querySelector('.lineType')?.value || config.defaultLineType,
         eccentricityFactor: row.querySelector('.eccentricityFactor').value,
         eccentricityAngle: row.querySelector('.eccentricityAngle').value,
         wavinessAmp: row.querySelector('.wavinessAmp').value,
-        wavinessFreq: row.querySelector('.wavinessFreq').value,
-        wavinessSeed: row.querySelector('.wavinessSeed').value
+        wavinessFreq: row.querySelector('.wavinessFreq').value
     }));
     const bgSel = document.getElementById('bgColorSelect');
     const bg = bgSel.value === 'other' ? document.getElementById('bgColorOther').value : bgSel.value;
@@ -3082,11 +3222,11 @@ function applySettingsData(data, preserveTitle) {
            div.querySelector('.unit').value = c.unit;
            div.querySelector('.lineColor').value = c.lineColor;
            div.querySelector('.lineThickness').value = c.lineThickness;
+           div.querySelector('.lineType').value = c.lineType || config.defaultLineType;
            div.querySelector('.eccentricityFactor').value = c.eccentricityFactor;
            div.querySelector('.eccentricityAngle').value = c.eccentricityAngle;
            div.querySelector('.wavinessAmp').value = c.wavinessAmp ?? 0;
            div.querySelector('.wavinessFreq').value = c.wavinessFreq ?? 8;
-           div.querySelector('.wavinessSeed').value = c.wavinessSeed ?? 0;
            document.getElementById('layer-list').appendChild(div);
         });
     }
@@ -3097,3 +3237,4 @@ function applySettingsData(data, preserveTitle) {
 </script>
 </body>
 </html>
+
