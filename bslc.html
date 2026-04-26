@@ -1,0 +1,2690 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <title>
+   Barrier Length Calculator
+  </title>
+  <style>
+  /*
+    Main CSS styles for layout, colors, and UI elements
+    Defines variables, grid layout, cards, buttons, tables, and responsive design
+    Main application wrapper: Contains title, description, and grid layout for sidebar and main content
+    Sidebar: User input fields for borehole and barrier parameters
+    Main content: SVG plots, calculated results, and charts
+    SVG plot for well cross section will be rendered here by JavaScript
+    Legend for plot colors
+    Table for calculated outputs
+    Table for sweep of inclination values
+    SVG chart for volume vs inclination
+    SVG chart for barrier length vs borehole diameter
+    Tooltip for interactive charts
+  */
+:root {
+  --bg:#ffffff;
+  --panel:#fff;
+  --text:#000000;
+  --muted:#5b6470;
+  --fill:#5b6c7c;
+  --border:#d9e0e7;
+  --field-bg:#fff;
+  --field-text:#111;
+  --field-border:#c6ced8;
+  --shell-bg:#fff;
+  --plot-bg:#fff;
+  --plot-line:#000;
+  --table-head:#fafbfc;
+  --table-border:#e6ebf0
+}
+* {
+  box-sizing:border-box
+}
+body {
+  margin:0;
+  font-family:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:var(--bg);
+  color:var(--text)
+}
+body.night-mode {
+  --bg:#080b10;
+  --panel:#141922;
+  --text:#eef3f8;
+  --muted:#9aa7b6;
+  --border:#2f3947;
+  --field-bg:#0d121a;
+  --field-text:#f2f6fb;
+  --field-border:#344153;
+  --shell-bg:#0b1017;
+  --plot-bg:#101722;
+  --plot-line:#e8edf4;
+  --table-head:#1c2430;
+  --table-border:#303b4b;
+}
+.wrap {
+  max-width:1280px;
+  margin:24px auto;
+  padding:0 16px 32px
+}
+.title {
+  margin-bottom:14px
+}
+.title h1 {
+  margin:0 0 6px;
+  font-size:28px
+}
+.title p {
+  margin:0;
+  color:var(--muted);
+  line-height:1.45
+}
+.grid {
+  display:grid;
+  grid-template-columns:340px minmax(0,1fr);
+  gap:18px;
+  align-items:start
+}
+.sidebar {
+  position:sticky;
+  top:24px;
+  display:flex;
+  flex-direction:column;
+  gap:18px
+}
+.main {
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  min-width:0
+}
+.card {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:0 10px 28px rgba(15,23,42,.06)
+}
+.card-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px
+}
+.card-head h2 {
+  margin:0
+}
+.collapse-btn {
+  width:auto;
+  min-width:86px;
+  padding:7px 12px;
+  border-radius:8px
+}
+.card.is-collapsed .collapsible-body {
+  display:none
+}
+h2 {
+  margin:0 0 14px;
+  font-size:18px
+}
+.field {
+  margin-bottom:14px
+}
+.field label {
+  display:block;
+  font-weight:600;
+  margin-bottom:6px
+}
+.inline {
+  display:grid;
+  grid-template-columns:1fr 110px;
+  gap:8px
+}
+input,select,button {
+  width:100%;
+  padding:10px 12px;
+  border:1px solid var(--field-border);
+  border-radius:10px;
+  font-size:14px;
+  background:var(--field-bg);
+  color:var(--field-text)
+}
+.small {
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.4;
+  margin-top:4px
+}
+.shell {
+  background:var(--shell-bg);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:14px;
+  box-shadow:0 8px 24px rgba(15,23,42,.05)
+}
+.group-card {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+}
+.group-card h3 {
+  margin:0 0 12px;
+  font-size:18px;
+}
+.menu-bar {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:0;
+}
+.menu-group {
+  position:relative;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:0;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:transparent;
+}
+.menu-title {
+  font-weight:700;
+  color:var(--text);
+}
+.menu-popover {
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  display:none;
+  min-width:240px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--panel);
+  box-shadow:0 14px 34px rgba(0,0,0,.22);
+  z-index:10
+}
+.menu-group.is-open .menu-popover {
+  display:grid;
+  gap:8px
+}
+.checkbox-row {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.checkbox-row input[type="checkbox"] {
+  width:auto;
+  padding:0;
+}
+.row {
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:0 0 12px
+}
+.btn {
+  width:auto;
+  min-width:112px;
+  padding:9px 14px;
+  border:1px solid var(--field-border);
+  border-radius:10px;
+  background:var(--field-bg);
+  font-size:13px;
+  font-weight:700;
+  box-shadow:0 2px 8px rgba(15,23,42,.04);
+  cursor:pointer
+}
+.btn:hover {
+  filter:brightness(1.08)
+}
+.menu-bar > .menu-group > .btn {
+  min-width:88px;
+  padding:8px 12px
+}
+svg {
+  display:block;
+  width:100%;
+  height:auto;
+  background:var(--plot-bg)
+}
+.tbl {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:8px;
+  font-size:14px
+}
+.tbl td,.tbl th {
+  padding:10px 8px;
+  border-top:1px solid var(--table-border);
+  text-align:left;
+  vertical-align:top
+}
+.tbl td:first-child {
+  font-weight:700;
+  width:40%
+}
+.tbl th {
+  font-weight:700;
+  background:var(--table-head);
+  color:var(--text)
+}
+.sub {
+  margin:18px 0 10px;
+  font-size:16px;
+  font-weight:700
+}
+.warn {
+  margin-top:12px;
+  padding:12px;
+  border-radius:10px;
+  background:#fff8e1;
+  border:1px solid #f0d98c;
+  color:#5c4700;
+  line-height:1.45;
+  font-size:14px
+}
+.error {
+  margin-top:12px;
+  padding:12px;
+  border-radius:10px;
+  background:#fee2e2;
+  border:1px solid #fca5a5;
+  color:#991b1b;
+  line-height:1.45;
+  font-size:14px
+}
+.legend {
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+  margin-top:10px;
+  font-size:13px;
+  color:var(--muted)
+}
+.li {
+  display:flex;
+  align-items:center;
+  gap:8px
+}
+.sw {
+  width:20px;
+  height:12px;
+  border:1px solid var(--plot-line);
+  background:var(--plot-bg)
+}
+.sw.f {
+  background:var(--fill)
+}
+.tip {
+  position:fixed;
+  pointer-events:none;
+  background:rgba(255,255,255,.97);
+  border:1px solid #000;
+  border-radius:8px;
+  padding:8px 10px;
+  font-size:12px;
+  line-height:1.35;
+  box-shadow:0 2px 10px rgba(0,0,0,.12);
+  display:none;
+  z-index:20;
+  white-space:nowrap
+}
+@media(max-width:980px) {
+  .grid {
+    grid-template-columns:1fr
+  }
+  .sidebar {
+    position:static
+  }
+}
+
+/* 1. Reset */
+:root {
+  --bg:#f5f7fa;
+  --surface:#ffffff;
+  --surface-alt:#f8fafc;
+  --border:#d8dee6;
+  --text:#111827;
+  --muted:#6b7280;
+  --primary:#1f5fae;
+  --primary-strong:#174b8b;
+  --success:#0f8a4b;
+  --warning:#b7791f;
+  --danger:#c53030;
+  --shadow:0 18px 45px rgba(15,23,42,.08);
+  --radius:14px;
+  --space-xs:4px;
+  --space-sm:8px;
+  --space-md:14px;
+  --space-lg:20px;
+  --space-xl:28px;
+  --panel:var(--surface);
+  --field-bg:#ffffff;
+  --field-text:var(--text);
+  --field-border:#cbd5e1;
+  --shell-bg:#f8fafc;
+  --plot-bg:#ffffff;
+  --plot-line:#111827;
+  --table-head:#f1f5f9;
+  --table-border:#e2e8f0;
+  --font-ui:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-plot:Arial, sans-serif;
+}
+body.night-mode {
+  --bg:#0e1117;
+  --surface:#161b22;
+  --surface-alt:#111821;
+  --border:#30363d;
+  --text:#e6edf3;
+  --muted:#9aa4af;
+  --primary:#58a6ff;
+  --primary-strong:#79b8ff;
+  --success:#3fb950;
+  --warning:#d29922;
+  --danger:#f85149;
+  --shadow:0 18px 45px rgba(0,0,0,.38);
+  --panel:var(--surface);
+  --field-bg:#0f141b;
+  --field-text:var(--text);
+  --field-border:#30363d;
+  --shell-bg:#0f141b;
+  --plot-bg:#111821;
+  --plot-line:#e6edf3;
+  --table-head:#1f2937;
+  --table-border:#30363d;
+}
+* { box-sizing:border-box; }
+html { background:var(--bg); }
+body {
+  margin:0;
+  min-height:100vh;
+  font-family:var(--font-ui);
+  background:var(--bg);
+  color:var(--text);
+  letter-spacing:0;
+}
+button,input,select { font:inherit; }
+
+/* 2. Variables and layout */
+.wrap.app-shell {
+  max-width:1480px;
+  margin:0 auto;
+  padding:var(--space-xl);
+}
+.app-header {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+  margin-bottom:var(--space-xl);
+  padding:12px 16px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface);
+  box-shadow:0 8px 24px rgba(15,23,42,.05);
+}
+.app-header-top {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.app-brand {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+.app-logo {
+  height:40px;
+  width:auto;
+  flex-shrink:0;
+}
+.app-title-wrap {
+  min-width:0;
+}
+.app-header h1 {
+  margin:0;
+  font-size:1.18rem;
+  line-height:1.2;
+  letter-spacing:.01em;
+}
+.app-header p {
+  margin:2px 0 0;
+  color:var(--muted);
+  font-size:12px;
+}
+.app-meta {
+  font-size:12px;
+  color:var(--muted);
+  text-align:right;
+  line-height:1.45;
+  white-space:nowrap;
+}
+.header-actions {
+  display:flex;
+  align-items:center;
+  gap:var(--space-sm);
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  padding-top:10px;
+  border-top:1px solid var(--border);
+}
+body.night-mode .app-header {
+  background:var(--surface);
+}
+.grid {
+  display:grid;
+  grid-template-columns:360px minmax(0,1fr);
+  gap:var(--space-xl);
+  align-items:start;
+}
+.sidebar {
+  position:sticky;
+  top:var(--space-lg);
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-md);
+}
+.main {
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-lg);
+}
+
+/* 3. Cards */
+.card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:var(--space-lg);
+  box-shadow:var(--shadow);
+}
+.card-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-md);
+  margin-bottom:var(--space-md);
+}
+.card-head h2,
+.card h2 {
+  margin:0;
+  font-size:15px;
+  font-weight:760;
+  line-height:1.2;
+  letter-spacing:0;
+}
+.card.is-collapsed .collapsible-body { display:none; }
+.sub {
+  margin:22px 0 10px;
+  color:var(--text);
+  font-size:14px;
+  font-weight:760;
+}
+.accordion {
+  border-top:1px solid var(--border);
+  margin-top:var(--space-md);
+  padding-top:var(--space-sm);
+}
+.card > .accordion:first-child {
+  border-top:0;
+  margin-top:0;
+  padding-top:0;
+}
+.accordion summary {
+  cursor:pointer;
+  list-style:none;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-md);
+  color:var(--text);
+  font-size:15px;
+  font-weight:760;
+}
+.accordion summary::-webkit-details-marker { display:none; }
+.accordion summary::after {
+  content:"+";
+  color:var(--muted);
+  font-size:18px;
+  line-height:1;
+}
+.accordion[open] summary::after { content:"-"; }
+.accordion[open] summary { margin-bottom:var(--space-md); }
+
+/* 4. Forms */
+.field { margin-bottom:var(--space-md); }
+.field:last-child { margin-bottom:0; }
+.field.is-driver-active {
+  margin-left:-8px;
+  margin-right:-8px;
+  padding:8px;
+  border:1px solid color-mix(in srgb, var(--primary) 44%, var(--border));
+  border-radius:12px;
+  background:color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+.field label,
+.checkbox-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-sm);
+  margin-bottom:6px;
+  color:var(--text);
+  font-size:12px;
+  font-weight:720;
+  text-transform:none;
+}
+.small {
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.35;
+}
+.field-error {
+  min-height:0;
+  margin-top:6px;
+  color:var(--danger);
+  font-size:12px;
+}
+.field-error:empty { display:none; }
+.inline {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 86px;
+  gap:0;
+}
+.unit-field input {
+  border-top-right-radius:0;
+  border-bottom-right-radius:0;
+}
+.unit-field select {
+  border-left:0;
+  border-top-left-radius:0;
+  border-bottom-left-radius:0;
+  text-align:center;
+}
+input,select {
+  width:100%;
+  min-height:40px;
+  padding:9px 11px;
+  border:1px solid var(--field-border);
+  border-radius:10px;
+  background:var(--field-bg);
+  color:var(--field-text);
+  font-size:14px;
+  outline:none;
+  transition:border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+input[type="number"] { text-align:right; font-variant-numeric:tabular-nums; }
+input:focus,select:focus,button:focus-visible,summary:focus-visible {
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 24%, transparent);
+  outline:none;
+}
+select:disabled {
+  color:var(--muted);
+  opacity:1;
+}
+.color-field input[type="color"] {
+  width:64px;
+  height:38px;
+  min-height:38px;
+  padding:2px;
+  cursor:pointer;
+}
+.checkbox-row {
+  justify-content:flex-start;
+  margin:0;
+  color:var(--muted);
+  font-weight:600;
+}
+.checkbox-row input,
+.theme-switch input {
+  width:16px;
+  min-height:16px;
+  accent-color:var(--primary);
+}
+.theme-switch {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  min-height:40px;
+  padding:0 12px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--surface-alt);
+  color:var(--text);
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.segmented {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4px;
+  margin-bottom:var(--space-md);
+  padding:4px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface-alt);
+}
+.segment {
+  min-width:0;
+  min-height:34px;
+  padding:7px 8px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:760;
+  cursor:pointer;
+}
+.segment.is-active {
+  background:var(--surface);
+  color:var(--primary);
+  box-shadow:0 1px 6px rgba(15,23,42,.08);
+}
+
+/* 5. Buttons */
+.btn {
+  width:auto;
+  min-width:0;
+  min-height:38px;
+  padding:8px 13px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+  color:var(--text);
+  font-size:13px;
+  font-weight:760;
+  box-shadow:none;
+  cursor:pointer;
+  transition:transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease;
+}
+.btn:hover { transform:translateY(-1px); filter:none; }
+.btn:active { transform:translateY(0); }
+.btn-primary {
+  border-color:var(--primary);
+  background:var(--primary);
+  color:#fff;
+}
+.btn-primary:hover {
+  background:var(--primary-strong);
+  border-color:var(--primary-strong);
+}
+.btn-secondary {
+  background:var(--surface-alt);
+  color:var(--text);
+}
+.btn-ghost {
+  width:100%;
+  justify-content:flex-start;
+  border-color:transparent;
+  background:transparent;
+  text-align:left;
+  color:var(--text);
+}
+.btn-ghost:hover {
+  background:var(--surface-alt);
+}
+.collapse-btn { min-width:82px; }
+.menu-bar {
+  display:flex;
+  align-items:center;
+  gap:var(--space-sm);
+  margin:0;
+}
+.menu-group {
+  position:relative;
+  border:0;
+  background:transparent;
+  padding:0;
+}
+.menu-popover {
+  position:absolute;
+  top:calc(100% + 8px);
+  left:0;
+  display:none;
+  min-width:230px;
+  padding:8px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--surface);
+  box-shadow:0 20px 42px rgba(0,0,0,.18);
+  z-index:40;
+}
+.menu-group.is-open .menu-popover { display:grid; gap:4px; }
+
+/* 6. Metrics, plots and charts */
+.kpi-grid {
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:var(--space-md);
+}
+.metric-card {
+  position:relative;
+  min-width:0;
+  padding:15px;
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  background:var(--surface);
+  box-shadow:var(--shadow);
+}
+.metric-card[data-help] {
+  cursor:help;
+}
+.metric-card[data-help]::before,
+.metric-card[data-help]::after {
+  position:absolute;
+  left:50%;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .16s ease,transform .16s ease;
+  z-index:30;
+}
+.metric-card[data-help]::after {
+  content:attr(data-help);
+  bottom:calc(100% + 12px);
+  transform:translate(-50%,4px);
+  width:min(320px,calc(100vw - 40px));
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+  color:var(--text);
+  font-size:12px;
+  line-height:1.45;
+  box-shadow:0 14px 28px rgba(15,23,42,.18);
+  text-transform:none;
+  letter-spacing:0;
+}
+.metric-card[data-help]::before {
+  content:'';
+  bottom:calc(100% + 6px);
+  transform:translateX(-50%);
+  border-left:6px solid transparent;
+  border-right:6px solid transparent;
+  border-top:6px solid var(--surface);
+  filter:drop-shadow(0 -1px 0 var(--border));
+}
+.metric-card[data-help]:hover::before,
+.metric-card[data-help]:hover::after,
+.metric-card[data-help]:focus-visible::before,
+.metric-card[data-help]:focus-visible::after {
+  opacity:1;
+}
+.metric-card[data-help]:hover::after,
+.metric-card[data-help]:focus-visible::after {
+  transform:translate(-50%,0);
+}
+.metric-label {
+  display:block;
+  min-height:30px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:760;
+  line-height:1.25;
+  text-transform:uppercase;
+}
+.metric-card strong {
+  display:block;
+  margin-top:8px;
+  font-size:25px;
+  line-height:1;
+  font-weight:780;
+  letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+}
+.metric-unit {
+  display:block;
+  margin-top:6px;
+  color:var(--muted);
+  font-size:12px;
+}
+.badge {
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  margin-top:10px;
+  padding:3px 8px;
+  border-radius:999px;
+  background:var(--surface-alt);
+  color:var(--muted);
+  font-size:12px;
+  font-weight:780;
+}
+.badge.ok {
+  background:color-mix(in srgb, var(--success) 14%, transparent);
+  color:var(--success);
+}
+.badge.bad {
+  background:color-mix(in srgb, var(--danger) 14%, transparent);
+  color:var(--danger);
+}
+.shell {
+  overflow:hidden;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:var(--shell-bg);
+  box-shadow:none;
+}
+.plot-shell { padding:16px; }
+svg {
+  display:block;
+  width:100%;
+  height:auto;
+  border-radius:8px;
+  background:var(--plot-bg);
+}
+.plot-meta {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+  color:var(--muted);
+  font-size:12px;
+}
+.plot-meta span {
+  padding:6px 9px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--surface-alt);
+}
+.plot-meta strong {
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.chart-grid {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:var(--space-lg);
+}
+
+/* 7. Tables and alerts */
+.tbl {
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0;
+  overflow:hidden;
+  margin-top:8px;
+  border:1px solid var(--table-border);
+  border-radius:12px;
+  font-size:13px;
+}
+.tbl td,.tbl th {
+  padding:10px 11px;
+  border-top:1px solid var(--table-border);
+  text-align:left;
+  vertical-align:top;
+}
+.tbl tr:first-child td,
+.tbl thead tr:first-child th { border-top:0; }
+.tbl td:first-child { width:42%; color:var(--muted); font-weight:700; }
+.tbl th {
+  background:var(--table-head);
+  color:var(--text);
+  font-weight:780;
+}
+.warn,.error {
+  margin-top:0;
+  padding:12px 14px;
+  border-radius:12px;
+  line-height:1.45;
+  font-size:13px;
+}
+.warn {
+  border:1px solid color-mix(in srgb, var(--warning) 44%, var(--border));
+  background:color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color:var(--warning);
+}
+.error {
+  border:1px solid color-mix(in srgb, var(--danger) 44%, var(--border));
+  background:color-mix(in srgb, var(--danger) 12%, var(--surface));
+  color:var(--danger);
+}
+.tip {
+  position:fixed;
+  pointer-events:none;
+  display:none;
+  z-index:60;
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+  color:var(--text);
+  box-shadow:var(--shadow);
+  font-size:12px;
+  line-height:1.35;
+  white-space:nowrap;
+}
+
+/* 8. Responsive */
+@media(max-width:1180px) {
+  .kpi-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media(max-width:980px) {
+  .wrap.app-shell { padding:var(--space-md); }
+  .app-header-top { align-items:flex-start; flex-direction:column; }
+  .app-meta { text-align:left; white-space:normal; }
+  .header-actions { width:100%; justify-content:flex-start; }
+  .grid { grid-template-columns:1fr; gap:var(--space-lg); }
+  .sidebar { position:static; }
+  .main { order:1; }
+  .sidebar { order:2; }
+  .kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:620px) {
+  .kpi-grid { grid-template-columns:1fr; }
+  .inline { grid-template-columns:minmax(0,1fr) 74px; }
+  .segmented { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .card-head { align-items:flex-start; flex-direction:column; }
+  .app-logo { height:34px; }
+  .header-actions { align-items:stretch; flex-direction:column; }
+  .data-menu { width:100%; }
+  .data-menu .menu-group,
+  .data-menu .btn { width:100%; }
+}
+</style>
+ </head>
+ <body>
+  <div class="wrap app-shell">
+   <header class="app-header">
+    <div class="app-header-top">
+     <div class="app-brand">
+      <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo"/>
+      <div class="app-title-wrap">
+       <h1>Barrier Sealing Length Calculator</h1>
+       <p>RockSolid R&D Tool</p>
+      </div>
+     </div>
+     <div class="app-meta">
+      <div>By Darren Wilkinson</div>
+      <div>Updated: 26.04.2026</div>
+     </div>
+    </div>
+    <div class="header-actions">
+     <div class="menu-bar data-menu">
+      <div class="menu-group" id="importMenu">
+       <button class="btn btn-secondary" id="importMenuButton" type="button" aria-expanded="false" aria-controls="importMenuPanel">Import Config</button>
+       <div class="menu-popover" id="importMenuPanel">
+        <button class="btn btn-ghost" id="importSettings" type="button">Settings JSON</button>
+       </div>
+      </div>
+      <div class="menu-group" id="exportMenu">
+       <button class="btn btn-primary" id="exportMenuButton" type="button" aria-expanded="false" aria-controls="exportMenuPanel">Export</button>
+       <div class="menu-popover" id="exportMenuPanel">
+       <button class="btn btn-ghost" id="exportSettings" type="button">Settings JSON</button>
+       <button class="btn btn-ghost" id="exportWellSvg" type="button">Well Plot SVG</button>
+       <button class="btn btn-ghost" id="exportWell" type="button">Well Plot PNG</button>
+       <button class="btn btn-ghost" id="exportIncSvg" type="button">Inclination Chart SVG</button>
+       <button class="btn btn-ghost" id="exportInc" type="button">Inclination Chart PNG</button>
+       </div>
+      </div>
+     </div>
+     <label class="theme-switch" for="nightMode">
+      <input id="nightMode" type="checkbox"/>
+      <span>Night Mode</span>
+     </label>
+     <button class="btn btn-secondary" id="resetAll" type="button">Reset</button>
+     <input id="importSettingsFile" type="file" accept=".json,application/json" hidden/>
+    </div>
+   </header>
+   <div class="grid">
+    <aside class="sidebar">
+     <section class="card">
+      <div class="card-head">
+       <h2>Core Geometry</h2>
+      </div>
+      <div class="field">
+       <label for="plotTitle">Plot Title</label>
+       <input id="plotTitle" type="text" placeholder="Export/report title"/>
+      </div>
+      <div class="field" data-driver-effective>
+       <label for="diameter">Borehole Diameter</label>
+       <div class="inline unit-field">
+        <input id="diameter" min="0" step="any" type="number"/>
+        <select id="diameterUnit">
+         <option value="mm">mm</option>
+         <option value="in">in</option>
+        </select>
+       </div>
+       <div class="field-error" id="diameterError"></div>
+      </div>
+      <div class="field" data-driver-effective>
+       <label for="inclination">Wellbore Inclination (&deg;)</label>
+       <input id="inclination" max="89.9" min="0" step="any" type="number"/>
+       <div class="small">0&deg; = vertical well</div>
+       <div class="field-error" id="inclinationError"></div>
+      </div>
+      <details class="accordion">
+       <summary>Well Interval</summary>
+       <div class="field">
+        <label for="interval">Wellbore Interval</label>
+        <div class="inline unit-field">
+         <input id="interval" min="0" placeholder="Auto" step="any" type="number"/>
+         <select id="intervalUnit">
+          <option value="m">m</option>
+          <option value="ft">ft</option>
+         </select>
+        </div>
+        <div class="small">Blank uses 1.5 x total low-side filled extent.</div>
+       </div>
+      </details>
+     </section>
+     <section class="card">
+      <div class="card-head">
+       <h2>Calculation Basis</h2>
+      </div>
+      <div class="segmented" role="tablist" aria-label="Calculation basis">
+       <button class="segment is-active" id="sourceVolume" type="button" data-source="volume" aria-selected="true">Volume</button>
+       <button class="segment" id="sourceMass" type="button" data-source="mass" aria-selected="false">Thermite Mass</button>
+       <button class="segment" id="sourceLength" type="button" data-source="length" aria-selected="false">Thermite Length</button>
+       <button class="segment" id="sourceEffective" type="button" data-source="effective" aria-selected="false">Effective Length</button>
+       <button class="segment" id="sourceTvt" type="button" data-source="tvt" aria-selected="false">TVT</button>
+      </div>
+      <div class="source-panel" data-source-panel="volume">
+       <div class="field">
+        <label for="volume">Bismuth Alloy Volume</label>
+        <div class="inline unit-field">
+         <input id="volume" min="0" step="any" type="number"/>
+         <select disabled><option>litres</option></select>
+        </div>
+        <div class="field-error" id="volumeError"></div>
+       </div>
+      </div>
+      <div class="source-panel" data-source-panel="mass" hidden>
+       <div class="field">
+        <label for="thermiteMass">Thermite Mass</label>
+        <div class="inline unit-field">
+         <input id="thermiteMass" min="0" step="any" type="number"/>
+         <select disabled><option>kg</option></select>
+        </div>
+        <div class="field-error" id="thermiteMassError"></div>
+       </div>
+      </div>
+      <div class="source-panel" data-source-panel="length" hidden>
+       <div class="field">
+        <label for="thermiteLength">Thermite Length</label>
+        <div class="inline unit-field">
+         <input id="thermiteLength" min="0" step="any" type="number"/>
+         <select disabled><option>m</option></select>
+        </div>
+        <div class="field-error" id="thermiteLengthError"></div>
+       </div>
+      </div>
+      <div class="source-panel" data-source-panel="effective" hidden>
+       <div class="field" data-driver-effective>
+        <label for="effectiveBarrierLength">Effective Barrier Length</label>
+        <div class="inline unit-field">
+         <input id="effectiveBarrierLength" min="0" step="any" type="number"/>
+         <select disabled><option>mMD</option></select>
+        </div>
+        <div class="small">Back-calculates required bismuth volume, bismuth mass, thermite mass, and thermite length.</div>
+        <div class="field-error" id="effectiveBarrierLengthError"></div>
+       </div>
+      </div>
+      <div class="source-panel" data-source-panel="tvt" hidden>
+       <div class="field">
+        <label for="trueVerticalThickness">True Vertical Thickness (TVT)</label>
+        <div class="inline unit-field">
+         <input id="trueVerticalThickness" min="0" step="any" type="number"/>
+         <select disabled><option>m</option></select>
+        </div>
+        <div class="small">Back-calculates required bismuth volume, bismuth mass, thermite mass, and thermite length from desired TVT.</div>
+        <div class="field-error" id="trueVerticalThicknessError"></div>
+       </div>
+      </div>
+     </section>
+     <section class="card">
+      <details class="accordion">
+       <summary>Advanced Thermite Settings</summary>
+       <div class="field">
+        <label for="thermiteType">Thermite Type</label>
+        <select id="thermiteType">
+         <option value="THX-3">THX-3</option>
+         <option value="THX-4">THX-4</option>
+         <option value="Custom">Custom</option>
+        </select>
+       </div>
+       <div class="field">
+        <label for="thermiteName">Thermite Name</label>
+        <input id="thermiteName" type="text" placeholder="Enter thermite name"/>
+       </div>
+       <div class="field">
+        <label for="alloyDensity">Alloy Density</label>
+        <div class="inline unit-field">
+         <input id="alloyDensity" min="0" step="any" type="number"/>
+         <select disabled><option>g/cc</option></select>
+        </div>
+       </div>
+       <div class="field">
+        <label for="conversionFactor">Conversion Factor</label>
+        <input id="conversionFactor" min="0" max="1" step="any" type="number"/>
+       </div>
+       <div class="field">
+        <label for="lossFactor">Loss Factor</label>
+        <input id="lossFactor" min="0" max="1" step="any" type="number"/>
+       </div>
+       <div class="field">
+        <label for="thermiteDensity">Thermite Density</label>
+        <div class="inline unit-field">
+         <input id="thermiteDensity" min="0" step="any" type="number"/>
+         <select disabled><option>g/cc</option></select>
+        </div>
+       </div>
+       <div class="field">
+        <label for="thermiteOuterDiameter">Thermite Outer Diameter</label>
+        <div class="inline unit-field">
+         <input id="thermiteOuterDiameter" min="0" step="any" type="number"/>
+         <select disabled><option>mm</option></select>
+        </div>
+       </div>
+      </details>
+     </section>
+     <section class="card">
+      <details class="accordion">
+       <summary>General Settings</summary>
+       <div class="field">
+        <label for="plotAspectRatio">Plot Aspect Ratio (H:W)</label>
+        <div class="inline">
+         <input id="plotAspectRatio" step="0.01" type="number"/>
+         <button class="btn btn-secondary" id="resetAspectRatio" type="button">Reset</button>
+        </div>
+        <div class="small">Applies to all plots. Width stays fixed; height follows H:W ratio.</div>
+       </div>
+       <div class="field color-field">
+        <label for="bismuthColor">Bismuth Fill Color</label>
+        <input id="bismuthColor" type="color" value="#5B6C7C"/>
+       </div>
+       <label class="checkbox-row" for="exportOutline">
+        <input id="exportOutline" type="checkbox"/>
+        <span>Black outline on exported plots</span>
+       </label>
+       <label class="checkbox-row" for="criticalVolumeOutline">
+        <input id="criticalVolumeOutline" type="checkbox"/>
+        <span>Outline minimum full-radial-coverage wedge (inclined wells)</span>
+       </label>
+      </details>
+     </section>
+    </aside>
+    <main class="main">
+     <section class="kpi-grid" aria-label="Calculated summary">
+      <article class="metric-card" tabindex="0" data-help="Effective Barrier Length is the along-well distance over which the barrier material is effectively placed. Use this value to confirm the planned seal interval is being achieved in the target section.">
+       <span class="metric-label">Effective Barrier Length</span>
+       <strong id="kpiEff">--</strong>
+       <span class="metric-unit">mMD</span>
+      </article>
+      <article class="metric-card" tabindex="0" data-help="True Vertical Thickness (TVT) is the vertical component of the barrier length after inclination is considered. It reflects the actual vertical isolation thickness, not just measured length along the well path.">
+       <span class="metric-label">True Vertical Thickness (TVT)</span>
+       <strong id="kpiVert">--</strong>
+       <span class="metric-unit">mTVT</span>
+      </article>
+      <article class="metric-card" tabindex="0" data-help="Bismuth Volume is the total bismuth alloy volume currently estimated for this design. It indicates how much barrier material is expected to be available in the interval.">
+       <span class="metric-label">Bismuth Volume</span>
+       <strong id="kpiVolume">--</strong>
+       <span class="metric-unit">L</span>
+      </article>
+      <article class="metric-card" tabindex="0" data-help="Thermite Length Used is the calculated measured length of thermite consumed for the current case. It helps translate mass-based demand into operational placement length.">
+       <span class="metric-label">Thermite Length Used</span>
+       <strong id="kpiThermiteLength">--</strong>
+       <span class="metric-unit">m</span>
+      </article>
+      <article class="metric-card" tabindex="0" data-help="Thermite Mass Used is the amount of thermite consumed to generate the bismuth barrier volume shown. It helps verify material demand and supports job planning logistics.">
+       <span class="metric-label">Thermite Mass Used</span>
+       <strong id="kpiThermite">--</strong>
+       <span class="metric-unit">kg</span>
+      </article>
+      <article class="metric-card" tabindex="0" data-help="500 mmMD Requirement is the bismuth volume required to achieve a 500 mm measured-depth barrier section over the current interval assumptions. Use it as a benchmark when evaluating contingency or minimum compliance targets.">
+       <span class="metric-label">500 mmMD Requirement</span>
+       <strong id="kpi500">--</strong>
+       <span class="metric-unit">L</span>
+      </article>
+     </section>
+     <section class="card plot-card">
+      <div class="card-head">
+        <h2>Cross Section</h2>
+      </div>
+      <div class="shell plot-shell">
+       <svg id="plot" viewBox="0 0 980 520"></svg>
+      </div>
+      <div class="plot-meta" id="plotMeta">
+       <span>BHID <strong id="metaDiameter">--</strong></span>
+       <span>Inclination <strong id="metaInclination">--</strong></span>
+       <span>Bismuth <strong id="metaVolume">--</strong></span>
+       <span>Thermite <strong id="metaThermite">--</strong></span>
+      </div>
+     </section>
+     <section class="card alerts-card" id="alertsCard" hidden>
+      <h2>Alerts</h2>
+      <div id="warn"></div>
+     </section>
+     <section class="card is-collapsed" id="calculatedCard">
+      <div class="card-head">
+       <h2>Detailed Results</h2>
+       <button class="btn btn-secondary collapse-btn" id="toggleCalculated" type="button" aria-expanded="false" aria-controls="calculatedBody">Expand</button>
+      </div>
+      <div class="collapsible-body" id="calculatedBody">
+       <table class="tbl">
+        <tbody>
+         <tr><td>Bismuth volume (total)</td><td id="outTotal"></td></tr>
+         <tr><td>Minimum Volume for Full Radial Coverage</td><td id="outMin"></td></tr>
+         <tr><td>Effective barrier length (mMD)</td><td id="outEff"></td></tr>
+         <tr><td>True Vertical Thickness (TVT, mTVT)</td><td id="outVert"></td></tr>
+         <tr><td>Volume required for 500 mmMD barrier</td><td id="out500"></td></tr>
+         <tr><td>Bismuth mass</td><td id="outBismuthMass"></td></tr>
+         <tr><td>Thermite mass used</td><td id="outThermiteMass"></td></tr>
+         <tr><td>Thermite length used</td><td id="outThermiteLength"></td></tr>
+         <tr><td>Required thermite mass</td><td id="outThermiteMassFromLength"></td></tr>
+        </tbody>
+       </table>
+       <div class="sub">Effective Barrier Length By Inclination</div>
+       <table class="tbl">
+        <thead>
+         <tr>
+          <th>Inclination (&deg;)</th>
+          <th>Minimum Volume for Full Radial Coverage (L)</th>
+          <th>Effective barrier length (mMD)</th>
+          <th>Effective vertical height (mTVT)</th>
+          <th>Volume for 500 mmMD barrier (L)</th>
+         </tr>
+        </thead>
+        <tbody id="sweep"></tbody>
+       </table>
+      </div>
+     </section>
+     <section class="chart-grid">
+      <article class="card chart-card">
+       <div class="card-head">
+        <h2>Volume Requirement Vs Inclination</h2>
+       </div>
+       <div class="shell">
+        <svg id="incChart" viewBox="0 0 900 430"></svg>
+       </div>
+      </article>
+     </section>
+    </main>
+   </div>
+  </div>
+  <div class="tip" id="tip">
+  </div>
+  <!--
+    Main JavaScript logic for the Bismuth Barrier Cross Section Tool
+    Handles input parsing, calculations, SVG drawing, and chart interactivity
+  -->
+  <script>
+  // ================= SETTINGS SECTION =================
+  // Edit the values below to change default input values and key aesthetics
+  // Each variable is commented for clarity
+  
+  // --- Default input values for the tool (shown in input boxes on load) ---
+  const DEF = {
+    plotTitle: 'Barrier Sealing Length Calculator', // Default user-defined title
+    diameterValue: 10.5,      // Default borehole diameter (number)
+    diameterUnit: 'in',       // Default borehole diameter unit ('mm' or 'in')
+    inclinationDeg: 45,       // Default wellbore inclination in degrees (0 = vertical)
+    intervalValue: '',       // Default interval to plot (string, can be blank for auto)
+    intervalUnit: 'm',        // Default interval unit ('m' or 'ft')
+    volumeLitres: 50,         // Default bismuth volume in litres
+    thermiteType: 'THX-3',    // Default thermite preset
+    thermiteName: 'THX-3',    // Default thermite name label
+    alloyDensity: 9.747,      // Default alloy density in g/cc
+    conversionFactor: 0.82,   // Default kg alloy produced per kg thermite
+    lossFactor: 0.2,          // Default fraction lost
+    thermiteDensity: 5.7,     // Default thermite density in g/cc
+    thermiteOuterDiameter: 114, // Default thermite outer diameter in mm
+    thermiteMass: '',         // Default thermite mass (optional)
+    thermiteLength: '',       // Default thermite length (optional)
+    effectiveBarrierLength: '', // Default effective barrier length (optional)
+    trueVerticalThickness: '',  // Default TVT basis value (optional)
+    plotAspectRatio: 0.75,    // Default global plot aspect ratio (H:W)
+    nightMode: false          // Default night mode off
+  };
+
+  const THERMITE_PRESETS = {
+    'THX-3': {
+      name: 'THX-3',
+      alloyDensity: 9.747,
+      conversionFactor: 0.82,
+      lossFactor: 0.2,
+      thermiteDensity: 5.7,
+      thermiteOuterDiameter: 114
+    },
+    'THX-4': {
+      name: 'THX-4',
+      alloyDensity: 8.00,
+      conversionFactor: 0.75,
+      lossFactor: 0.12,
+      thermiteDensity: 5.7,
+      thermiteOuterDiameter: 114
+    }
+  };
+
+    // --- Key aesthetic parameters for plots and charts ---
+    // NOTE: SVG text color is controlled by the CSS variable --text in the :root selector above.
+    const AESTHETICS = {
+      fillColor: '#5B6C7C',     // Day-mode color for bismuth fill in SVG plots (RGB 91, 108, 124)
+      nightFillColor: '#000114', // Night-mode default bismuth fill color (RGB 0, 1, 20)
+      outlineColor: '#000',     // Color for borehole outline and axes
+      backgroundColor: '#fff',  // Background color for SVG plots
+      legendMuted: '#5b6470',   // Color for muted/legend text
+      fontFamily: getComputedStyle(document.documentElement).getPropertyValue('--font-plot').trim() || 'Arial, sans-serif', // Font for all SVG text
+      fontSize: 13,             // Base font size for SVG text
+      axisWeight: 1.8,          // Stroke width for axes
+      outlineWeight: 2.2,       // Stroke width for borehole outline
+      fillWeight: 1.9           // Stroke width for bismuth fill outline
+    };
+
+  // --- Configuration for SVG plot and chart dimensions, margins, and axis values ---
+  const CFG = {
+    plot: {
+      W: 980,   // SVG width for main plot
+      H: 520,   // SVG height for main plot
+      m: {      // Margins for main plot
+        t: 44,
+        r: 36,
+        b: 90,
+        l: 42
+      },
+      off: 24,  // Offset for dimension lines
+      tick: 7,  // Tick size for dimension lines
+      arr: 8,   // Arrow size for dimension lines
+      gap: 10,  // Gap for dimension labels
+      th: 20,   // Height for dimension label boxes
+      fs: 13,   // Font size for dimension labels
+      l1: 26,   // Length for short dimension lines
+      l2: 36,   // Length for long dimension lines
+      no: 16    // Offset for label placement
+    },
+    chart: {
+      W: 900,   // SVG width for charts
+      H: 430,   // SVG height for charts
+      m: {      // Margins for charts
+        t: 24,
+        r: 26,
+        b: 56,
+        l: 76
+      },
+      maxA: 80, // Maximum inclination angle for sweep chart
+      tableA: [0, 10, 20, 30, 40, 50, 60, 70, 80] // Angles for sweep table
+    }
+  };
+  // ================= END SETTINGS SECTION =================
+// Helper to get element by ID
+const $=id=>document.getElementById(id),
+sanitizeFileBase=(name='')=>{
+  const cleaned=String(name||'').trim().replace(/[\\/:*?"<>|]+/g,'').replace(/\s+/g,'_');
+  return cleaned || 'barrier_plot';
+},
+getFileBase=()=>sanitizeFileBase($('plotTitle')?.value),
+cssVar=(name,fallback)=>getComputedStyle(document.body).getPropertyValue(name).trim()||getComputedStyle(document.documentElement).getPropertyValue(name).trim()||fallback,
+isNightByTime=()=> {
+  const h=new Date().getHours();
+  return h>=19||h<6;
+},
+setNightMode=(enabled,redraw=true)=> {
+  E.nightMode.checked=enabled;
+  document.body.classList.toggle('night-mode',enabled);
+  syncBismuthColorUi();
+  if(redraw)draw();
+},
+plotBg=()=>cssVar('--plot-bg','#fff'),
+plotLine=()=>cssVar('--plot-line','#000'),
+getGlobalPlotAspectRatio=()=> {
+  const raw=parseFloat(E.plotAspectRatio?.value);
+  const fallback=DEF.plotAspectRatio;
+  if(Number.isFinite(raw) && raw>0) return raw;
+  if(E.plotAspectRatio) E.plotAspectRatio.value=String(fallback);
+  return fallback;
+},
+applyGlobalAspectRatio=()=> {
+  const ratio=getGlobalPlotAspectRatio(),
+    plotH=Math.max(1,Math.round(CFG.plot.W*ratio)),
+    chartH=Math.max(1,Math.round(CFG.chart.W*ratio));
+  CFG.plot.H=plotH;
+  CFG.chart.H=chartH;
+  if(E.plot) E.plot.setAttribute('viewBox',`0 0 ${CFG.plot.W} ${plotH}`);
+  if(E.incChart) E.incChart.setAttribute('viewBox',`0 0 ${CFG.chart.W} ${chartH}`);
+},
+bismuthFillColor=()=>document.body.classList.contains('night-mode')?AESTHETICS.nightFillColor:AESTHETICS.fillColor,
+syncBismuthColorUi=()=> {
+  const activeColor=bismuthFillColor();
+  const colorInput=$('bismuthColor');
+  if(colorInput) colorInput.value=activeColor;
+  const legendBismuth=$('legendBismuth');
+  if(legendBismuth) legendBismuth.style.background=activeColor;
+},
+SOURCE_INPUT= {
+  active:'volume'
+},
+E= {
+  plotTitle:$('plotTitle'),
+  diameter:$('diameter'),
+  diameterUnit:$('diameterUnit'),
+  inclination:$('inclination'),
+  interval:$('interval'),
+  intervalUnit:$('intervalUnit'),
+  volume:$('volume'),
+  thermiteType:$('thermiteType'),
+  thermiteName:$('thermiteName'),
+  alloyDensity:$('alloyDensity'),
+  conversionFactor:$('conversionFactor'),
+  lossFactor:$('lossFactor'),
+  thermiteDensity:$('thermiteDensity'),
+  thermiteOuterDiameter:$('thermiteOuterDiameter'),
+  thermiteMass:$('thermiteMass'),
+  thermiteLength:$('thermiteLength'),
+  effectiveBarrierLength:$('effectiveBarrierLength'),
+  trueVerticalThickness:$('trueVerticalThickness'),
+  plotAspectRatio:$('plotAspectRatio'),
+  resetAspectRatio:$('resetAspectRatio'),
+  nightMode:$('nightMode'),
+  exportOutline:$('exportOutline'),
+  plot:$('plot'),
+  incChart:$('incChart'),
+  tip:$('tip'),
+  outTotal:$('outTotal'),
+  outMin:$('outMin'),
+  outEff:$('outEff'),
+  outVert:$('outVert'),
+  out500:$('out500'),
+  outBismuthMass:$('outBismuthMass'),
+  outThermiteMass:$('outThermiteMass'),
+  outThermiteLength:$('outThermiteLength'),
+  outThermiteMassFromLength:$('outThermiteMassFromLength'),
+  warn:$('warn'),
+  alertsCard:$('alertsCard'),
+  sweep:$('sweep'),
+  kpiEff:$('kpiEff'),
+  kpiVert:$('kpiVert'),
+  kpiVolume:$('kpiVolume'),
+  kpiThermiteLength:$('kpiThermiteLength'),
+  kpiThermite:$('kpiThermite'),
+  kpi500:$('kpi500'),
+  criticalVolumeOutline:$('criticalVolumeOutline'),
+  metaDiameter:$('metaDiameter'),
+  metaInclination:$('metaInclination'),
+  metaVolume:$('metaVolume'),
+  metaThermite:$('metaThermite'),
+  exportMenu:$('exportMenu'),
+  exportMenuButton:$('exportMenuButton'),
+  importMenu:$('importMenu'),
+  importMenuButton:$('importMenuButton'),
+  resetAll:$('resetAll'),
+  exportSettings:$('exportSettings'),
+  importSettings:$('importSettings'),
+  importSettingsFile:$('importSettingsFile'),
+  exportWellSvg:$('exportWellSvg'),
+  exportWell:$('exportWell'),
+  exportIncSvg:$('exportIncSvg'),
+  exportInc:$('exportInc'),
+  quickExportWell:$('quickExportWell'),
+  quickExportInc:$('quickExportInc'),
+  calculatedCard:$('calculatedCard'),
+  calculatedBody:$('calculatedBody'),
+  toggleCalculated:$('toggleCalculated')
+};
+// Set default values for input fields
+E.plotTitle.value=DEF.plotTitle;
+Object.assign(E.diameter, {
+  value:DEF.diameterValue
+}
+);
+E.diameterUnit.value=DEF.diameterUnit;
+E.diameterUnit.dataset.prev=DEF.diameterUnit;
+E.inclination.value=DEF.inclinationDeg;
+E.interval.value=DEF.intervalValue;
+E.intervalUnit.value=DEF.intervalUnit;
+E.volume.value=DEF.volumeLitres;
+E.thermiteType.value=DEF.thermiteType;
+E.thermiteName.value=DEF.thermiteName;
+E.alloyDensity.value=DEF.alloyDensity;
+E.conversionFactor.value=DEF.conversionFactor;
+E.lossFactor.value=DEF.lossFactor;
+E.thermiteDensity.value=DEF.thermiteDensity;
+E.thermiteOuterDiameter.value=DEF.thermiteOuterDiameter;
+E.thermiteMass.value=DEF.thermiteMass;
+E.thermiteLength.value=DEF.thermiteLength;
+E.effectiveBarrierLength.value=DEF.effectiveBarrierLength;
+E.trueVerticalThickness.value=DEF.trueVerticalThickness;
+E.plotAspectRatio.value=DEF.plotAspectRatio;
+E.nightMode.checked=isNightByTime();
+document.body.classList.toggle('night-mode',E.nightMode.checked);
+// --- Utility functions for units, formatting, and SVG drawing ---
+const ns='http://www.w3.org/2000/svg', // SVG namespace
+  mm=v=>v/1000, // Convert mm to meters
+  inch=v=>v*.0254, // Convert inches to meters
+  ft=v=>v*.3048, // Convert feet to meters
+  mToFt=v=>v/.3048, // Convert meters to feet
+  convertDiameterValue=(value,fromUnit,toUnit)=> {
+    if(!Number.isFinite(value) || fromUnit===toUnit) return value;
+    if(fromUnit==='in' && toUnit==='mm') return value*25.4;
+    if(fromUnit==='mm' && toUnit==='in') return value/25.4;
+    return value;
+  },
+  formatConvertedInput=(value)=>Number.isFinite(value)?String(Number(value.toFixed(4))):'',
+  L=v=>v/1000, // Convert litres to cubic meters
+  m3L=v=>v*1000, // Convert cubic meters to litres
+  fmt=(v,d=2)=>new Intl.NumberFormat('en-GB', {
+    minimumFractionDigits:0,maximumFractionDigits:d
+  }).format(v), // Format number with fixed decimals
+  nice=(mx,t=6)=> {
+    // Find a 'nice' axis step for charting
+    const r=mx/Math.max(t,1),
+      p=Math.pow(10,Math.floor(Math.log10(Math.max(r,1e-9)))),
+      n=r/p;
+    return(n<1.5?1:n<3?2:n<7?5:10)*p
+  },
+  svg=(tag,root)=>root.appendChild(document.createElementNS(ns,tag)), // Create SVG element
+  line=(root,x1,y1,x2,y2,w=1.5,d='')=> {
+    // Draw SVG line
+    const l=svg('line',root);
+    l.setAttribute('x1',x1.toFixed(2));
+    l.setAttribute('y1',y1.toFixed(2));
+    l.setAttribute('x2',x2.toFixed(2));
+    l.setAttribute('y2',y2.toFixed(2));
+    l.setAttribute('stroke',plotLine());
+    l.setAttribute('stroke-width',w);
+    if(d)l.setAttribute('stroke-dasharray',d);
+    return l
+  },
+  gridLine=(root,x1,y1,x2,y2)=> {
+    const l=svg('line',root);
+    l.setAttribute('x1',x1.toFixed(2));
+    l.setAttribute('y1',y1.toFixed(2));
+    l.setAttribute('x2',x2.toFixed(2));
+    l.setAttribute('y2',y2.toFixed(2));
+    l.setAttribute('stroke',cssVar('--border','#d8dee6'));
+    l.setAttribute('stroke-width','1');
+    l.setAttribute('opacity','0.72');
+    return l
+  },
+  // Draw SVG text, with color selection (main/info), linked to CSS variables
+  txt=(root,x,y,t,a='start',s=12,w='400',colorType='main')=> {
+    const z=svg('text',root);
+    z.setAttribute('x',x);
+    z.setAttribute('y',y);
+    // Use CSS variable --text for main, --muted for info
+    const mainColor = cssVar('--text','#111');
+    const infoColor = cssVar('--muted','#5b6470');
+    z.setAttribute('fill', colorType === 'info' ? infoColor : mainColor);
+    z.setAttribute('font-size',s);
+    z.setAttribute('font-family',AESTHETICS.fontFamily);
+    z.setAttribute('text-anchor',a);
+    z.setAttribute('font-weight',w);
+    z.textContent=t;
+    return z
+  },
+  path=(root,d,fill='none',stroke='#000',w=2,dash='')=> {
+    // Draw SVG path
+    const p=svg('path',root);
+    p.setAttribute('d',d);
+    p.setAttribute('fill',fill);
+    p.setAttribute('stroke',stroke==='#000'?plotLine():stroke);
+    p.setAttribute('stroke-width',w);
+    if(dash)p.setAttribute('stroke-dasharray',dash);
+    return p
+  },
+  pstr=(pts,c=true)=> {
+    // Convert array of points to SVG path string
+    if(!pts.length)return'';
+    let d=`M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+    for(let i=1;i<pts.length;i++)d+=` L ${pts[i].x.toFixed(2)} ${pts[i].y.toFixed(2)}`;
+    return c?d+' Z':d
+  },
+  P0=(o,a,n,s,x,y)=>( {
+    // Transform point in borehole coordinates to SVG coordinates
+    x:o.x+a.x*(x*s)+n.x*(y*s),y:o.y+a.y*(x*s)+n.y*(y*s)
+  }),
+  arrow=(root,x,y,ang,size=CFG.plot.arr)=> {
+    // Draw dimension arrow
+    line(root,x,y,x+Math.cos(ang+Math.PI/7)*size,y+Math.sin(ang+Math.PI/7)*size,1.6);
+    line(root,x,y,x+Math.cos(ang-Math.PI/7)*size,y+Math.sin(ang-Math.PI/7)*size,1.6)
+  },
+  rotBox=(root,cx,cy,label,deg,w)=> {
+    // Draw rotated label box for dimensions
+    const g=svg('g',root);
+    g.setAttribute('transform',`translate(${cx.toFixed(2)} ${cy.toFixed(2)}) rotate(${deg.toFixed(2)})`);
+    const r=svg('rect',g);
+    r.setAttribute('x',(-((w+12)/2)).toFixed(2));
+    r.setAttribute('y',(-(CFG.plot.th/2)).toFixed(2));
+    r.setAttribute('width',(w+12).toFixed(2));
+    r.setAttribute('height',CFG.plot.th);
+    r.setAttribute('fill',plotBg());
+    const t=svg('text',g);
+    t.setAttribute('x','0');
+    t.setAttribute('y','0');
+    t.setAttribute('fill',plotLine());
+    t.setAttribute('font-size',CFG.plot.fs);
+    t.setAttribute('font-family',AESTHETICS.fontFamily);
+    t.setAttribute('dominant-baseline','central');
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-weight','700');
+    t.textContent=label;
+    return g
+  },
+  dim=(root,p1,p2,label,off,along)=> {
+  const s0= {
+    x:p1.x+off.x*CFG.plot.off,
+    y:p1.y+off.y*CFG.plot.off
+  },
+  e0= {
+    x:p2.x+off.x*CFG.plot.off,
+    y:p2.y+off.y*CFG.plot.off
+  };
+  line(root,p1.x,p1.y,s0.x,s0.y,1.4);
+  line(root,p2.x,p2.y,e0.x,e0.y,1.4);
+  line(root,s0.x-off.x*CFG.plot.tick,s0.y-off.y*CFG.plot.tick,s0.x+off.x*CFG.plot.tick,s0.y+off.y*CFG.plot.tick,1.6);
+  line(root,e0.x-off.x*CFG.plot.tick,e0.y-off.y*CFG.plot.tick,e0.x+off.x*CFG.plot.tick,e0.y+off.y*CFG.plot.tick,1.6);
+  const dx=e0.x-s0.x,
+  dy=e0.y-s0.y,
+  Lp=Math.hypot(dx,dy),
+  ux=dx/Math.max(Lp,1e-9),
+  uy=dy/Math.max(Lp,1e-9),
+  ang=Math.atan2(dy,dx),
+  deg=ang*180/Math.PI,
+  mid= {
+    x:(s0.x+e0.x)/2,
+    y:(s0.y+e0.y)/2
+  },
+  tw=Math.max(46,label.length*7.6);
+  if(Lp>tw+30) {
+    const g=tw/2+CFG.plot.gap,
+    pA= {
+      x:mid.x-ux*g,
+      y:mid.y-uy*g
+    },
+    pB= {
+      x:mid.x+ux*g,
+      y:mid.y+uy*g
+    };
+    line(root,s0.x,s0.y,pA.x,pA.y,1.6);
+    line(root,pB.x,pB.y,e0.x,e0.y,1.6);
+    arrow(root,s0.x,s0.y,ang);
+    arrow(root,e0.x,e0.y,ang+Math.PI);
+    rotBox(root,mid.x,mid.y,label,deg,tw)
+  }
+  else {
+    line(root,s0.x,s0.y,e0.x,e0.y,1.6);
+    arrow(root,s0.x,s0.y,ang+Math.PI);
+    arrow(root,e0.x,e0.y,ang);
+    const ls= {
+      x:e0.x+along.x*CFG.plot.l1,
+      y:e0.y+along.y*CFG.plot.l1
+    },
+    le= {
+      x:ls.x+along.x*CFG.plot.l2,
+      y:ls.y+along.y*CFG.plot.l2
+    };
+    line(root,e0.x,e0.y,ls.x,ls.y,1.4);
+    line(root,ls.x,ls.y,le.x,le.y,1.4);
+    rotBox(root,le.x-off.x*CFG.plot.no,le.y-off.y*CFG.plot.no,label,deg,tw)
+  }
+},
+// Draw axes for SVG charts
+axes=(root,iw,ih,m,xl,yl)=> {
+  root.innerHTML='';
+  const bg=svg('rect',root);
+  bg.setAttribute('x',0);
+  bg.setAttribute('y',0);
+  bg.setAttribute('width',root.viewBox.baseVal.width||900);
+  bg.setAttribute('height',root.viewBox.baseVal.height||430);
+  bg.setAttribute('fill',plotBg());
+  const frame=svg('rect',root);
+  frame.setAttribute('x',m.l);
+  frame.setAttribute('y',m.t);
+  frame.setAttribute('width',iw);
+  frame.setAttribute('height',ih);
+  frame.setAttribute('fill','none');
+  frame.setAttribute('stroke',plotLine());
+  frame.setAttribute('stroke-width','1.8');
+  txt(root,m.l+iw/2,m.t+ih+42,xl,'middle',13,'700');
+  const y=svg('text',root);
+  y.setAttribute('x',18);
+  y.setAttribute('y',m.t+ih/2);
+  y.setAttribute('fill',plotLine());
+  y.setAttribute('font-size','13');
+  y.setAttribute('font-family',AESTHETICS.fontFamily);
+  y.setAttribute('font-weight','700');
+  y.setAttribute('text-anchor','middle');
+  y.setAttribute('transform',`rotate(-90 18 ${m.t+ih/2})`);
+  y.textContent=yl
+},
+addExportOutline=(svgEl)=> {
+  if(!E.exportOutline || !E.exportOutline.checked) return;
+  const vb=svgEl.viewBox.baseVal;
+  if(!vb || !vb.width || !vb.height) return;
+  const border=svg('rect',svgEl);
+  border.setAttribute('x',vb.x);
+  border.setAttribute('y',vb.y);
+  border.setAttribute('width',vb.width);
+  border.setAttribute('height',vb.height);
+  border.setAttribute('fill','none');
+  border.setAttribute('stroke','#000');
+  border.setAttribute('stroke-width','2');
+  border.setAttribute('vector-effect','non-scaling-stroke');
+},
+prepareExportSvg=(svgEl)=> {
+  const clone=svgEl.cloneNode(true);
+  const vb=svgEl.viewBox.baseVal;
+  if(vb && vb.width && vb.height) {
+    clone.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.width} ${vb.height}`);
+    clone.setAttribute('width', vb.width);
+    clone.setAttribute('height', vb.height);
+  }
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('version', '1.1');
+  clone.style.background = '#ffffff';
+
+  const style=document.createElementNS(ns,'style');
+  style.textContent=`
+    text { font-family: ${AESTHETICS.fontFamily}; }
+  `;
+  clone.insertBefore(style, clone.firstChild);
+  addExportOutline(clone);
+  return clone;
+},
+// Export SVG as PNG image
+png=(svgEl,name)=> {
+  const clone=prepareExportSvg(svgEl);
+  const ser=new XMLSerializer(),
+  blob=new Blob([ser.serializeToString(clone)], {
+    type:'image/svg+xml;charset=utf-8'
+  }
+  ),
+  url=URL.createObjectURL(blob),
+  img=new Image();
+  img.onload=()=> {
+    const vb=svgEl.viewBox.baseVal,
+    c=document.createElement('canvas');
+    c.width=Math.round((vb.width||svgEl.clientWidth)*2);
+    c.height=Math.round((vb.height||svgEl.clientHeight)*2);
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,c.width,c.height);
+    ctx.drawImage(img,0,0,c.width,c.height);
+    URL.revokeObjectURL(url);
+    const a=document.createElement('a');
+    a.href=c.toDataURL('image/png');
+    a.download=name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove()
+  };
+  img.src=url
+},
+// Export SVG directly for PowerPoint. In PowerPoint, insert the SVG and use
+// "Convert to Shape" to make the lines, polygons, and text editable.
+exportSvg=(svgEl,name)=> {
+  const clone=prepareExportSvg(svgEl);
+  const ser=new XMLSerializer();
+  let source=ser.serializeToString(clone);
+  if(!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+    source=source.replace('<svg','<svg xmlns="http://www.w3.org/2000/svg"');
+  }
+  const blob=new Blob([source], {type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+
+function getSettingsObject() {
+  return {
+    title: E.plotTitle.value.trim(),
+    diameter: E.diameter.value,
+    diameterUnit: E.diameterUnit.value,
+    inclination: E.inclination.value,
+    interval: E.interval.value,
+    intervalUnit: E.intervalUnit.value,
+    volumeLitres: E.volume.value,
+    thermiteType: E.thermiteType.value,
+    thermiteName: E.thermiteName.value.trim(),
+    alloyDensity: E.alloyDensity.value,
+    conversionFactor: E.conversionFactor.value,
+    lossFactor: E.lossFactor.value,
+    thermiteDensity: E.thermiteDensity.value,
+    thermiteOuterDiameter: E.thermiteOuterDiameter.value,
+    thermiteMass: E.thermiteMass.value,
+    thermiteLength: E.thermiteLength.value,
+    effectiveBarrierLength: E.effectiveBarrierLength.value,
+    trueVerticalThickness: E.trueVerticalThickness.value,
+    plotAspectRatio: E.plotAspectRatio.value,
+    calculationBasis: SOURCE_INPUT.active,
+    nightMode: E.nightMode.checked,
+    bismuthColor: AESTHETICS.fillColor,
+    exportOutline: E.exportOutline.checked,
+    criticalVolumeOutline: Boolean(E.criticalVolumeOutline && E.criticalVolumeOutline.checked)
+  };
+}
+function applySettingsObject(data) {
+  if(!data || typeof data !== 'object') return;
+  if('title' in data) E.plotTitle.value = data.title ?? '';
+  if('diameter' in data) E.diameter.value = data.diameter ?? '';
+  if('diameterUnit' in data && (data.diameterUnit === 'mm' || data.diameterUnit === 'in')) { E.diameterUnit.value = data.diameterUnit; E.diameterUnit.dataset.prev = data.diameterUnit; }
+  if('inclination' in data) E.inclination.value = data.inclination ?? '';
+  if('interval' in data) E.interval.value = data.interval ?? '';
+  if('intervalUnit' in data && (data.intervalUnit === 'm' || data.intervalUnit === 'ft')) E.intervalUnit.value = data.intervalUnit;
+  if('volumeLitres' in data) E.volume.value = data.volumeLitres ?? '';
+  if('thermiteType' in data && (data.thermiteType in THERMITE_PRESETS || data.thermiteType === 'Custom')) E.thermiteType.value = data.thermiteType;
+  if('thermiteName' in data) E.thermiteName.value = data.thermiteName ?? '';
+  if('alloyDensity' in data) E.alloyDensity.value = data.alloyDensity ?? '';
+  if('conversionFactor' in data) E.conversionFactor.value = data.conversionFactor ?? '';
+  if('lossFactor' in data) E.lossFactor.value = data.lossFactor ?? '';
+  if('thermiteDensity' in data) E.thermiteDensity.value = data.thermiteDensity ?? '';
+  if('thermiteOuterDiameter' in data) E.thermiteOuterDiameter.value = data.thermiteOuterDiameter ?? '';
+  if('thermiteMass' in data) E.thermiteMass.value = data.thermiteMass ?? '';
+  if('thermiteLength' in data) E.thermiteLength.value = data.thermiteLength ?? '';
+  if('effectiveBarrierLength' in data) E.effectiveBarrierLength.value = data.effectiveBarrierLength ?? '';
+  if('trueVerticalThickness' in data) E.trueVerticalThickness.value = data.trueVerticalThickness ?? '';
+  if('plotAspectRatio' in data && Number.isFinite(parseFloat(data.plotAspectRatio))) E.plotAspectRatio.value = data.plotAspectRatio;
+  if('calculationBasis' in data && ['volume','mass','length','effective','tvt'].includes(data.calculationBasis)) SOURCE_INPUT.active = data.calculationBasis;
+  if('nightMode' in data) {
+    setNightMode(Boolean(data.nightMode), false);
+  }
+  if('exportOutline' in data) E.exportOutline.checked = Boolean(data.exportOutline);
+  if('criticalVolumeOutline' in data && E.criticalVolumeOutline) E.criticalVolumeOutline.checked = Boolean(data.criticalVolumeOutline);
+  if(E.thermiteType.value in THERMITE_PRESETS) {
+    const preset = THERMITE_PRESETS[E.thermiteType.value];
+    E.thermiteName.value = preset.name;
+    E.alloyDensity.value = preset.alloyDensity;
+    E.conversionFactor.value = preset.conversionFactor;
+    E.lossFactor.value = preset.lossFactor;
+    E.thermiteDensity.value = preset.thermiteDensity;
+    E.thermiteOuterDiameter.value = preset.thermiteOuterDiameter;
+  }
+  if('bismuthColor' in data && /^#([0-9a-f]{6})$/i.test(data.bismuthColor || '')) {
+    AESTHETICS.fillColor = data.bismuthColor;
+    syncBismuthColorUi();
+  }
+  draw();
+}
+function applyThermitePreset(type) {
+  const preset = THERMITE_PRESETS[type];
+  if(!preset) return;
+  E.thermiteName.value = preset.name;
+  E.alloyDensity.value = preset.alloyDensity;
+  E.conversionFactor.value = preset.conversionFactor;
+  E.lossFactor.value = preset.lossFactor;
+  E.thermiteDensity.value = preset.thermiteDensity;
+  E.thermiteOuterDiameter.value = preset.thermiteOuterDiameter;
+}
+function clearThermitePresetFields() {
+  E.thermiteName.value='';
+  E.alloyDensity.value='';
+  E.conversionFactor.value='';
+  E.lossFactor.value='';
+  E.thermiteDensity.value='';
+  E.thermiteOuterDiameter.value='';
+}
+function chartLegend(root,x,y,w,h) {
+  const box=svg('rect',root);
+  box.setAttribute('x',x);
+  box.setAttribute('y',y);
+  box.setAttribute('width',w);
+  box.setAttribute('height',h);
+  box.setAttribute('rx','4');
+  box.setAttribute('fill',plotBg());
+  box.setAttribute('stroke',plotLine());
+  box.setAttribute('stroke-width','1');
+  return box;
+}
+function withDayModeExport(fn) {
+  const wasNight=document.body.classList.contains('night-mode');
+  if(wasNight) {
+    document.body.classList.remove('night-mode');
+    E.nightMode.checked=false;
+    draw();
+  }
+  try {
+    fn();
+  } finally {
+    if(wasNight) {
+      document.body.classList.add('night-mode');
+      E.nightMode.checked=true;
+      draw();
+    }
+  }
+}
+function closeMenus() {
+  [E.exportMenu,E.importMenu].forEach(menu=>menu&&menu.classList.remove('is-open'));
+  if(E.exportMenuButton)E.exportMenuButton.setAttribute('aria-expanded','false');
+  if(E.importMenuButton)E.importMenuButton.setAttribute('aria-expanded','false');
+}
+function toggleMenu(menu,button) {
+  const willOpen=!menu.classList.contains('is-open');
+  closeMenus();
+  menu.classList.toggle('is-open',willOpen);
+  button.setAttribute('aria-expanded',String(willOpen));
+}
+function setAlerts(html='') {
+  if(!E.warn) return;
+  E.warn.innerHTML=html;
+  if(E.alertsCard) E.alertsCard.hidden=!html;
+}
+function setFieldError(id,message='') {
+  const el=$(id);
+  if(el) el.textContent=message;
+}
+function updateSourceUi() {
+  document.querySelectorAll('[data-source]').forEach(btn=> {
+    const active=btn.dataset.source===SOURCE_INPUT.active;
+    btn.classList.toggle('is-active',active);
+    btn.setAttribute('aria-selected',String(active));
+  });
+  document.querySelectorAll('[data-source-panel]').forEach(panel=> {
+    panel.hidden=panel.dataset.sourcePanel!==SOURCE_INPUT.active;
+  });
+  document.querySelectorAll('[data-driver-effective]').forEach(field=> {
+    field.classList.toggle('is-driver-active',SOURCE_INPUT.active==='effective');
+  });
+}
+function updateSummaryCards(values) {
+  const set=(el,value)=>{ if(el) el.textContent=value; };
+  set(E.kpiEff,Number.isFinite(values.eff)?fmt(values.eff,2):'--');
+  set(E.kpiVert,Number.isFinite(values.vertEff)?fmt(values.vertEff,2):'--');
+  set(E.kpiVolume,Number.isFinite(values.bismuthVolumeL)?fmt(values.bismuthVolumeL,1):'--');
+  set(E.kpiThermiteLength,Number.isFinite(values.usedThermiteLengthM)?fmt(values.usedThermiteLengthM,1):'--');
+  set(E.kpiThermite,Number.isFinite(values.usedThermiteMassKg)?fmt(values.usedThermiteMassKg,1):'--');
+  set(E.kpi500,Number.isFinite(values.req500)?fmt(m3L(values.req500),1):'--');
+  set(E.metaDiameter,values.diameterLabel || '--');
+  set(E.metaInclination,values.inclinationLabel || '--');
+  set(E.metaVolume,Number.isFinite(values.bismuthVolumeL)?`${fmt(values.bismuthVolumeL,2)} L`:'--');
+  set(E.metaThermite,values.thermiteLabel || '--');
+}
+function setActiveSourceInput(source, options={}) {
+  if(!['volume','mass','length','effective','tvt'].includes(source)) return;
+  const clearOthers=Boolean(options.clearOthers);
+  SOURCE_INPUT.active=source;
+  if(source==='volume') {
+    if(clearOthers || E.volume.value.trim()!=='') {
+      E.thermiteMass.value='';
+      E.thermiteLength.value='';
+      E.effectiveBarrierLength.value='';
+      E.trueVerticalThickness.value='';
+    }
+  } else if(source==='mass') {
+    if(clearOthers || E.thermiteMass.value.trim()!=='') {
+      E.volume.value='';
+      E.thermiteLength.value='';
+      E.effectiveBarrierLength.value='';
+      E.trueVerticalThickness.value='';
+    }
+  } else if(source==='length') {
+    if(clearOthers || E.thermiteLength.value.trim()!=='') {
+      E.volume.value='';
+      E.thermiteMass.value='';
+      E.effectiveBarrierLength.value='';
+      E.trueVerticalThickness.value='';
+    }
+  } else if(source==='effective') {
+    if(clearOthers || E.effectiveBarrierLength.value.trim()!=='') {
+      E.volume.value='';
+      E.thermiteMass.value='';
+      E.thermiteLength.value='';
+      E.trueVerticalThickness.value='';
+    }
+  } else if(source==='tvt') {
+    if(clearOthers || E.trueVerticalThickness.value.trim()!=='') {
+      E.volume.value='';
+      E.thermiteMass.value='';
+      E.thermiteLength.value='';
+      E.effectiveBarrierLength.value='';
+    }
+  }
+  updateSourceUi();
+}
+function inferActiveSourceInput() {
+  if(['volume','mass','length','effective','tvt'].includes(SOURCE_INPUT.active)) return SOURCE_INPUT.active;
+  if(E.volume.value.trim()!=='') return 'volume';
+  if(E.thermiteMass.value.trim()!=='') return 'mass';
+  if(E.thermiteLength.value.trim()!=='') return 'length';
+  if(E.effectiveBarrierLength.value.trim()!=='') return 'effective';
+  if(E.trueVerticalThickness.value.trim()!=='') return 'tvt';
+  return 'volume';
+}
+
+// Main function to update all plots and calculations based on user input
+function draw() {
+  applyGlobalAspectRatio();
+  const plotTitle=(E.plotTitle.value || '').trim();
+  updateSourceUi();
+  ['diameterError','inclinationError','volumeError','thermiteMassError','thermiteLengthError','effectiveBarrierLengthError','trueVerticalThicknessError'].forEach(id=>setFieldError(id,''));
+  const dRaw=parseFloat(E.diameter.value),
+  iRaw=parseFloat(E.inclination.value),
+  vRaw=parseFloat(E.volume.value),
+  intIn=E.interval.value.trim(),
+  intRaw=intIn===''?NaN:parseFloat(intIn),
+  thermiteType=(E.thermiteType.value||'').trim(),
+  thermiteName=(E.thermiteName.value||'').trim(),
+  alloyDensityRaw=parseFloat(E.alloyDensity.value),
+  conversionFactorRaw=parseFloat(E.conversionFactor.value),
+  lossFactorRaw=parseFloat(E.lossFactor.value),
+  thermiteDensityRaw=parseFloat(E.thermiteDensity.value),
+  outerDiameterRaw=parseFloat(E.thermiteOuterDiameter.value),
+  thermiteMassIn=E.thermiteMass.value.trim(),
+  thermiteMassRaw=thermiteMassIn===''?NaN:parseFloat(thermiteMassIn),
+  thermiteLengthIn=E.thermiteLength.value.trim(),
+  thermiteLengthRaw=thermiteLengthIn===''?NaN:parseFloat(thermiteLengthIn),
+  effectiveLengthIn=E.effectiveBarrierLength.value.trim(),
+  effectiveLengthRaw=effectiveLengthIn===''?NaN:parseFloat(effectiveLengthIn),
+  tvtIn=E.trueVerticalThickness.value.trim(),
+  tvtRaw=tvtIn===''?NaN:parseFloat(tvtIn);
+  // Validate user input
+  const validBaseInputs=[dRaw,iRaw].every(Number.isFinite)&&dRaw>0&&iRaw>=0&&iRaw<90&&(intIn===''||(Number.isFinite(intRaw)&&intRaw>0));
+  if(!validBaseInputs) {
+    if(!(Number.isFinite(dRaw)&&dRaw>0)) setFieldError('diameterError','Enter a positive borehole diameter.');
+    if(!(Number.isFinite(iRaw)&&iRaw>=0&&iRaw<90)) setFieldError('inclinationError','Inclination must be from 0 to less than 90 degrees.');
+    setAlerts('<div class="warn">Please enter valid positive values. Inclination must be between 0 and less than 90 degrees.</div>');
+    return
+  }
+  const D=E.diameterUnit.value==='mm'?mm(dRaw):inch(dRaw),
+  theta=iRaw*Math.PI/180,
+  cosTheta=Math.max(Math.cos(theta),1e-12),
+  area=Math.PI*D*D/4,
+  minW=D*Math.tan(theta),
+  minV=.5*area*minW;
+
+  const userVolumeEntered=E.volume.value.trim()!==''&&Number.isFinite(vRaw)&&vRaw>=0,
+  userMassEntered=thermiteMassIn!==''&&Number.isFinite(thermiteMassRaw)&&thermiteMassRaw>=0,
+  userLengthEntered=thermiteLengthIn!==''&&Number.isFinite(thermiteLengthRaw)&&thermiteLengthRaw>=0,
+  userEffectiveEntered=effectiveLengthIn!==''&&Number.isFinite(effectiveLengthRaw)&&effectiveLengthRaw>=0,
+  userTvtEntered=tvtIn!==''&&Number.isFinite(tvtRaw)&&tvtRaw>=0,
+  effectiveLengthFromTvt=userTvtEntered?tvtRaw/cosTheta:NaN,
+  odM=Number.isFinite(outerDiameterRaw)&&outerDiameterRaw>0?mm(outerDiameterRaw):NaN,
+  hasThermiteInputs=[alloyDensityRaw,conversionFactorRaw,lossFactorRaw,thermiteDensityRaw,outerDiameterRaw].every(Number.isFinite),
+  validThermiteInputs=hasThermiteInputs && conversionFactorRaw>=0 && conversionFactorRaw<=1 && lossFactorRaw>=0 && lossFactorRaw<1 && alloyDensityRaw>0 && thermiteDensityRaw>0 && outerDiameterRaw>0;
+  const alloyDensityKgM3=Number.isFinite(alloyDensityRaw)&&alloyDensityRaw>0?alloyDensityRaw*1000:NaN,
+  thermiteVolumePerMeter=Number.isFinite(odM)?Math.PI*(odM*odM)/4:NaN;
+  let bismuthVolumeL=userVolumeEntered?vRaw:(userEffectiveEntered?m3L(minV+area*effectiveLengthRaw):(userTvtEntered?m3L(minV+area*effectiveLengthFromTvt):NaN)),
+  bismuthM3=Number.isFinite(bismuthVolumeL)?L(bismuthVolumeL):NaN,
+  bismuthMassKg=Number.isFinite(alloyDensityKgM3)&&Number.isFinite(bismuthM3)?bismuthM3*alloyDensityKgM3:NaN,
+  requiredThermiteMassKg=NaN,
+  requiredThermiteLengthM=NaN,
+  thermiteMassFromLengthKg=NaN,
+  usedThermiteMassKg=NaN,
+  usedThermiteLengthM=NaN;
+  if(validThermiteInputs) {
+    const thermiteDensityKgM3=thermiteDensityRaw*1000,
+    effectiveYield=conversionFactorRaw*(1-lossFactorRaw);
+    if(userLengthEntered) {
+      thermiteMassFromLengthKg=thermiteVolumePerMeter*thermiteLengthRaw*thermiteDensityKgM3;
+    }
+    if((userVolumeEntered || userEffectiveEntered || userTvtEntered) && Number.isFinite(bismuthMassKg) && effectiveYield>0) {
+      requiredThermiteMassKg=bismuthMassKg/effectiveYield;
+      if(requiredThermiteMassKg>0) {
+        requiredThermiteLengthM=requiredThermiteMassKg/(thermiteVolumePerMeter*thermiteDensityKgM3);
+      }
+    }
+    if(userMassEntered) {
+      usedThermiteMassKg=thermiteMassRaw;
+      if(Number.isFinite(thermiteVolumePerMeter) && thermiteVolumePerMeter>0) {
+        usedThermiteLengthM=thermiteMassRaw/(thermiteVolumePerMeter*thermiteDensityKgM3);
+      }
+    } else if(userLengthEntered) {
+      usedThermiteLengthM=thermiteLengthRaw;
+      usedThermiteMassKg=thermiteMassFromLengthKg;
+    } else {
+      usedThermiteMassKg=requiredThermiteMassKg;
+      usedThermiteLengthM=requiredThermiteLengthM;
+    }
+    if(!userVolumeEntered && !userEffectiveEntered && !userTvtEntered && Number.isFinite(usedThermiteMassKg) && Number.isFinite(alloyDensityKgM3) && effectiveYield>0) {
+      bismuthMassKg=usedThermiteMassKg*effectiveYield;
+      bismuthM3=bismuthMassKg/alloyDensityKgM3;
+      bismuthVolumeL=m3L(bismuthM3);
+    }
+  }
+  if(!userVolumeEntered && !userMassEntered && !userLengthEntered && !userEffectiveEntered && !userTvtEntered) {
+    if(SOURCE_INPUT.active==='volume') setFieldError('volumeError','Enter a volume or choose a thermite basis.');
+    if(SOURCE_INPUT.active==='mass') setFieldError('thermiteMassError','Enter a mass or choose another basis.');
+    if(SOURCE_INPUT.active==='length') setFieldError('thermiteLengthError','Enter a length or choose another basis.');
+    if(SOURCE_INPUT.active==='effective') setFieldError('effectiveBarrierLengthError','Enter an effective barrier length or choose another basis.');
+    if(SOURCE_INPUT.active==='tvt') setFieldError('trueVerticalThicknessError','Enter a TVT value or choose another basis.');
+    setAlerts('<div class="warn">Enter either a bismuth volume, thermite mass/length, target effective barrier length, or target TVT.</div>');
+    return
+  }
+  const constraintErrors=[];
+  if(validThermiteInputs && (userVolumeEntered || userEffectiveEntered || userTvtEntered) && (userMassEntered || userLengthEntered)) {
+    const compareMass=userMassEntered?thermiteMassRaw:thermiteMassFromLengthKg;
+    if(Number.isFinite(compareMass) && Number.isFinite(requiredThermiteMassKg)) {
+      const diff=Math.abs(compareMass-requiredThermiteMassKg),
+      tol=Math.max(1e-6,0.01*Math.max(compareMass,requiredThermiteMassKg));
+      if(diff>tol) {
+        constraintErrors.push('The entered thermite values conflict with the current bismuth volume and yield settings.');
+      }
+    }
+  }
+  if(validThermiteInputs && userMassEntered && userLengthEntered && Number.isFinite(thermiteMassFromLengthKg)) {
+    const diff=Math.abs(thermiteMassRaw-thermiteMassFromLengthKg),
+      tol=Math.max(1e-6,0.01*Math.max(thermiteMassRaw,thermiteMassFromLengthKg));
+    if(diff>tol) {
+      constraintErrors.push('Thermite length and mass entries are inconsistent with each other.');
+    }
+  }
+  // Convert and calculate all main geometric and physical values
+  const eff=Math.max(0,(L(bismuthVolumeL)-minV)/area),
+  vertEff=eff*Math.cos(theta),
+  req500=minV+area*.5,
+  filled=eff+minW,
+  intM=intIn===''?Math.max(1e-6,1.5*filled):(E.intervalUnit.value==='m'?intRaw:ft(intRaw));
+  const s=E.plot,
+  W=CFG.plot.W,
+  H=CFG.plot.H,
+  m=CFG.plot.m,
+  paneGap=8,
+  paneLeftW=278,
+  paneRightW=W-m.l-m.r-paneLeftW-paneGap,
+  titleReserve=plotTitle?34:0,
+  paneH=H-m.t-m.b-titleReserve;
+  s.innerHTML='';
+  const beta=Math.PI/2-theta,
+  a= {
+    x:Math.cos(beta),
+    y:-Math.sin(beta)
+  },
+  n= {
+    x:Math.cos(beta-Math.PI/2),
+    y:-Math.sin(beta-Math.PI/2)
+  },
+  corn=[ {
+    x:a.x*0+n.x*(D/2),
+    y:a.y*0+n.y*(D/2)
+  },
+  {
+    x:a.x*intM+n.x*(D/2),
+    y:a.y*intM+n.y*(D/2)
+  },
+  {
+    x:a.x*intM+n.x*(-D/2),
+    y:a.y*intM+n.y*(-D/2)
+  },
+  {
+    x:a.x*0+n.x*(-D/2),
+    y:a.y*0+n.y*(-D/2)
+  }
+  ],
+  minX=Math.min(...corn.map(p=>p.x)),
+  maxX=Math.max(...corn.map(p=>p.x)),
+  minY=Math.min(...corn.map(p=>p.y)),
+  maxY=Math.max(...corn.map(p=>p.y)),
+  sc=Math.min((paneRightW-24)/Math.max(maxX-minX,.001),(paneH-24)/Math.max(maxY-minY,.001)),
+  paneLeftX=m.l,
+  paneRightX=m.l+paneLeftW+paneGap,
+  paneY=m.t+titleReserve,
+  o= {
+    x:paneRightX+paneRightW/2-((minX+maxX)/2)*sc,
+    y:paneY+paneH/2-((minY+maxY)/2)*sc
+  },
+  P=(x,y)=>P0(o,a,n,sc,x,y),
+  out=[P(0,D/2),
+  P(intM,D/2),
+  P(intM,-D/2),
+  P(0,-D/2)],
+  base=[P(0,-D/2),
+  P(0,D/2)],
+  wa=P(0,D/2),
+  wb=P(0,-D/2),
+  lowN=wa.y>=wb.y?D/2:-D/2,
+  highN=wa.y>=wb.y?-D/2:D/2,
+  fill=[],
+  fillVolumeM3=Number.isFinite(bismuthVolumeL)?L(bismuthVolumeL):NaN,
+  q=Number.isFinite(fillVolumeM3)?fillVolumeM3/area:NaN;
+  // Calculate fill geometry for vertical and inclined wells
+  if(iRaw===0) {
+    const fl=Math.min(q,intM);
+    if(Number.isFinite(fl)&&fl>0)fill.push([P(0,lowN),P(0,highN),P(fl,highN),P(fl,lowN)])
+  }
+  else if(Number.isFinite(q)&&q>0&&q<=.5*minW) {
+    const k=Math.sqrt(Math.max(0,2*q/Math.max(minW,1e-12))),
+    tip=Math.min(k*minW,intM),
+    cap=lowN+k*(highN-lowN);
+    fill.push([P(0,lowN),P(0,cap),P(tip,lowN)])
+  }
+  else if(Number.isFinite(q)&&q>0) {
+    const fl=q-.5*minW,
+    top=Math.min(fl,intM),
+    toe=Math.min(fl+minW,intM);
+    fill.push(top>=intM?[P(0,lowN),P(0,highN),P(intM,highN),P(intM,lowN)]:[P(0,lowN),P(0,highN),P(top,highN),P(toe,lowN)])
+  }
+  const effPlot=Math.min(eff,intM),
+  effStart=P(0,highN),
+  effEnd=P(effPlot,highN),
+  effTopY=Math.min(effStart.y,effEnd.y),
+  effBotY=Math.max(effStart.y,effEnd.y),
+  leftRectW=Math.min(Math.max(D*sc,36),paneLeftW-120),
+  leftRectX=paneLeftX+(paneLeftW-leftRectW)/2,
+  leftRectRight=leftRectX+leftRectW;
+  const bg=svg('rect',s);
+  bg.setAttribute('x',0);
+  bg.setAttribute('y',0);
+  bg.setAttribute('width',W);
+  bg.setAttribute('height',H);
+  bg.setAttribute('fill',plotBg());
+
+  if(plotTitle) txt(s,W/2,m.t+20,plotTitle,'middle',24,'700');
+
+  if(vertEff>0) {
+    const leftFill=svg('rect',s);
+    leftFill.setAttribute('x',leftRectX.toFixed(2));
+    leftFill.setAttribute('y',effTopY.toFixed(2));
+    leftFill.setAttribute('width',leftRectW.toFixed(2));
+    leftFill.setAttribute('height',(effBotY-effTopY).toFixed(2));
+    leftFill.setAttribute('fill',bismuthFillColor());
+    leftFill.setAttribute('stroke',plotLine());
+    leftFill.setAttribute('stroke-width','1.9');
+
+    line(s,leftRectRight,effTopY,effEnd.x,effEnd.y,1.4,'10 7');
+    line(s,leftRectRight,effBotY,effStart.x,effStart.y,1.4,'10 7');
+
+    dim(
+      s,
+      { x:leftRectX, y:effBotY },
+      { x:leftRectX, y:effTopY },
+      `${fmt(vertEff,2)} m`,
+      { x:-1, y:0 },
+      { x:0, y:-1 }
+    );
+  }
+
+  fill.forEach(sh=>path(s,pstr(sh),bismuthFillColor(),'#000',1.9));
+  if(E.criticalVolumeOutline && E.criticalVolumeOutline.checked && iRaw>0) {
+    const criticalTip=Math.min(minW,intM),
+      criticalWedge=[P(0,lowN),P(0,highN),P(criticalTip,lowN)];
+    path(s,pstr(criticalWedge),'none',plotLine(),AESTHETICS.fillWeight,'8 5');
+  }
+  path(s,pstr(out),'none','#000',2.2);
+  line(s,base[0].x,base[0].y,base[1].x,base[1].y,2.2);
+
+  const thermitePlotName=thermiteName||thermiteType||'n/a',
+  thermiteMassLabel=Number.isFinite(usedThermiteMassKg)?`${fmt(usedThermiteMassKg,2)} kg`:'n/a',
+  plotInfo=`Borehole ID = ${fmt(D*1000,1)} mm | Inclination = ${fmt(iRaw,1)}\u00b0 from vertical | Bismuth volume = ${fmt(bismuthVolumeL,2)} L | Thermite mass = ${thermiteMassLabel} | Thermite = ${thermitePlotName}`;
+  txt(s,12,H-18,plotInfo,'start',13,'400');
+
+  if(eff>0)dim(s,P(0,highN),P(Math.min(eff,intM),highN),`${fmt(eff,2)} mMD`,iRaw===0? {
+    x:-1,y:0
+  }
+  : {
+    x:-n.x,y:-n.y
+  },
+  a);
+  if(iRaw>0&&filled>0)dim(s,P(0,lowN),P(Math.min(filled,intM),lowN),`${fmt(filled,2)} m`, {
+    x:n.x,y:n.y
+  },
+  a);
+
+  // Output calculated values to the table
+  E.outTotal.textContent=`${fmt(bismuthVolumeL,2)} L`;
+  E.outMin.textContent=`${fmt(m3L(minV),2)} L`;
+  E.outEff.textContent=`${fmt(eff,3)} mMD`;
+  E.outVert.textContent=`${fmt(vertEff,3)} mTVT`;
+  const dL=m3L(L(bismuthVolumeL)-req500),
+  dP=req500>0?(L(bismuthVolumeL)-req500)/req500*100:0;
+  E.out500.textContent=`${fmt(m3L(req500),2)} L (${dL>=0?'+':'-'}${fmt(Math.abs(dL),2)} L, ${dP>=0?'+':'-'}${fmt(Math.abs(dP),1)}%)`;
+  E.outBismuthMass.textContent=Number.isFinite(bismuthMassKg)?`${fmt(bismuthMassKg,2)} kg`:'n/a';
+  E.outThermiteMass.textContent=Number.isFinite(usedThermiteMassKg)?`${fmt(usedThermiteMassKg,2)} kg`:'n/a';
+  E.outThermiteLength.textContent=Number.isFinite(usedThermiteLengthM)?`${fmt(usedThermiteLengthM,3)} m`:'n/a';
+  E.outThermiteMassFromLength.textContent=Number.isFinite(requiredThermiteMassKg)?`${fmt(requiredThermiteMassKg,2)} kg`:'n/a';
+  updateSummaryCards({
+    eff,
+    vertEff,
+    bismuthVolumeL,
+    minV,
+    req500,
+    usedThermiteLengthM,
+    usedThermiteMassKg,
+    diameterLabel:`${fmt(dRaw,3)} ${E.diameterUnit.value}`,
+    inclinationLabel:`${fmt(iRaw,1)}\u00b0`,
+    thermiteLabel:Number.isFinite(usedThermiteMassKg)?`${thermiteName || thermiteType || 'Thermite'} / ${fmt(usedThermiteMassKg,2)} kg`:(thermiteName || thermiteType || '--')
+  });
+  const warns=[];
+  const errors=[];
+  if(filled>intM)warns.push(`The computed fill extends beyond the plotted interval. Filled length shown is clipped to ${fmt(intM,3)} m in the graphic.`);
+  if(L(bismuthVolumeL)<minV)warns.push('Current volume is below the minimum volume for full radial coverage, so the effective barrier length is zero.');
+  if(!validThermiteInputs && (userMassEntered||userLengthEntered||userEffectiveEntered||userTvtEntered||!userVolumeEntered)) {
+    errors.push('Thermite calculation is incomplete: check alloy density, conversion factor, loss factor, thermite density and diameter.');
+  }
+  if(constraintErrors && constraintErrors.length) {
+    constraintErrors.forEach(err=>errors.push(err));
+  }
+  if(errors.length) {
+    setAlerts(`<div class='error'>${errors.join(' ')}</div>`);
+  } else {
+    setAlerts(warns.length?`<div class='warn'>${warns.join(' ')}</div>`:'');
+  }
+  // Populate sweep table for inclination values
+  E.sweep.innerHTML=CFG.chart.tableA.map(a0=> {
+    const ar=a0*Math.PI/180,mw=D*Math.tan(ar),mv=.5*area*mw,ef0=Math.max(0,(L(bismuthVolumeL)-mv)/area),vf0=ef0*Math.cos(ar),v500=mv+area*.5;
+    return`<tr><td>${fmt(a0,0)}</td><td>${fmt(m3L(mv),2)} L</td><td>${fmt(ef0,3)} mMD</td><td>${fmt(vf0,3)} mTVT</td><td>${fmt(m3L(v500),2)} L</td></tr>`
+  }
+  ).join('');
+  const cW=CFG.chart.W,
+  cH=CFG.chart.H,
+  cm=CFG.chart.m,
+  cIW=cW-cm.l-cm.r,
+  cIH=cH-cm.t-cm.b,
+  maxA=CFG.chart.maxA,
+  showEffectiveRequirementLine=SOURCE_INPUT.active==='effective'&&userEffectiveEntered&&Math.abs(effectiveLengthRaw-0.5)>1e-6,
+  showTvtRequirementLine=SOURCE_INPUT.active==='tvt'&&userTvtEntered&&tvtRaw>0,
+  effectiveLengthMm=effectiveLengthRaw*1000,
+  inc=E.incChart;
+  // Draw inclination vs volume chart
+  axes(inc,cIW,cIH,cm,'Inclination (\u00b0)','Bismuth volume (L)');
+  const incData=Array.from( {
+    length:maxA+1
+  },
+  (_,a0)=> {
+    const ar=a0*Math.PI/180,mw=D*Math.tan(ar),mn=m3L(.5*area*mw),v5=m3L(.5*area*mw+area*.5),ve=showEffectiveRequirementLine?m3L(.5*area*mw+area*effectiveLengthRaw):NaN,vt=showTvtRequirementLine?m3L(.5*area*mw+area*(tvtRaw/Math.max(Math.cos(ar),1e-12))):NaN;
+    return {
+      a:a0,mn,v5,ve,vt
+    }
+  }
+  ),
+  rawY=Math.max(...incData.map(d=>showEffectiveRequirementLine?Math.max(d.mn,d.v5,d.ve):(showTvtRequirementLine?Math.max(d.mn,d.v5,d.vt):Math.max(d.mn,d.v5)))),
+  step=nice(rawY,6),
+  maxTick=Math.ceil(rawY/step)*step,
+  xS=a0=>cm.l+a0/maxA*cIW,
+  yS=v=>cm.t+cIH-v/Math.max(maxTick,1e-9)*cIH,
+  mk=k=>incData.map((d,i)=>`${i?'L':'M'} ${xS(d.a).toFixed(2)} ${yS(d[k]).toFixed(2)}`).join(' ');
+  for(let x=0;
+  x<=maxA;
+  x+=10) {
+    const xx=xS(x);
+    if(x>0 && x<maxA) gridLine(inc,xx,cm.t,xx,cm.t+cIH);
+    line(inc,xx,cm.t+cIH,xx,cm.t+cIH-7,1.4);
+    line(inc,xx,cm.t,xx,cm.t+7,1.4);
+    txt(inc,xx,cm.t+cIH+22,`${x}`,'middle',12,'400');
+  }
+  for(let y=0;
+  y<=maxTick+.5*step;
+  y+=step) {
+    const yy=yS(y);
+    if(y>0 && y<maxTick) gridLine(inc,cm.l,yy,cm.l+cIW,yy);
+    line(inc,cm.l,yy,cm.l+7,yy,1.4);
+    line(inc,cm.l+cIW,yy,cm.l+cIW-7,yy,1.4);
+    txt(inc,cm.l-8,yy+4,`${fmt(y,1)}`,'end',12,'400');
+  }
+  path(inc,mk('mn'),'none','#000',2,'8 5');
+  path(inc,mk('v5'),'none','#000',2);
+  if(showEffectiveRequirementLine) path(inc,mk('ve'),'none','#000',2,'2 6');
+  if(showTvtRequirementLine) path(inc,mk('vt'),'none','#000',2,'2 6');
+  const legendEntries=[
+    {dash:'8 5',label:'Minimum volume for full radial coverage'},
+    {dash:'',label:'Volume for 500 mmMD barrier'}
+  ];
+  if(showEffectiveRequirementLine) legendEntries.push({dash:'2 6',label:`Volume for ${fmt(effectiveLengthMm,0)} mmMD effective barrier length`});
+  if(showTvtRequirementLine) legendEntries.push({dash:'2 6',label:`Volume for ${fmt(tvtRaw,3)} mTVT target`});
+  const legendX=cm.l+8,
+    legendTop=cm.t+10,
+    legendRowH=20,
+    legendPad=8,
+    legendSampleW=34,
+    legendTextX=legendX+legendPad+legendSampleW+8,
+    legendW=Math.min(cIW-16,Math.max(...legendEntries.map(e=>legendSampleW+28+e.label.length*6.5))+legendPad*2),
+    legendH=legendPad*2+legendEntries.length*legendRowH;
+  chartLegend(inc,legendX,legendTop,legendW,legendH);
+  legendEntries.forEach((entry,idx)=> {
+    const y=legendTop+legendPad+idx*legendRowH+10,
+      x1=legendX+legendPad,
+      x2=x1+legendSampleW;
+    line(inc,x1,y,x2,y,2,entry.dash);
+    txt(inc,legendTextX,y+4,entry.label,'start',12,'400');
+  });
+  const hv=svg('rect',inc);
+  hv.setAttribute('x',cm.l);
+  hv.setAttribute('y',cm.t);
+  hv.setAttribute('width',cIW);
+  hv.setAttribute('height',cIH);
+  hv.setAttribute('fill','transparent');
+  hv.style.cursor='crosshair';
+  const m1=svg('circle',inc);
+  m1.setAttribute('r','4');
+  m1.setAttribute('fill',plotBg());
+  m1.setAttribute('stroke',plotLine());
+  m1.setAttribute('stroke-width','2');
+  m1.style.display='none';
+  const m2=svg('circle',inc);
+  m2.setAttribute('r','4');
+  m2.setAttribute('fill','#000');
+  m2.style.display='none';
+  const m3=svg('circle',inc);
+  m3.setAttribute('r','4');
+  m3.setAttribute('fill',plotBg());
+  m3.setAttribute('stroke',plotLine());
+  m3.setAttribute('stroke-width','2');
+  m3.style.display='none';
+  const vg=line(inc,cm.l,cm.t,cm.l,cm.t+cIH,1);
+  vg.style.display='none';
+  // Interactive tooltip for inclination chart
+  hv.onmousemove=ev=> {
+    const r=hv.getBoundingClientRect(),
+    frac=Math.max(0,Math.min(1,(ev.clientX-r.left)/r.width)),
+    i=Math.round(frac*maxA),
+    d=incData[i],
+    x=xS(d.a),
+    y1=yS(d.mn),
+    y2=yS(d.v5),
+    y3=showEffectiveRequirementLine?yS(d.ve):(showTvtRequirementLine?yS(d.vt):NaN);
+    m1.setAttribute('cx',x.toFixed(2));
+    m1.setAttribute('cy',y1.toFixed(2));
+    m1.style.display='block';
+    m2.setAttribute('cx',x.toFixed(2));
+    m2.setAttribute('cy',y2.toFixed(2));
+    m2.style.display='block';
+    if(Number.isFinite(y3)) {
+      m3.setAttribute('cx',x.toFixed(2));
+      m3.setAttribute('cy',y3.toFixed(2));
+      m3.style.display='block';
+    } else {
+      m3.style.display='none';
+    }
+    vg.setAttribute('x1',x.toFixed(2));
+    vg.setAttribute('x2',x.toFixed(2));
+    vg.style.display='block';
+    E.tip.innerHTML=`Inclination: ${fmt(d.a,0)}\u00b0<br>Minimum volume for full radial coverage: ${fmt(d.mn,2)} L<br>Volume for 500 mmMD barrier: ${fmt(d.v5,2)} L${showEffectiveRequirementLine?`<br>Volume for ${fmt(effectiveLengthMm,0)} mmMD effective barrier length: ${fmt(d.ve,2)} L`:''}${showTvtRequirementLine?`<br>Volume for ${fmt(tvtRaw,3)} mTVT target: ${fmt(d.vt,2)} L`:''}`;
+    E.tip.style.display='block';
+    E.tip.style.left=`${ev.clientX+14}px`;
+    E.tip.style.top=`${ev.clientY+14}px`
+  };
+  hv.onmouseleave=()=> {
+    m1.style.display='none';
+    m2.style.display='none';
+    m3.style.display='none';
+    vg.style.display='none';
+    E.tip.style.display='none'
+  };
+}
+// --- Event listeners for all input fields ---
+['plotTitle',
+'diameter',
+'inclination',
+'interval',
+'thermiteType',
+'thermiteName',
+'alloyDensity',
+'conversionFactor',
+'lossFactor',
+'thermiteDensity',
+'thermiteOuterDiameter',
+'intervalUnit'].forEach(id=>$(id).addEventListener('input',draw));
+E.volume.addEventListener('input',()=> {
+  setActiveSourceInput('volume');
+  draw();
+});
+E.thermiteMass.addEventListener('input',()=> {
+  setActiveSourceInput('mass');
+  draw();
+});
+E.thermiteLength.addEventListener('input',()=> {
+  setActiveSourceInput('length');
+  draw();
+});
+E.effectiveBarrierLength.addEventListener('input',()=> {
+  setActiveSourceInput('effective');
+  draw();
+});
+E.trueVerticalThickness.addEventListener('input',()=> {
+  setActiveSourceInput('tvt');
+  draw();
+});
+E.plotAspectRatio.addEventListener('input',draw);
+if(E.resetAspectRatio) {
+  E.resetAspectRatio.addEventListener('click',()=> {
+    E.plotAspectRatio.value=DEF.plotAspectRatio;
+    draw();
+  });
+}
+E.thermiteType.addEventListener('change',()=> {
+  if(E.thermiteType.value in THERMITE_PRESETS) applyThermitePreset(E.thermiteType.value);
+  else if(E.thermiteType.value==='Custom') clearThermitePresetFields();
+  draw();
+});
+E.diameter.addEventListener('input',()=> {
+  draw()
+}
+);
+E.diameterUnit.addEventListener('change',()=> {
+  const previousUnit=E.diameterUnit.dataset.prev || DEF.diameterUnit;
+  const nextUnit=E.diameterUnit.value;
+  const diameterValue=parseFloat(E.diameter.value);
+  const convertedDiameter=convertDiameterValue(diameterValue,previousUnit,nextUnit);
+  if(Number.isFinite(convertedDiameter)) E.diameter.value=formatConvertedInput(convertedDiameter);
+  E.diameterUnit.dataset.prev=nextUnit;
+  draw()
+}
+);
+if(E.criticalVolumeOutline) {
+  E.criticalVolumeOutline.addEventListener('change',draw);
+}
+document.querySelectorAll('[data-source]').forEach(btn=> {
+  btn.addEventListener('click',()=> {
+    setActiveSourceInput(btn.dataset.source,{clearOthers:true});
+    draw();
+  });
+});
+document.querySelectorAll('details.accordion').forEach(details=> {
+  details.setAttribute('aria-expanded',String(details.open));
+  details.addEventListener('toggle',()=>details.setAttribute('aria-expanded',String(details.open)));
+});
+E.toggleCalculated.addEventListener('click',()=> {
+  const collapsed=!E.calculatedCard.classList.contains('is-collapsed');
+  E.calculatedCard.classList.toggle('is-collapsed',collapsed);
+  E.toggleCalculated.textContent=collapsed?'Expand':'Collapse';
+  E.toggleCalculated.setAttribute('aria-expanded',String(!collapsed));
+});
+E.exportMenuButton.addEventListener('click',ev=> {
+  ev.stopPropagation();
+  toggleMenu(E.exportMenu,E.exportMenuButton);
+});
+E.importMenuButton.addEventListener('click',ev=> {
+  ev.stopPropagation();
+  toggleMenu(E.importMenu,E.importMenuButton);
+});
+if(E.resetAll) {
+  E.resetAll.addEventListener('click',()=> {
+    const ok=window.confirm('This will reset the entire sheet to default values by refreshing the page. Any unsaved changes will be lost. Continue?');
+    if(ok) window.location.reload();
+  });
+}
+document.addEventListener('click',ev=> {
+  if(!E.exportMenu.contains(ev.target)&&!E.importMenu.contains(ev.target)) closeMenus();
+});
+document.addEventListener('keydown',ev=> {
+  if(ev.key==='Escape') closeMenus();
+});
+// --- Export buttons for PNG download ---
+E.exportSettings.onclick=()=>{
+  const blob=new Blob([JSON.stringify(getSettingsObject(),null,2)], {type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`${getFileBase()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  closeMenus();
+};
+E.importSettings.onclick=()=> {
+  E.importSettingsFile.click();
+  closeMenus();
+};
+E.importSettingsFile.onchange=(ev)=>{
+  const file=ev.target.files && ev.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try {
+      const data=JSON.parse(reader.result);
+      applySettingsObject(data);
+    } catch(err) {
+      alert('Could not import settings JSON. Please select a valid exported settings file.');
+    } finally {
+      E.importSettingsFile.value='';
+    }
+  };
+  reader.readAsText(file);
+};
+E.exportWellSvg.onclick=()=> {
+  withDayModeExport(()=>exportSvg(E.plot,`${getFileBase()}_well_plot_editable.svg`));
+  closeMenus();
+};
+E.exportWell.onclick=()=> {
+  withDayModeExport(()=>png(E.plot,`${getFileBase()}_well_plot.png`));
+  closeMenus();
+};
+E.exportIncSvg.onclick=()=> {
+  withDayModeExport(()=>exportSvg(E.incChart,`${getFileBase()}_inclination_chart_editable.svg`));
+  closeMenus();
+};
+E.exportInc.onclick=()=> {
+  withDayModeExport(()=>png(E.incChart,`${getFileBase()}_inclination_chart.png`));
+  closeMenus();
+};
+if(E.quickExportWell) E.quickExportWell.onclick=()=>withDayModeExport(()=>png(E.plot,`${getFileBase()}_well_plot.png`));
+if(E.quickExportInc) E.quickExportInc.onclick=()=>withDayModeExport(()=>png(E.incChart,`${getFileBase()}_inclination_chart.png`));
+
+// Ensure legend bismuth color matches AESTHETICS.fillColor and allow live color picking
+function updateBismuthColorUI(newColor) {
+  // Update AESTHETICS.fillColor
+  if(document.body.classList.contains('night-mode')) {
+    AESTHETICS.nightFillColor = newColor;
+  } else {
+    AESTHETICS.fillColor = newColor;
+  }
+  syncBismuthColorUi();
+  // Redraw plot
+  draw();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var colorInput = document.getElementById('bismuthColor');
+  if (colorInput) {
+    syncBismuthColorUi();
+    colorInput.addEventListener('input', function(e) {
+      updateBismuthColorUI(e.target.value);
+    });
+  }
+  var nightModeInput = document.getElementById('nightMode');
+  if (nightModeInput) {
+    nightModeInput.checked = document.body.classList.contains('night-mode');
+    nightModeInput.addEventListener('change', function(e) {
+      setNightMode(e.target.checked);
+    });
+  }
+});
+
+// Initial draw on page load
+draw()
+</script>
+ </body>
+</html>
