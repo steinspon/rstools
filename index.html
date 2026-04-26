@@ -4,150 +4,305 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interwell R&D Tools</title>
-
   <style>
     :root {
-      --primary: #000000;
-      --secondary: #7c43bd;
-      --bg: #f5f5f7;
-      --border: #d1d1d1;
-      --text: #333;
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #d8dee6;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #1f5fae;
+      --primary-strong: #174b8b;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+      --space-sm: 8px;
+      --space-md: 14px;
+      --space-lg: 20px;
+      --space-xl: 28px;
+      --field-border: #cbd5e1;
     }
 
+    body.night-mode {
+      --bg: #0e1117;
+      --surface: #161b22;
+      --surface-alt: #111821;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #9aa4af;
+      --primary: #58a6ff;
+      --primary-strong: #79b8ff;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.38);
+      --field-border: #30363d;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
-      padding: 0;
       background: var(--bg);
       color: var(--text);
+      -webkit-text-size-adjust: 100%;
+    }
+    :focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
     }
 
-    /* HEADER */
-    header {
-      background: white;
-      border-bottom: 1px solid var(--border);
-      padding: 10px 20px;
+    .wrap.app-shell {
+      min-height: 100vh;
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    .app-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      flex-shrink: 0;
+    }
+    .app-header-top {
       display: flex;
       align-items: center;
-      gap: 15px;
-      height: 60px;
-      box-sizing: border-box;
+      justify-content: space-between;
+      gap: 16px;
     }
-
-    header img {
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .app-logo {
       height: 40px;
+      width: auto;
+      flex-shrink: 0;
     }
-
-    header h1 {
+    .app-title-wrap { min-width: 0; }
+    .app-header h1 {
       margin: 0;
-      font-size: 1.2rem;
+      font-size: 1.18rem;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
     }
-
-    header .meta {
-      font-size: 0.8rem;
-      color: #666;
-      margin-left: auto;
-      text-align: right;
+    .app-header p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
     }
-
-    /* MAIN CONTENT */
-    .container {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
-
-    .card {
-      background: white;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 25px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-
-    .card h2 {
-      margin-top: 0;
-      font-size: 1.1rem;
-      color: var(--primary);
-    }
-
-    /* TOOL LINKS */
-    .tool-link {
-      display: block;
-      padding: 15px;
-      margin-top: 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
+    .app-header p a {
+      color: inherit;
       text-decoration: none;
-      color: #000;
-      transition: all 0.2s;
-    }
-
-    .tool-link .title {
       font-weight: 600;
-      color: #000;
+    }
+    .app-header p a:hover {
+      color: var(--primary);
+      text-decoration: underline;
+    }
+    .app-meta {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.45;
+      white-space: nowrap;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .theme-switch input[type="checkbox"] {
+      width: 16px;
+      min-height: 16px;
+      accent-color: var(--primary);
+      padding: 0;
+      margin: 0;
     }
 
-    .tool-link .description {
-      font-size: 0.9rem;
-      color: #000;
-      margin-top: 5px;
+    .suite-main {
+      flex: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
     }
-
-    /* HOVER */
+    .suite-panel {
+      width: min(100%, 980px);
+      display: grid;
+      gap: var(--space-md);
+    }
+    .suite-intro {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      padding: 0 2px;
+    }
+    .suite-intro h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      line-height: 1.2;
+    }
+    .suite-intro p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+    .tool-link {
+      display: grid;
+      gap: 8px;
+      min-height: 150px;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+    }
     .tool-link:hover {
-      background: var(--secondary);
-      border-color: var(--secondary);
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+      box-shadow: var(--shadow);
+    }
+    .tool-kicker {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .tool-link .title {
+      font-weight: 800;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+    .tool-link .description {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
     }
 
-    .tool-link:hover .title,
-    .tool-link:hover .description {
-      color: #fff;
+    @media (max-width: 980px) {
+      .wrap.app-shell { padding: var(--space-md); }
+      .app-header-top {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .app-meta {
+        text-align: left;
+        white-space: normal;
+      }
+      .app-logo { height: 34px; }
+      .header-actions { justify-content: flex-start; }
+      .suite-intro {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .tool-grid { grid-template-columns: 1fr; }
     }
-
   </style>
 </head>
-
 <body>
-
-  <header>
-    <img src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo">
-
-    <div>
-      <h1>Interwell P&A-R&D Tools</h1>
-      <div style="font-size: 0.8rem; color: #888;">Calculators and visualisation tools for RockSolid products.</div>
-    </div>
-
-    <div class="meta">
-      <div>By Darren J. Wilkinson</div>
-      <div>Updated: 20.03.2026</div>
-    </div>
-  </header>
-
-  <div class="container">
-
-    <div class="card">
-      <h2>Available Tools</h2>
-
-      <a class="tool-link" href="https://steinspon.github.io/WAP/" target="_blank">
-        <div class="title">Well Architecture Plotter</div>
-        <div class="description">
-          Build and visualize radial cross sections of wellbores.
+  <div class="wrap app-shell">
+    <header class="app-header">
+      <div class="app-header-top">
+        <div class="app-brand">
+          <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo">
+          <div class="app-title-wrap">
+            <h1>Interwell P&A-R&D Tools</h1>
+            <p><a href="index.html">HOME</a> | <a href="wap.html">WAP</a> | <a href="bslc.html">BSLC</a> | <a href="iat.html">IAT</a></p>
+          </div>
         </div>
-      </a>
-
-      <a class="tool-link" href="https://steinspon.github.io/BSLC/" target="_blank">
-        <div class="title">Barrier Sealing Length Calculator</div>
-        <div class="description">
-          Calculate and visualise barrier lengths as a function of inclination, borehole size.
+        <div class="app-meta">
+          <div>By Darren Wilkinson</div>
+          <div>Updated: 26.04.2026</div>
         </div>
-      </a>
+      </div>
+      <div class="header-actions">
+        <label class="theme-switch" for="nightMode">
+          <input id="nightMode" type="checkbox">
+          <span>Night Mode</span>
+        </label>
+      </div>
+    </header>
 
-    </div>
+    <main class="suite-main">
+      <section class="suite-panel" aria-labelledby="suiteTitle">
+        <div class="suite-intro">
+          <div>
+            <h2 id="suiteTitle">Available Tools</h2>
+            <p>Engineering calculators and visualisation utilities for RockSolid workflows.</p>
+          </div>
+        </div>
 
+        <div class="tool-grid">
+          <a class="tool-link" href="wap.html">
+            <span class="tool-kicker">WAP</span>
+            <span class="title">Well Architecture Plotter</span>
+            <span class="description">Build and visualize radial and longitudinal wellbore cross sections.</span>
+          </a>
+
+          <a class="tool-link" href="bslc.html">
+            <span class="tool-kicker">BSLC</span>
+            <span class="title">Barrier Sealing Length Calculator</span>
+            <span class="description">Calculate and visualise barrier lengths as a function of inclination and borehole size.</span>
+          </a>
+
+          <a class="tool-link" href="iat.html">
+            <span class="tool-kicker">IAT</span>
+            <span class="title">Image Annotating Tool</span>
+            <span class="description">Calibrate image scale and add publication-style callouts, shapes, and scale bars.</span>
+          </a>
+        </div>
+      </section>
+    </main>
   </div>
 
+  <script>
+    (function() {
+      const nightMode = document.getElementById('nightMode');
+      if (!nightMode) return;
+      const h = new Date().getHours();
+      const isNight = h >= 19 || h < 6;
+      nightMode.checked = isNight;
+      document.body.classList.toggle('night-mode', isNight);
+      nightMode.addEventListener('change', function(e) {
+        document.body.classList.toggle('night-mode', e.target.checked);
+      });
+    })();
+  </script>
 </body>
 </html>
