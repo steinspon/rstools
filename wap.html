@@ -1,0 +1,3099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interwell Well Architecture Plotter v6.6 (High Res)</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #d8dee6;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #1f5fae;
+      --primary-strong: #174b8b;
+      --success: #0f8a4b;
+      --danger: #c53030;
+      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+      --space-sm: 8px;
+      --space-md: 14px;
+      --space-lg: 20px;
+      --space-xl: 28px;
+      --panel: var(--surface);
+      --field-bg: #ffffff;
+      --field-text: var(--text);
+      --field-border: #cbd5e1;
+      --shell-bg: #f8fafc;
+      --plot-bg: #ffffff;
+      --plot-line: #111827;
+      --table-head: #f1f5f9;
+      --table-border: #e2e8f0;
+    }
+    body.night-mode {
+      --bg: #0e1117;
+      --surface: #161b22;
+      --surface-alt: #111821;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #9aa4af;
+      --primary: #58a6ff;
+      --primary-strong: #79b8ff;
+      --success: #3fb950;
+      --danger: #f85149;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.38);
+      --panel: var(--surface);
+      --field-bg: #0f141b;
+      --field-text: var(--text);
+      --field-border: #30363d;
+      --shell-bg: #0f141b;
+      --plot-bg: #111821;
+      --plot-line: #e6edf3;
+      --table-head: #1f2937;
+      --table-border: #30363d;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-text-size-adjust: 100%;
+    }
+
+    .wrap.app-shell {
+      height: 100vh;
+      padding: var(--space-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    /* HEADER */
+    .app-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      flex-shrink: 0;
+    }
+    .app-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+    .app-logo {
+      height: 40px;
+      width: auto;
+      flex-shrink: 0;
+    }
+    .app-title-wrap {
+      min-width: 0;
+    }
+    .app-header h1 {
+      margin: 0;
+      font-size: 1.18rem;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+    }
+    .app-header p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .app-meta {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.45;
+      white-space: nowrap;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+    .menu-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin: 0;
+    }
+    .menu-group {
+      position: relative;
+      border: 0;
+      background: transparent;
+      padding: 0;
+    }
+    .menu-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      display: none;
+      min-width: 230px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 20px 42px rgba(0,0,0,.18);
+      z-index: 40;
+    }
+    .menu-group.is-open .menu-popover {
+      display: grid;
+      gap: 4px;
+    }
+    .menu-popover .menu-item {
+      width: 100%;
+      text-align: left;
+      justify-content: flex-start;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+    .menu-popover .menu-item:hover {
+      background: var(--surface-alt);
+      transform: none;
+    }
+    body.night-mode .app-header {
+      background: var(--surface);
+    }
+
+    /* LAYOUT */
+    .app-layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      gap: var(--space-lg);
+    }
+
+    /* LEFT PANEL - SCROLLABLE INPUTS */
+    .controls-panel {
+      width: 700px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow-y: auto;
+      padding: var(--space-lg);
+      flex-shrink: 0;
+      box-shadow: var(--shadow);
+      box-sizing: border-box;
+    }
+
+    /* RIGHT PANEL - STICKY VISUALIZATION */
+    .viz-panel {
+      flex: 1;
+      background: var(--panel);
+      padding: var(--space-lg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    /* SECTIONS */
+    .section-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-weight: 760;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+      letter-spacing: 0.03em;
+    }
+
+    /* FORM ELEMENTS */
+    .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+    select, input[type="text"], input[type="number"] {
+      min-height: 40px;
+      padding: 9px 11px;
+      border: 1px solid var(--field-border);
+      border-radius: 10px;
+      font-size: 14px;
+      background: var(--field-bg);
+      color: var(--field-text);
+      outline: none;
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+    input[type="number"] { text-align: right; font-variant-numeric: tabular-nums; }
+    select:focus, input[type="text"]:focus, input[type="number"]:focus, button:focus-visible {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 24%, transparent);
+      outline: none;
+    }
+    button {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      min-height: 38px;
+      padding: 8px 13px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 760;
+      color: var(--text);
+      transition: transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    button.primary:hover { background: var(--primary-strong); border-color: var(--primary-strong); }
+    button.success { background: color-mix(in srgb, var(--success) 10%, #fff); color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, var(--border)); }
+    button.success:hover { background: color-mix(in srgb, var(--success) 16%, #fff); }
+    button.danger { background: color-mix(in srgb, var(--danger) 12%, #fff); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
+    button.icon-btn { padding: 4px 8px; font-size: 12px; }
+    
+    label { font-size: 14px; }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 16px;
+      min-height: 16px;
+      accent-color: var(--primary);
+      padding: 0;
+      margin: 0;
+    }
+    .theme-switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .theme-switch input[type="checkbox"] {
+      width: 16px;
+      min-height: 16px;
+      accent-color: var(--primary);
+      padding: 0;
+      margin: 0;
+    }
+
+    /* DATA GRID STYLING FOR LAYERS */
+    #layer-list { display: flex; flex-direction: column; gap: 8px; }
+    
+    .layer-row {
+      background: var(--surface);
+      border: 1px solid var(--field-border);
+      border-radius: 10px;
+      padding: 8px;
+      transition: box-shadow 0.2s;
+    }
+    .layer-row:hover { box-shadow: 0 6px 16px rgba(15,23,42,0.08); }
+    
+    .layer-primary {
+      display: grid;
+      grid-template-columns: 80px 60px 1fr 100px 30px 30px; 
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .layer-advanced {
+      display: none; 
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #eee;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      background: var(--surface-alt);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    .layer-advanced.show { display: grid; }
+    
+    .layer-advanced label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 2px; }
+    .layer-advanced input { width: 100%; box-sizing: border-box; }
+
+    /* CANVAS TOOLBAR */
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-alt);
+    }
+
+    canvas {
+      box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+      border-radius: 8px;
+      /* Max width ensures it fits the screen even if high res internally */
+      max-width: 100%;
+      border: 1px solid var(--plot-line);
+      background: var(--plot-bg);
+    }
+
+    /* RESULT TABLE */
+    table {
+      width: 700px;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 0;
+      font-size: 0.84rem;
+      background: var(--surface);
+      border: 1px solid var(--table-border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    th, td {
+      border-top: 1px solid var(--table-border);
+      padding: 8px;
+      text-align: center;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+    }
+    tr:first-child th,
+    tr:first-child td { border-top: 0; }
+    th { background: var(--table-head); font-weight: 760; }
+    .color-cell { font-weight: bold; width: 160px; }
+    .od-column { width: 80px; }
+
+    /* Tooltip */
+    #tooltip {
+      position: fixed; 
+      pointer-events: none;
+      background: var(--surface);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 0.85em;
+      display: none;
+      z-index: 9999;
+      box-shadow: var(--shadow);
+    }
+
+
+    #canvasWrap {
+      position: relative;
+      display: inline-block;
+      width: min(100%, 700px);
+      overflow: visible;
+    }
+
+    #circleCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .layer-header-row {
+      display: grid;
+      grid-template-columns: 80px 60px 1fr 100px 30px 30px;
+      gap: 8px;
+      padding: 0 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .wrap.app-shell {
+        height: auto;
+        min-height: 100vh;
+        padding: var(--space-md);
+      }
+
+      .app-header-top {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .app-meta {
+        text-align: left;
+        white-space: normal;
+      }
+
+      .app-logo {
+        height: 34px;
+      }
+
+      .app-header {
+        padding: 12px;
+      }
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .menu-bar {
+        width: 100%;
+      }
+      .menu-group {
+        flex: 1;
+      }
+      .menu-group > button {
+        width: 100%;
+      }
+
+      .app-layout {
+        flex-direction: column;
+        overflow: visible;
+      }
+
+      .controls-panel,
+      .viz-panel {
+        width: 100%;
+        max-width: 100%;
+        padding: 12px;
+        overflow: visible;
+        box-sizing: border-box;
+      }
+
+      .controls-panel {
+        border: 1px solid var(--border);
+        box-shadow: none;
+      }
+
+      .viz-panel {
+        align-items: flex-start;
+      }
+
+      .toolbar {
+        justify-content: stretch;
+        gap: 8px;
+      }
+
+      .toolbar > * {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 0;
+      }
+
+      .toolbar label {
+        flex: 1 1 100%;
+        margin-top: 4px;
+      }
+
+      .toolbar select,
+      .toolbar input,
+      .toolbar button {
+        width: 100%;
+        min-height: 40px;
+        box-sizing: border-box;
+      }
+
+      .layer-primary {
+        grid-template-columns: minmax(72px, 86px) minmax(58px, 64px) minmax(0, 1fr) minmax(88px, 96px) 34px 34px;
+      }
+
+      .layer-header-row {
+        display: none;
+      }
+
+      .flex-row {
+        gap: 8px;
+      }
+
+      .flex-row > input[type="text"],
+      .flex-row > input[type="number"],
+      .flex-row > select,
+      .flex-row > button {
+        min-height: 40px;
+        box-sizing: border-box;
+      }
+
+      table {
+        width: max-content;
+        min-width: 700px;
+        margin-top: 16px;
+        font-size: 0.82em;
+      }
+
+      th, td {
+        padding: 6px;
+        white-space: nowrap;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .toolbar > * {
+        flex-basis: 100%;
+      }
+
+      .section-card {
+        padding: 12px;
+      }
+
+      .layer-primary {
+        grid-template-columns: 1fr 72px 1fr 88px 34px 34px;
+        gap: 6px;
+      }
+
+      .layer-advanced {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wrap app-shell">
+  <header class="app-header">
+    <div class="app-header-top">
+      <div class="app-brand">
+        <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo">
+        <div class="app-title-wrap">
+          <h1>Well Architecture Plotter</h1>
+          <p>RockSolid R&D Tool</p>
+        </div>
+      </div>
+      <div class="app-meta">
+        <div>By Darren Wilkinson</div>
+        <div>Updated: 26.04.2026</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="menu-bar">
+        <div class="menu-group" id="importMenu">
+          <button type="button" id="importMenuButton" aria-expanded="false" aria-controls="importMenuPanel">Import</button>
+          <div class="menu-popover" id="importMenuPanel">
+            <button type="button" class="menu-item" id="importSettings">Configuration JSON</button>
+          </div>
+        </div>
+        <div class="menu-group" id="exportMenu">
+          <button type="button" class="primary" id="exportMenuButton" aria-expanded="false" aria-controls="exportMenuPanel">Export</button>
+          <div class="menu-popover" id="exportMenuPanel">
+            <button type="button" class="menu-item" id="exportSettings">Configuration JSON</button>
+            <button type="button" class="menu-item" id="exportPlotPngMenu">Plot PNG</button>
+            <button type="button" class="menu-item" id="exportPlotSvgMenu">Plot SVG</button>
+            <button type="button" class="menu-item" id="exportTablePngMenu">Table PNG</button>
+            <button type="button" class="menu-item" id="exportTableSvgMenu">Table SVG</button>
+            <button type="button" class="menu-item" id="exportComboPngMenu">Combo PNG</button>
+            <button type="button" class="menu-item" id="exportComboSvgMenu">Combo SVG</button>
+          </div>
+        </div>
+      </div>
+      <label class="theme-switch" for="nightMode">
+        <input type="checkbox" id="nightMode">
+        <span>Night Mode</span>
+      </label>
+      <input type="file" id="fallbackFileInput" accept=".json,application/json" hidden>
+    </div>
+  </header>
+
+  <div class="app-layout">
+    
+    <div class="controls-panel">
+      
+      <div class="section-card">
+        <div class="section-title">Quick Add</div>
+        <div class="flex-row">
+          <select id="pipeSelect" style="flex:1"></select>
+          <button type="button" class="primary" onclick="addStandardPipe()">+ Add Pipe</button>
+        </div>
+        <div class="flex-row" style="margin-top:8px; font-size:0.85rem;">
+          <label>Pipe Material:</label>
+          <select id="pipeMaterialSelect" style="width:100px"></select>
+          <input type="color" id="pipeMaterialOther" style="display:none; width:40px;" />
+          
+          <label style="margin-left:10px">Fill:</label>
+          <select id="pipeFillSelect" style="width:100px"></select>
+          <input type="color" id="pipeFillOther" style="display:none; width:40px;" />
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">General Settings</div>
+
+        <div class="flex-row" style="margin-bottom:10px;">
+           <label style="width:100px; font-weight:bold;">Plot Title:</label>
+           <input type="text" id="configNameInput" placeholder="My Well Configuration" value="New Configuration" style="flex:1; font-weight:bold;">
+        </div>
+        
+        <div class="flex-row">
+           <label style="width:100px;">Background:</label>
+           <select id="bgColorSelect" style="flex:1"></select>
+           <input type="color" id="bgColorOther" style="display:none;" />
+        </div>
+
+        <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+           <label style="width:100px;">Lock View:</label>
+           <input type="checkbox" id="lockViewCheckbox">
+           <div style="display:flex; flex-direction:column; gap:2px;">
+             <label for="lockViewSizeRadial" style="font-size:0.72rem; color:var(--muted);">Radial View</label>
+             <input type="number" id="lockViewSizeRadial" placeholder="Radial (mm)" style="width:120px;" value="300">
+           </div>
+           <div style="display:flex; flex-direction:column; gap:2px;">
+             <label for="lockViewSizeLongitudinal" style="font-size:0.72rem; color:var(--muted);">Longitudinal View</label>
+             <input type="number" id="lockViewSizeLongitudinal" placeholder="Longitudinal (mm)" style="width:150px;" value="300">
+           </div>
+           <span style="font-size:0.8em; color:var(--muted);">mm</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
+           Check to fix scale. Use separate lock sizes for radial and longitudinal views.
+        </div>
+
+        <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+           <label style="width:100px;">Ruler:</label>
+           <label class="checkbox-row" for="showRulerCheckbox" style="margin-right:6px;">
+             <input type="checkbox" id="showRulerCheckbox" checked>
+             <span>Show</span>
+           </label>
+           <select id="rulerUnitsSelect" style="width:170px;">
+             <option value="metric" selected>Metric (cm/mm)</option>
+             <option value="imperial">Imperial (in)</option>
+           </select>
+        </div>
+        <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
+           Applies to radial view ruler. Major ticks are labeled; minor ticks are unlabeled.
+        </div>
+
+        <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+           <label style="width:100px;">Reference:</label>
+           <label class="checkbox-row" for="showReferenceCrosshairCheckbox">
+             <input type="checkbox" id="showReferenceCrosshairCheckbox" checked>
+             <span>Show radial center crosshair</span>
+           </label>
+        </div>
+
+        <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+           <label style="width:100px;">Export:</label>
+           <label class="checkbox-row" for="exportOutlineCheckbox">
+             <input type="checkbox" id="exportOutlineCheckbox" checked>
+             <span>Black outline on exported plots</span>
+           </label>
+        </div>
+
+      </div>
+
+      <div class="flex-row" style="justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
+        <div class="section-title" style="margin-bottom:0; border:none;">Wellbore Layers</div>
+        <button type="button" onclick="addCircleInput()">+ Empty Layer</button>
+      </div>
+      
+      <div class="layer-header-row">
+        <div>Diameter</div>
+        <div>Unit</div>
+        <div>Material Label</div>
+        <div>Fill Color</div>
+        <div>Adv</div>
+        <div>Del</div>
+      </div>
+
+      <div id="layer-list">
+        </div>
+      
+      <div style="margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.8em;">
+        <i>Drag to pan, pinch/scroll to zoom, double-tap or double-click to reset</i>
+      </div>
+
+    </div>
+
+    <div class="viz-panel">
+      
+      <div class="toolbar">
+        <button type="button" id="resetViewBtn">Reset View</button>
+        
+        <label style="font-size:13px; align-self:center;">View:</label>
+        <select id="viewModeSelect">
+          <option value="radial" selected>Radial (Cross Section)</option>
+          <option value="longitudinal">Longitudinal (Side View)</option>
+        </select>
+        <label id="sectionLengthLabel" style="font-size:13px; align-self:center; display:none;">Section length (mm):</label>
+        <input id="sectionLengthInput" type="number" value="500" min="50" step="10" style="width:90px; display:none;">
+
+        <label id="inclinationLabel" style="font-size:13px; align-self:center; display:none;">Inclination from vertical (deg):</label>
+        <input id="inclinationInput" type="number" value="0" min="0" max="90" step="1" style="width:70px; display:none;">
+      </div>
+
+      <div id="canvasWrap">
+        <canvas id="circleCanvas" width="700" height="700"></canvas>
+        <div id="tooltip"></div>
+      </div>
+
+      <div class="table-scroll">
+      <table id="areaTable">
+        <thead>
+          <tr>
+            <th class="color-cell">Material</th>
+            <th class="od-column">OD (mm)</th>
+            <th class="od-column">OD (in)</th>
+            <th>Delta R (mm)</th>
+            <th>Area (cm<sup>2</sup>)</th>
+            <th>L/m</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      </div>
+
+    </div>
+  </div>
+  </div>
+
+<script>
+/***************************************************************
+ * CONFIGURATION & DATA
+ ***************************************************************/
+const config = {
+  defaultLineColor: '#000000',
+  defaultLineThickness: 0.25,
+  fillColorOptions: [
+    { name: 'Caprock',   value: '#E4EBD7', textColor: '#000000' },
+    { name: 'Cement',    value: '#E3DFEB', textColor: '#000000' },
+    { name: 'Steel',     value: '#210D2A', textColor: '#FFFFFF' },
+    { name: 'Thermite',  value: '#CBE811', textColor: '#000000' },
+    { name: 'Tool Body', value: '#C7B2EA', textColor: '#000000' },
+    { name: 'Water',     value: '#C6EFFE', textColor: '#000000' },
+    { name: 'Aluminium', value: '#00B0F0', textColor: '#FFFFFF' },
+    { name: 'N/A',       value: '#FFFFFF', textColor: '#000000' }
+  ],
+  pipeList: [
+        { desc: "--- RS Thermite ---",  od_mm:1, id_mm:0 },
+        { desc: "Ø63 / 12.5",  od_mm:63, id_mm:12.5 },
+        { desc: "Ø111.3 / 20",  od_mm:111.3, id_mm:20 },
+        { desc: "Ø111.3 / 36.5",  od_mm:111.3, id_mm:36.5 },
+        { desc: "--- RS Tools ---",  od_mm:1, id_mm:0 },
+        { desc: "Ø70 x 1.5",  od_mm:70, id_mm:67 },
+        { desc: "Ø70 x 3.0",  od_mm:70, id_mm:64 },
+	{ desc: "Ø80 x 5.0",  od_mm:80, id_mm:70 },
+        { desc: "RS700",  od_mm:127, id_mm:115 },
+        { desc: "RS110",  od_mm:110, id_mm:100 },
+	{ desc: "--- WSPR Setup Components ---",  od_mm:1, id_mm:0 },
+	{ desc: "Pipe Ø254 mm x 2mm",  od_mm:254, id_mm:250 },
+	{ desc: "Pipe Ø160 x Ø141 mm Polyeth",  od_mm:160, id_mm:141 },
+        { desc: "--- Casings ---",  od_mm:1, id_mm:0 },
+	{ desc: "4'' / 101.6mm x 6.3mm  IFS 1042683",  od_mm:101.6, id_mm:89 },
+        { desc: "4.5'' 9.5#",  od_mm:114.30, id_mm:103.89 },
+        { desc: "4.5'' 10.5#", od_mm:114.30, id_mm:102.92 },
+        { desc: "4.5'' 11.6#", od_mm:114.30, id_mm:101.60 },
+        { desc: "4.5'' 12.6#", od_mm:114.30, id_mm:100.53 },
+        { desc: "4.5'' 13.5#", od_mm:114.30, id_mm:99.57 },
+        { desc: "4.5'' 15.1#", od_mm:114.30, id_mm:97.18 },
+        { desc: "4.5'' 16# (AkerBP)",  od_mm:114.30, id_mm:92.202 },
+        { desc: "4.5'' 18.8# (AkerBP)",  od_mm:114.30, id_mm:97.36 },
+        { desc: "5'' 11.5#",   od_mm:127.00, id_mm:115.82 },
+        { desc: "5'' 13#",     od_mm:127.00, id_mm:114.15 },
+        { desc: "5'' 15#",     od_mm:127.00, id_mm:111.96 },
+        { desc: "5'' 18#",     od_mm:127.00, id_mm:108.61 },
+        { desc: "5'' 21.4#",   od_mm:127.00, id_mm:104.80 },
+        { desc: "5'' 23.2#",   od_mm:127.00, id_mm:102.72 },
+        { desc: "5'' 24.1#",   od_mm:127.00, id_mm:101.60 },
+        { desc: "5.5'' 15.5#", od_mm:139.70, id_mm:125.73 },
+        { desc: "5.5'' 17#",   od_mm:139.70, id_mm:124.26 },
+        { desc: "5.5'' 20#",   od_mm:139.70, id_mm:121.36 },
+        { desc: "5.5'' 23#",   od_mm:139.70, id_mm:118.62 },
+        { desc: "5.5'' 26#",   od_mm:139.70, id_mm:115.52 },
+        { desc: "5.5'' 26.8#", od_mm:139.70, id_mm:114.30 },
+        { desc: "5.5'' 29.7#", od_mm:139.70, id_mm:111.15 },
+        { desc: "5.5'' 32.6#", od_mm:139.70, id_mm:107.95 },
+        { desc: "5.5'' 35.3#", od_mm:139.70, id_mm:104.80 },
+        { desc: "5.5'' 38#",   od_mm:139.70, id_mm:101.60 },
+        { desc: "5.5'' 40.5#", od_mm:139.70, id_mm:98.45 },
+        { desc: "5.5'' 43.1#", od_mm:139.70, id_mm:95.25 },
+        { desc: "5.5'' 45.5# (AkerBP)", od_mm:139.70, id_mm:92.1 },
+        { desc: "5.5'' 45.7# (AkerBP)", od_mm:139.70, id_mm:91.948 },
+        { desc: "5.5'' 46.6# (AkerBP)", od_mm:139.70, id_mm:90.678 },
+        { desc: "5.625'' 26.7#", od_mm:142.88, id_mm:118.64 },
+        { desc: "5.75'' 16.5#", od_mm:146.05, id_mm:132.03 },
+        { desc: "5.75'' 18.1#", od_mm:146.05, id_mm:130.61 },
+        { desc: "5.75'' 19.7#", od_mm:146.05, id_mm:129.03 },
+        { desc: "5.75'' 21.8#", od_mm:146.05, id_mm:127.00 },
+        { desc: "5.75'' 24.2#", od_mm:146.05, id_mm:124.71 },
+        { desc: "6.625'' 20#",  od_mm:168.28, id_mm:153.64 },
+        { desc: "6.625'' 24#",  od_mm:168.28, id_mm:150.39 },
+        { desc: "6.625'' 28#",  od_mm:168.28, id_mm:147.09 },
+        { desc: "6.625'' 32#",  od_mm:168.28, id_mm:144.15 },
+        { desc: "6.625'' 65.8# (AkerBP)",  od_mm:168.28, id_mm:111.125 },
+        { desc: "7'' 20#",    od_mm:177.80, id_mm:163.98 },
+        { desc: "7'' 23#",    od_mm:177.80, id_mm:161.70 },
+        { desc: "7'' 26#",    od_mm:177.80, id_mm:159.41 },
+        { desc: "7'' 29#",    od_mm:177.80, id_mm:157.07 },
+        { desc: "7'' 32#",    od_mm:177.80, id_mm:154.79 },
+        { desc: "7'' 35#",    od_mm:177.80, id_mm:152.50 },
+        { desc: "7'' 38#",    od_mm:177.80, id_mm:150.37 },
+        { desc: "7'' 41#",    od_mm:177.80, id_mm:147.83 },
+        { desc: "7'' 42.7#",  od_mm:177.80, id_mm:146.05 },
+        { desc: "7'' 46.4#",  od_mm:177.80, id_mm:142.90 },
+        { desc: "7'' 50.1#",  od_mm:177.80, id_mm:139.70 },
+        { desc: "7'' 53.6#",  od_mm:177.80, id_mm:136.55 },
+        { desc: "7'' 57.1#",  od_mm:177.80, id_mm:133.35 },
+        { desc: "7.625'' 24#",  od_mm:193.68, id_mm:178.44 },
+        { desc: "7.625'' 26.4#", od_mm:193.68, id_mm:177.01 },
+        { desc: "7.625'' 29.7#", od_mm:193.68, id_mm:174.63 },
+        { desc: "7.625'' 33.7#", od_mm:193.68, id_mm:171.83 },
+        { desc: "7.625'' 35#", od_mm:193.68, id_mm:170.434 },
+        { desc: "7.625'' 37#", od_mm:193.68, id_mm:168.91 },
+        { desc: "7.625'' 39#",   od_mm:193.68, id_mm:168.28 },
+        { desc: "7.625'' 42.8#", od_mm:193.68, id_mm:165.13 },
+        { desc: "7.625'' 45.3#", od_mm:193.68, id_mm:163.45 },
+        { desc: "7.625'' 47.1#", od_mm:193.68, id_mm:161.93 },
+        { desc: "7.625'' 51.2#", od_mm:193.68, id_mm:158.78 },
+        { desc: "7.625'' 55.3#", od_mm:193.68, id_mm:155.58 },
+        { desc: "7.75'' 46.1#",  od_mm:196.85, id_mm:166.62 },
+        { desc: "8.625'' 24#",   od_mm:219.08, id_mm:205.66 },
+        { desc: "8.625'' 28#",   od_mm:219.08, id_mm:203.63 },
+        { desc: "8.625'' 32#",   od_mm:219.08, id_mm:201.19 },
+        { desc: "8.625'' 36#",   od_mm:219.08, id_mm:198.76 },
+        { desc: "8.625'' 40#",   od_mm:219.08, id_mm:196.22 },
+        { desc: "8.625'' 44#",   od_mm:219.08, id_mm:193.68 },
+        { desc: "8.625'' 49#",   od_mm:219.08, id_mm:190.78 },
+        { desc: "9.625'' 32.3#", od_mm:244.48, id_mm:228.63 },
+        { desc: "9.625'' 36#",   od_mm:244.48, id_mm:226.59 },
+        { desc: "9.625'' 40#",   od_mm:244.48, id_mm:224.41 },
+        { desc: "9.625'' 43.5#", od_mm:244.48, id_mm:222.38 },
+        { desc: "9.625'' 47#",   od_mm:244.48, id_mm:220.50 },
+        { desc: "9.625'' 53.5#", od_mm:244.48, id_mm:216.79 },
+        { desc: "9.625'' 58.4#", od_mm:244.48, id_mm:214.25 },
+        { desc: "9.625'' 59.4#", od_mm:244.48, id_mm:213.54 },
+        { desc: "9.625'' 64.9#", od_mm:244.48, id_mm:210.34 },
+        { desc: "9.625'' 70.3#", od_mm:244.48, id_mm:207.19 },
+        { desc: "9.625'' 75.6#", od_mm:244.48, id_mm:203.99 },
+        { desc: "9.75'' 59.2#",  od_mm:247.65, id_mm:217.42 },
+        { desc: "9.875'' 62.8#", od_mm:250.83, id_mm:219.08 },
+        { desc: "10.75'' 32.75#", od_mm:273.05, id_mm:258.88 },
+        { desc: "10.75'' 40.5#",  od_mm:273.05, id_mm:255.27 },
+        { desc: "10.75'' 45.5#",  od_mm:273.05, id_mm:252.73 },
+        { desc: "10.75'' 51#",    od_mm:273.05, id_mm:250.19 },
+        { desc: "10.75'' 55.5#",  od_mm:273.05, id_mm:247.90 },
+        { desc: "10.75'' 60.7#",  od_mm:273.05, id_mm:245.36 },
+        { desc: "10.75'' 65.7#",  od_mm:273.05, id_mm:242.82 },
+        { desc: "10.75'' 71.1#",  od_mm:273.05, id_mm:240.03 },
+        { desc: "10.75'' 73.2#",  od_mm:273.05, id_mm:238.91 },
+        { desc: "10.75'' 79.2#",  od_mm:273.05, id_mm:235.76 },
+        { desc: "10.75'' 85.3#",  od_mm:273.05, id_mm:232.56 },
+        { desc: "11.75'' 42#",    od_mm:298.45, id_mm:281.53 },
+        { desc: "11.75'' 47#",    od_mm:298.45, id_mm:279.40 },
+        { desc: "11.75'' 54#",    od_mm:298.45, id_mm:276.35 },
+        { desc: "11.75'' 60#",    od_mm:298.45, id_mm:273.61 },
+        { desc: "11.75'' 65#",    od_mm:298.45, id_mm:271.32 },
+        { desc: "11.75'' 71#",    od_mm:298.45, id_mm:268.88 },
+        { desc: "11.875'' 71.8#", od_mm:301.63, id_mm:272.06 },
+        { desc: "11.875'' 71#",   od_mm:301.63, id_mm:268.88 },
+        { desc: "13.375'' 48#",   od_mm:339.73, id_mm:322.96 },
+        { desc: "13.375'' 54.5#", od_mm:339.73, id_mm:320.42 },
+        { desc: "13.375'' 61#",   od_mm:339.73, id_mm:317.88 },
+        { desc: "13.375'' 68#",   od_mm:339.73, id_mm:315.34 },
+        { desc: "13.375'' 72#",   od_mm:339.73, id_mm:313.61 },
+        { desc: "13.375'' 80.7#", od_mm:339.73, id_mm:310.26 },
+        { desc: "13.375'' 86#",   od_mm:339.73, id_mm:307.98 },
+        { desc: "13.5'' 81.4#",   od_mm:342.90, id_mm:313.44 },
+        { desc: "13.625'' 88.2#", od_mm:346.08, id_mm:314.33 },
+        { desc: "16'' 65#",       od_mm:406.40, id_mm:387.35 },
+        { desc: "16'' 75#",       od_mm:406.40, id_mm:384.15 },
+        { desc: "16'' 84#",       od_mm:406.40, id_mm:381.25 },
+        { desc: "16'' 95#",       od_mm:406.40, id_mm:377.65 },
+        { desc: "16'' 97#",       od_mm:406.40, id_mm:377.19 },
+        { desc: "16'' 109#",      od_mm:406.40, id_mm:373.08 },
+        { desc: "16'' 118#",      od_mm:406.40, id_mm:370.08 },
+        { desc: "18.625'' 87.5#",  od_mm:473.08, id_mm:450.98 },
+        { desc: "18.625'' 94.5#",  od_mm:473.08, id_mm:449.30 },
+        { desc: "18.625'' 106#",   od_mm:473.08, id_mm:446.10 },
+        { desc: "18.625'' 117.5#", od_mm:473.08, id_mm:442.95 },
+        { desc: "20'' 94#",        od_mm:508.00, id_mm:485.75 },
+        { desc: "20'' 106.5#",     od_mm:508.00, id_mm:482.60 },
+        { desc: "20'' 133#",       od_mm:508.00, id_mm:475.74 },
+        { desc: "20'' 169#",       od_mm:508.00, id_mm:466.75 }
+  ]
+};
+
+// =========================================================================================
+// Render scale for crisp on-screen graphics and exports.
+// Uses device pixel ratio (with a sensible floor/ceiling) to reduce fuzzy text/lines.
+// =========================================================================================
+const RESOLUTION_SCALE = Math.min(4, Math.max(2, Math.ceil(window.devicePixelRatio || 1)));
+// =========================================================================================
+
+let view = { scale: 1, panX: 0, panY: 0 };
+let circleHitboxes = [];
+let rectHitboxes = [];
+let viewMode = "radial";
+// Global handle to remember last used file location in session
+let lastUsedFileHandle = null;
+const SHARED_PICKER_ID = 'interwell-wap-shared-location';
+let activeTouches = new Map();
+let touchState = null;
+let plotFrameRequested = false;
+let plotNeedsTableRefresh = true;
+
+function isNightByTime() {
+  const h = new Date().getHours();
+  return h >= 19 || h < 6;
+}
+
+function setNightMode(enabled) {
+  const nightModeCheckbox = document.getElementById('nightMode');
+  if (nightModeCheckbox) nightModeCheckbox.checked = enabled;
+  document.body.classList.toggle('night-mode', enabled);
+}
+
+function getLockViewSizeMmForCurrentView() {
+  const radial = parseFloat(document.getElementById('lockViewSizeRadial')?.value);
+  const longitudinal = parseFloat(document.getElementById('lockViewSizeLongitudinal')?.value);
+  if (viewMode === 'longitudinal') return longitudinal;
+  return radial;
+}
+
+function setCanvasDisplaySize() {
+  const canvas = document.getElementById('circleCanvas');
+  const wrap = document.getElementById('canvasWrap');
+  if (!canvas || !wrap) return;
+
+  const logicalSize = 700;
+  const availableWidth = Math.max(280, Math.min(logicalSize, Math.floor(wrap.clientWidth || logicalSize)));
+  canvas.style.width = `${availableWidth}px`;
+  canvas.style.height = `${availableWidth}px`;
+}
+
+function getCanvasInteractionPoint(evt) {
+  const canvas = document.getElementById('circleCanvas');
+  const rect = canvas.getBoundingClientRect();
+  const padding = 20;
+  const titleOffset = 30;
+  return {
+    x: evt.clientX - rect.left - padding,
+    y: evt.clientY - rect.top - (padding + titleOffset)
+  };
+}
+
+function updateTooltipAtClientPoint(clientX, clientY) {
+  const canvas = document.getElementById('circleCanvas');
+  const tooltip = document.getElementById('tooltip');
+  const rect = canvas.getBoundingClientRect();
+  const padding = 20;
+  const titleOffset = 30;
+  const sx = clientX - rect.left - padding;
+  const sy = clientY - rect.top - (padding + titleOffset);
+  const wx = (sx - view.panX) / view.scale;
+  const wy = (sy - view.panY) / view.scale;
+
+  let hit = null;
+  if (viewMode === 'radial') {
+    for (let i = circleHitboxes.length - 1; i >= 0; i--) {
+      const h = circleHitboxes[i];
+      const dx = wx - h.cx;
+      const dy = wy - h.cy;
+      if (Math.sqrt(dx * dx + dy * dy) <= h.r) {
+        hit = h;
+        break;
+      }
+    }
+  } else {
+    for (let i = rectHitboxes.length - 1; i >= 0; i--) {
+      const h = rectHitboxes[i];
+      if (h && typeof h.angle === 'number' && typeof h.cx === 'number' && typeof h.cy === 'number') {
+        // Quick reject in global AABB before oriented-rect test
+        if (wx < h.minX || wx > h.maxX || wy < h.minY || wy > h.maxY) continue;
+        const cosA = Math.cos(h.angle);
+        const sinA = Math.sin(h.angle);
+        const dx = wx - h.cx;
+        const dy = wy - h.cy;
+        // Inverse-rotate world point into the layer's local frame.
+        const lx = (dx * cosA) + (dy * sinA);
+        const ly = (-dx * sinA) + (dy * cosA);
+        if (lx >= h.localX0 && lx <= h.localX1 && ly >= h.localY0 && ly <= h.localY1) {
+          hit = h;
+          break;
+        }
+      } else if (wx >= h.x0 && wx <= h.x1 && wy >= h.y0 && wy <= h.y1) {
+        hit = h;
+        break;
+      }
+    }
+  }
+
+  if (hit) {
+    tooltip.style.display = 'block';
+    tooltip.innerHTML = `<div><strong>${hit.data.materialLabel}</strong></div>
+    <div>OD: ${hit.data.diameter.toFixed(2)} mm (${(hit.data.diameter / 25.4).toFixed(3)} in)</div>`;
+    tooltip.style.left = (clientX + 15) + 'px';
+    tooltip.style.top = (clientY + 15) + 'px';
+  } else {
+    tooltip.style.display = 'none';
+  }
+}
+
+function getTouchDistance(t1, t2) {
+  const dx = t2.clientX - t1.clientX;
+  const dy = t2.clientY - t1.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function getTouchMidpoint(t1, t2) {
+  return {
+    clientX: (t1.clientX + t2.clientX) / 2,
+    clientY: (t1.clientY + t2.clientY) / 2
+  };
+}
+
+/***************************************************************
+ * INITIALIZATION
+ ***************************************************************/
+window.onload = function () {
+  // 0. Setup High-Res Canvas
+  const canvas = document.getElementById('circleCanvas');
+  const logicalSize = 700; // The display size in pixels
+  
+  // Set the CSS size (how big it looks on screen)
+  canvas.style.width = `${logicalSize}px`;
+  canvas.style.height = `${logicalSize}px`;
+  
+  // Set the internal memory size (how many pixels it actually has for high-res)
+  canvas.width = logicalSize * RESOLUTION_SCALE;
+  canvas.height = logicalSize * RESOLUTION_SCALE;
+
+  setCanvasDisplaySize();
+  window.addEventListener('resize', () => { setCanvasDisplaySize(); requestPlot({ rebuildTable: false }); });
+
+  // 1. Global Color Dropdowns
+  populateColorDropdown(document.getElementById('bgColorSelect'), document.getElementById('bgColorOther'));
+  populateColorDropdown(document.getElementById('pipeMaterialSelect'), document.getElementById('pipeMaterialOther'));
+  populateColorDropdown(document.getElementById('pipeFillSelect'), document.getElementById('pipeFillOther'));
+
+  // Quick Add defaults: Pipe Material = Steel, Fill = N/A
+  const pipeMaterialSelect = document.getElementById('pipeMaterialSelect');
+  const pipeMaterialOther = document.getElementById('pipeMaterialOther');
+  if (pipeMaterialSelect) {
+    pipeMaterialSelect.value = '#210D2A'; // Steel
+    if (pipeMaterialOther) pipeMaterialOther.style.display = 'none';
+  }
+  const pipeFillSelect = document.getElementById('pipeFillSelect');
+  const pipeFillOther = document.getElementById('pipeFillOther');
+  if (pipeFillSelect) {
+    pipeFillSelect.value = '#FFFFFF'; // N/A
+    if (pipeFillOther) pipeFillOther.style.display = 'none';
+  }
+
+  // Default plot background to N/A (pure white).
+  const bgSelect = document.getElementById('bgColorSelect');
+  const bgOther = document.getElementById('bgColorOther');
+  if (bgSelect) {
+    bgSelect.value = '#FFFFFF';
+    if (bgOther) {
+      bgOther.style.display = 'none';
+      bgOther.value = '#FFFFFF';
+    }
+  }
+
+  const rulerToggle = document.getElementById('showRulerCheckbox');
+  if (rulerToggle) rulerToggle.checked = true;
+  const rulerUnitsSelect = document.getElementById('rulerUnitsSelect');
+  if (rulerUnitsSelect && !rulerUnitsSelect.value) rulerUnitsSelect.value = 'metric';
+  const crosshairToggle = document.getElementById('showReferenceCrosshairCheckbox');
+  if (crosshairToggle) crosshairToggle.checked = true;
+  const exportOutlineToggle = document.getElementById('exportOutlineCheckbox');
+  if (exportOutlineToggle) exportOutlineToggle.checked = true;
+
+  // 2. Populate Pipe List
+  populatePipeList(document.getElementById('pipeSelect'));
+
+  // 3. Wire events
+  wireCanvasInteractions();
+  wireTableEditing();
+  wireButtons();
+
+  // Night mode defaults to BSLC behavior: auto-by-time once at load.
+  setNightMode(isNightByTime());
+  const nightModeCheckbox = document.getElementById('nightMode');
+  if (nightModeCheckbox) {
+    nightModeCheckbox.addEventListener('change', function(e) {
+      // Manual override stays as-is until page refresh.
+      setNightMode(e.target.checked);
+    });
+  }
+
+  // View mode controls
+  const viewSel = document.getElementById('viewModeSelect');
+  const secLenInput = document.getElementById('sectionLengthInput');
+  const secLenLabel = document.getElementById('sectionLengthLabel');
+  const incInput = document.getElementById('inclinationInput');
+  const incLabel = document.getElementById('inclinationLabel');
+
+  function syncViewModeUI() {
+    viewMode = viewSel.value;
+    const show = (viewMode === 'longitudinal');
+    secLenInput.style.display = show ? 'inline-block' : 'none';
+    secLenLabel.style.display = show ? 'inline' : 'none';
+    incInput.style.display = show ? 'inline-block' : 'none';
+    incLabel.style.display = show ? 'inline' : 'none';
+  }
+
+  viewSel.addEventListener('change', () => { syncViewModeUI(); requestPlot(); });
+  secLenInput.addEventListener('input', () => requestPlot());
+  incInput.addEventListener('input', () => requestPlot());
+  syncViewModeUI();
+
+  // 4. Watch for Real-time Updates
+  document.querySelector('.controls-panel').addEventListener('input', function(e) {
+    if(e.target.matches('input') || e.target.matches('select')) {
+      requestPlot();
+    }
+  });
+  document.querySelector('.controls-panel').addEventListener('change', function(e) {
+    if (e.target.matches('.circleDiameter, .unit')) {
+      sortLayerRowsByDiameter();
+      requestPlot();
+    }
+  });
+  document.querySelector('.controls-panel').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && e.target.matches('.circleDiameter')) {
+      e.preventDefault();
+      e.target.blur();
+      sortLayerRowsByDiameter();
+      requestPlot();
+    }
+  });
+
+  // Initial plot
+  plotCircles();
+};
+
+function closeMenus() {
+    const exportMenu = document.getElementById('exportMenu');
+    const importMenu = document.getElementById('importMenu');
+    const exportMenuButton = document.getElementById('exportMenuButton');
+    const importMenuButton = document.getElementById('importMenuButton');
+    if (exportMenu) exportMenu.classList.remove('is-open');
+    if (importMenu) importMenu.classList.remove('is-open');
+    if (exportMenuButton) exportMenuButton.setAttribute('aria-expanded', 'false');
+    if (importMenuButton) importMenuButton.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMenu(menu, button) {
+    if (!menu || !button) return;
+    const willOpen = !menu.classList.contains('is-open');
+    closeMenus();
+    menu.classList.toggle('is-open', willOpen);
+    button.setAttribute('aria-expanded', String(willOpen));
+}
+
+function wireButtons() {
+    const resetViewBtn = document.getElementById('resetViewBtn');
+    if (resetViewBtn) {
+        resetViewBtn.onclick = () => { view.scale=1; view.panX=0; view.panY=0; requestPlot({ rebuildTable: false }); };
+    }
+
+    const importMenu = document.getElementById('importMenu');
+    const exportMenu = document.getElementById('exportMenu');
+    const importMenuButton = document.getElementById('importMenuButton');
+    const exportMenuButton = document.getElementById('exportMenuButton');
+    const importSettings = document.getElementById('importSettings');
+    const exportSettings = document.getElementById('exportSettings');
+    const exportPlotPngMenu = document.getElementById('exportPlotPngMenu');
+    const exportPlotSvgMenu = document.getElementById('exportPlotSvgMenu');
+    const exportTablePngMenu = document.getElementById('exportTablePngMenu');
+    const exportTableSvgMenu = document.getElementById('exportTableSvgMenu');
+    const exportComboPngMenu = document.getElementById('exportComboPngMenu');
+    const exportComboSvgMenu = document.getElementById('exportComboSvgMenu');
+    const fallbackFileInput = document.getElementById('fallbackFileInput');
+
+    if (importMenuButton) {
+        importMenuButton.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            toggleMenu(importMenu, importMenuButton);
+        });
+    }
+    if (exportMenuButton) {
+        exportMenuButton.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            toggleMenu(exportMenu, exportMenuButton);
+        });
+    }
+
+    if (importSettings) {
+        importSettings.addEventListener('click', function () {
+            openConfig();
+            closeMenus();
+        });
+    }
+    if (exportSettings) {
+        exportSettings.addEventListener('click', function () {
+            saveConfigAs();
+            closeMenus();
+        });
+    }
+    if (exportPlotPngMenu) {
+        exportPlotPngMenu.addEventListener('click', function () { exportPlotPng(); closeMenus(); });
+    }
+    if (exportPlotSvgMenu) {
+        exportPlotSvgMenu.addEventListener('click', function () { exportPlotSvg(); closeMenus(); });
+    }
+    if (exportTablePngMenu) {
+        exportTablePngMenu.addEventListener('click', function () { exportTableAsImage(); closeMenus(); });
+    }
+    if (exportTableSvgMenu) {
+        exportTableSvgMenu.addEventListener('click', function () { exportTableSvg(); closeMenus(); });
+    }
+    if (exportComboPngMenu) {
+        exportComboPngMenu.addEventListener('click', function () { exportAllAsImage(); closeMenus(); });
+    }
+    if (exportComboSvgMenu) {
+        exportComboSvgMenu.addEventListener('click', function () { exportAllSvg(); closeMenus(); });
+    }
+
+    if (fallbackFileInput) {
+        fallbackFileInput.onchange = function () {
+            fallbackLoad(this);
+            closeMenus();
+        };
+    }
+
+    document.addEventListener('click', function (ev) {
+        const target = ev.target;
+        if (!importMenu || !exportMenu) {
+            closeMenus();
+            return;
+        }
+        if (!importMenu.contains(target) && !exportMenu.contains(target)) closeMenus();
+    });
+    document.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape') closeMenus();
+    });
+}
+
+
+/***************************************************************
+ * DOM MANIPULATION (The Data Grid)
+ ***************************************************************/
+
+// Create a new layer row
+function buildCircleEntry(diameterValue, fillColorValue, materialName) {
+    const rowId = 'row-' + Date.now() + Math.random().toString(16).slice(2);
+    
+    const div = document.createElement('div');
+    div.className = 'layer-row';
+    div.id = rowId;
+    
+    // Default values
+    const dVal = diameterValue || '';
+    const mName = materialName || '';
+    
+    // HTML Structure
+    div.innerHTML = `
+      <div class="layer-primary">
+        <input type="text" class="circleDiameter" placeholder="Diam" value="${dVal}">
+        <select class="unit">
+          <option value="inches">in</option>
+          <option value="mm" selected>mm</option>
+        </select>
+        <input type="text" class="materialLabel" placeholder="Label" value="${mName}">
+        
+        <div class="fill-wrap" style="display:flex; gap:2px;">
+            <select class="fillColorSelect" style="width:100%;"></select>
+            <input type="color" class="fillColor" style="display:none; width:30px; height:30px; padding:0; border:none;">
+        </div>
+        
+        <button type="button" class="icon-btn" onclick="toggleAdvanced('${rowId}')">⚙️</button>
+        <button type="button" class="icon-btn danger" onclick="deleteEntry(this)">x</button>
+      </div>
+
+      <div class="layer-advanced">
+        <div>
+           <label>Line Color</label>
+           <input type="color" class="lineColor" value="${config.defaultLineColor}" style="width:100%; height:30px;">
+        </div>
+        <div>
+           <label>Line Thk</label>
+           <input type="number" class="lineThickness" value="${config.defaultLineThickness}" min="0" step="0.1">
+        </div>
+        <div>
+           <label>Ecc. Factor (0-1)</label>
+           <input type="number" class="eccentricityFactor" value="0" min="0" max="1" step="0.05">
+        </div>
+        <div>
+           <label>Ecc. Angle</label>
+           <input type="number" class="eccentricityAngle" value="0" min="0" max="360">
+        </div>
+        <div>
+           <label>Wavy Amp (mm)</label>
+           <input type="number" class="wavinessAmp" value="0" min="0" step="0.1">
+        </div>
+        <div>
+           <label>Wavy Freq</label>
+           <input type="number" class="wavinessFreq" value="8" min="1" step="1">
+        </div>
+        <div>
+           <label>Wavy Seed</label>
+           <input type="number" class="wavinessSeed" value="0" step="1">
+        </div>
+        <div>
+            <label>Action</label>
+            <button type="button" class="icon-btn" style="width:100%" onclick="insertAbove(this)">^ Insert Above</button>
+        </div>
+      </div>
+    `;
+
+    // Populate Fills
+    populateFillColorSelect(div);
+    
+    // Handle Fill Logic
+    const fillSelect = div.querySelector('.fillColorSelect');
+    const fillPicker = div.querySelector('.fillColor');
+    const knownColors = config.fillColorOptions.map(c => c.value);
+    
+    if (knownColors.includes(fillColorValue)) {
+        fillSelect.value = fillColorValue;
+        fillPicker.style.display = 'none';
+        fillPicker.value = fillColorValue;
+    } else {
+        fillSelect.value = 'other';
+        fillPicker.style.display = 'block';
+        if(fillColorValue) fillPicker.value = fillColorValue;
+    }
+    
+    setupFillColorEvents(div);
+    return div;
+}
+
+function addCircleInput(diam, color, matName, options = {}) {
+    const list = document.getElementById('layer-list');
+    const defMat = matName || config.fillColorOptions[0].name;
+    const defColor = color || '#E3B0A2';
+    const newRow = buildCircleEntry(diam, defColor, defMat);
+    list.appendChild(newRow);
+    sortLayerRowsByDiameter();
+    if (!options.deferRedraw) requestPlot();
+}
+
+function insertAbove(btn) {
+    const row = btn.closest('.layer-row');
+    const newRow = buildCircleEntry('', '#E3B0A2', config.fillColorOptions[0].name);
+    row.parentNode.insertBefore(newRow, row);
+    sortLayerRowsByDiameter();
+    requestPlot();
+}
+
+function deleteEntry(btn) {
+    const row = btn.closest('.layer-row');
+    row.remove();
+    requestPlot();
+}
+
+function toggleAdvanced(rowId) {
+    const row = document.getElementById(rowId);
+    const adv = row.querySelector('.layer-advanced');
+    adv.classList.toggle('show');
+}
+
+function getRowDiameterMm(row) {
+    if (!row) return Number.NEGATIVE_INFINITY;
+    const dInput = row.querySelector('.circleDiameter');
+    const unitEl = row.querySelector('.unit');
+    if (!dInput || !unitEl) return Number.NEGATIVE_INFINITY;
+    let d = parseFloat(dInput.value);
+    if (!isFinite(d) || d <= 0) return Number.NEGATIVE_INFINITY;
+    if (unitEl.value === 'inches') d *= 25.4;
+    return d;
+}
+
+function sortLayerRowsByDiameter() {
+    const list = document.getElementById('layer-list');
+    if (!list) return;
+    const rows = Array.from(list.querySelectorAll('.layer-row')).map((row, idx) => ({
+        row,
+        idx,
+        dmm: getRowDiameterMm(row)
+    }));
+    rows.sort((a, b) => {
+        if (a.dmm === b.dmm) return a.idx - b.idx;
+        return b.dmm - a.dmm;
+    });
+    rows.forEach(item => list.appendChild(item.row));
+}
+
+
+/***************************************************************
+ * PIPE LOGIC
+ ***************************************************************/
+function populatePipeList(selectEl) {
+    selectEl.innerHTML = '';
+    config.pipeList.forEach(pipe => {
+        const opt = document.createElement('option');
+        opt.value = pipe.desc;
+        opt.textContent = pipe.desc;
+        selectEl.appendChild(opt);
+    });
+    selectEl.selectedIndex = 0;
+}
+
+function addStandardPipe() {
+    const pipeSelect = document.getElementById('pipeSelect');
+    const pipeData = config.pipeList.find(p => p.desc === pipeSelect.value);
+    if (!pipeData) return alert('Select a pipe');
+
+    const matSel = document.getElementById('pipeMaterialSelect');
+    const matOther = document.getElementById('pipeMaterialOther');
+    const pipeMatColor = (matSel.value === 'other') ? matOther.value : matSel.value;
+
+    const fillSel = document.getElementById('pipeFillSelect');
+    const fillOther = document.getElementById('pipeFillOther');
+    const pipeFillColor = (fillSel.value === 'other') ? fillOther.value : fillSel.value;
+
+    // Add Outer
+    addCircleInput(pipeData.od_mm, pipeMatColor, pipeData.desc, { deferRedraw: true });
+    
+    // Add Inner (if ID exists and > 0)
+    if(pipeData.id_mm > 0) {
+        addCircleInput(pipeData.id_mm, pipeFillColor, "N/A", { deferRedraw: true });
+    }
+    requestPlot();
+}
+
+
+/***************************************************************
+ * COLOR & SELECT HELPERS
+ ***************************************************************/
+function populateColorDropdown(selectEl, otherColorEl) {
+    selectEl.innerHTML = '';
+    config.fillColorOptions.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.value;
+        o.textContent = opt.name;
+        o.style.backgroundColor = opt.value;
+        o.style.color = opt.textColor || '#000000';
+        selectEl.appendChild(o);
+    });
+    const o2 = document.createElement('option');
+    o2.value = 'other';
+    o2.textContent = 'Other...';
+    selectEl.appendChild(o2);
+    selectEl.selectedIndex = 0;
+
+    selectEl.addEventListener('change', () => {
+        otherColorEl.style.display = (selectEl.value === 'other') ? 'block' : 'none';
+        if(selectEl.value !== 'other') otherColorEl.value = selectEl.value;
+        requestPlot();
+    });
+}
+
+function populateFillColorSelect(entryDiv) {
+    const select = entryDiv.querySelector('.fillColorSelect');
+    select.innerHTML = '';
+    config.fillColorOptions.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.value;
+        o.textContent = opt.name;
+        o.style.backgroundColor = opt.value;
+        o.style.color = opt.textColor || '#000000';
+        select.appendChild(o);
+    });
+    const o2 = document.createElement('option');
+    o2.value = 'other';
+    o2.textContent = 'Other...';
+    select.appendChild(o2);
+}
+
+function setupFillColorEvents(entryDiv) {
+    const select = entryDiv.querySelector('.fillColorSelect');
+    const picker = entryDiv.querySelector('.fillColor');
+    select.addEventListener('change', () => {
+        picker.style.display = (select.value === 'other') ? 'block' : 'none';
+        if(select.value !== 'other') picker.value = select.value;
+        requestPlot();
+    });
+    picker.addEventListener('input', () => requestPlot());
+}
+
+function fract(v) {
+    return v - Math.floor(v);
+}
+
+function seededUnit(seed) {
+    return fract(Math.sin(seed * 12.9898) * 43758.5453);
+}
+
+function getWavyMaxAmplitudePx(data, pxPerMm, baseRadius) {
+    const ampMm = Math.max(0, parseFloat(data.wavinessAmp) || 0);
+    if (ampMm <= 0 || !isFinite(pxPerMm) || pxPerMm <= 0) return 0;
+    return Math.min(baseRadius * 0.45, ampMm * pxPerMm);
+}
+
+function getWavyRadiusPx(baseRadius, theta, data, pxPerMm) {
+    const maxAmpPx = getWavyMaxAmplitudePx(data, pxPerMm, baseRadius);
+    if (maxAmpPx <= 0) return baseRadius;
+
+    const freq = Math.max(1, Math.floor(parseFloat(data.wavinessFreq) || 8));
+    const seed = Math.floor(parseFloat(data.wavinessSeed) || 0);
+    const p1 = seededUnit(seed + 11) * Math.PI * 2;
+    const p2 = seededUnit(seed + 23) * Math.PI * 2;
+    const p3 = seededUnit(seed + 47) * Math.PI * 2;
+
+    const signal =
+        0.62 * Math.sin(freq * theta + p1) +
+        0.26 * Math.sin((freq * 2 + 1) * theta + p2) +
+        0.12 * Math.sin((freq * 3 + 2) * theta + p3);
+
+    const r = baseRadius + maxAmpPx * signal;
+    return Math.max(0.5, r);
+}
+
+function traceWavyCirclePath(ctx, cx, cy, baseRadius, data, pxPerMm, segments = 240) {
+    if (!segments || segments < 24) segments = 24;
+    ctx.beginPath();
+    for (let i = 0; i <= segments; i++) {
+        const t = (i / segments) * Math.PI * 2;
+        const r = getWavyRadiusPx(baseRadius, t, data, pxPerMm);
+        const x = cx + r * Math.cos(t);
+        const y = cy + r * Math.sin(t);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+}
+
+function buildWavyCirclePathD(cx, cy, baseRadius, data, pxPerMm, segments = 240) {
+    if (!segments || segments < 24) segments = 24;
+    let d = '';
+    for (let i = 0; i <= segments; i++) {
+        const t = (i / segments) * Math.PI * 2;
+        const r = getWavyRadiusPx(baseRadius, t, data, pxPerMm);
+        const x = cx + r * Math.cos(t);
+        const y = cy + r * Math.sin(t);
+        d += (i === 0 ? `M ${x.toFixed(3)} ${y.toFixed(3)}` : ` L ${x.toFixed(3)} ${y.toFixed(3)}`);
+    }
+    return d + ' Z';
+}
+
+
+/***************************************************************
+ * PLOTTING ENGINE (with Title Logic)
+ ***************************************************************/
+function plotCircles(options = {}) {
+    const rebuildTable = options.rebuildTable !== false;
+    const rows = document.querySelectorAll('.layer-row');
+    const canvas = document.getElementById('circleCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // BG Color
+    const bgSel = document.getElementById('bgColorSelect');
+    const bgPick = document.getElementById('bgColorOther');
+    const bgColor = (bgSel.value === 'other') ? bgPick.value : bgSel.value;
+    
+    // We clear the high-res canvas (internal size)
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0,0, canvas.width, canvas.height);
+
+    const padding = 20;
+    const titleHeight = 30; // space for title
+    
+    // Effective area (logical, before scaling)
+    const logicalWidth = canvas.width / RESOLUTION_SCALE;
+    const logicalHeight = canvas.height / RESOLUTION_SCALE;
+
+    const plotW = logicalWidth - 2*padding;
+    const plotH = logicalHeight - 2*padding - titleHeight;
+    const rulerEnabled = (document.getElementById('showRulerCheckbox') ? document.getElementById('showRulerCheckbox').checked : true);
+    const rulerUnits = (document.getElementById('rulerUnitsSelect') ? document.getElementById('rulerUnitsSelect').value : 'metric');
+    const showRuler = rulerEnabled;
+    const rulerGap = showRuler ? 6 : 0;
+    const rulerHeight = showRuler ? 30 : 0;
+    const drawPlotH = plotH - rulerGap - rulerHeight;
+
+    // --- APPLY SCALE FOR HIGH RES ---
+    ctx.save();
+    ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
+
+    // Draw title as an overlay layer (always on top of plotted geometry).
+    function drawPlotTitleOverlay() {
+        const titleText = document.getElementById('configNameInput').value;
+        if(!titleText) return;
+        ctx.save();
+        ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
+        ctx.font = "bold 18px Arial";
+        ctx.textAlign = "center";
+        const rgb = hexToRgb(bgColor) || {r:255,g:255,b:255};
+        const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+        ctx.fillStyle = (brightness > 125) ? "#000000" : "#FFFFFF";
+        ctx.fillText(titleText, logicalWidth/2, 28);
+        ctx.restore();
+    }
+
+    function drawBottomRulerOverlay(zeroWorldX, pxPerMm, units) {
+        if (!showRuler || !isFinite(pxPerMm) || pxPerMm <= 0) return;
+
+        const xStart = padding;
+        const xEnd = padding + plotW;
+        const yTop = padding + titleHeight + drawPlotH + rulerGap;
+        const yBottom = yTop + rulerHeight;
+        const zeroX = padding + (zeroWorldX * view.scale + view.panX);
+
+        ctx.save();
+        ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
+
+        // White ruler strip
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(xStart, yTop, plotW, rulerHeight);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(xStart + 0.5, yTop + 0.5, plotW - 1, rulerHeight - 1);
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = '11px Arial';
+        ctx.fillStyle = '#000000';
+
+        const minMajorPxGap = 62;
+        const minMinorPxGap = 3;
+        const minLabelPxGap = 26;
+
+        function chooseStep(target, series) {
+            for (let i = 0; i < series.length; i++) {
+                if (series[i] >= target) return series[i];
+            }
+            return series[series.length - 1];
+        }
+
+        function formatTick(v) {
+            const rounded = Math.abs(v) < 1e-9 ? 0 : v;
+            return String(parseFloat(rounded.toFixed(4)));
+        }
+
+        let majorMm = 10;
+        let minorMm = 1;
+        let displayUnit = (units === 'imperial') ? 'in' : 'cm';
+        let toDisplayValue = function(mm) { return mm / 10; };
+
+        if (units === 'imperial') {
+            const pxPerIn = pxPerMm * 25.4;
+            const majorSeriesIn = [1/16, 1/8, 1/4, 1/2, 1, 2, 4, 8, 12, 24];
+            const targetMajorIn = minMajorPxGap / Math.max(pxPerIn, 1e-9);
+            const majorIn = chooseStep(targetMajorIn, majorSeriesIn);
+            majorMm = majorIn * 25.4;
+            minorMm = Math.max((1 / 64) * 25.4, majorMm / 8);
+            displayUnit = 'in';
+            toDisplayValue = function(mm) { return mm / 25.4; };
+        } else {
+            const majorSeriesMm = [1, 2, 5, 10, 20, 50, 100, 200, 500];
+            const targetMajorMm = minMajorPxGap / Math.max(pxPerMm, 1e-9);
+            majorMm = chooseStep(targetMajorMm, majorSeriesMm);
+            if (majorMm < 10) {
+                minorMm = 1; // In mm mode, keep intuitive 1 mm minor ticks.
+                displayUnit = 'mm';
+                toDisplayValue = function(mm) { return mm; };
+            } else {
+                // In cm mode, keep intuitive 1 cm minor ticks (e.g., 5 cm major => 1 cm minors).
+                minorMm = 10;
+                displayUnit = 'cm';
+                toDisplayValue = function(mm) { return mm / 10; };
+            }
+        }
+
+        const pxPerMinor = pxPerMm * minorMm;
+        if (pxPerMinor > 0) {
+            const minorMin = Math.ceil((xStart - zeroX) / pxPerMinor);
+            const minorMax = Math.floor((xEnd - zeroX) / pxPerMinor);
+            const majorEvery = Math.max(1, Math.round(majorMm / minorMm));
+            const midEvery = (majorEvery > 2 && majorEvery % 2 === 0) ? (majorEvery / 2) : 0;
+
+            let drawMinorEvery = 1;
+            while ((pxPerMinor * drawMinorEvery) < minMinorPxGap && drawMinorEvery < 512) {
+                drawMinorEvery *= 2;
+            }
+
+            let lastLabelX = -1e9;
+            for (let n = minorMin; n <= minorMax; n++) {
+                const majorTick = (n % majorEvery === 0);
+                const midTick = (!majorTick && midEvery > 0 && (n % midEvery === 0));
+                const drawMinor = (n % drawMinorEvery === 0);
+                if (!majorTick && !midTick && !drawMinor) continue;
+
+                const x = zeroX + n * pxPerMinor;
+                let tickLen = 4;
+                if (majorTick) tickLen = 12;
+                else if (midTick) tickLen = 8;
+                else tickLen = 5;
+
+                ctx.beginPath();
+                ctx.moveTo(x, yTop);
+                ctx.lineTo(x, yTop + tickLen);
+                ctx.stroke();
+
+                if (majorTick && (x - lastLabelX) >= minLabelPxGap) {
+                    const mmValue = n * minorMm;
+                    ctx.fillText(formatTick(toDisplayValue(mmValue)), x, yBottom - 4);
+                    lastLabelX = x;
+                }
+            }
+        }
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 11px Arial';
+        ctx.fillText(displayUnit, xEnd - 6, yTop + (rulerHeight / 2));
+
+        ctx.restore();
+    }
+
+    function drawReferenceCrosshairOverlay(refWorldX, refWorldY) {
+        if (viewMode !== 'radial') return;
+        const enabled = (document.getElementById('showReferenceCrosshairCheckbox') ? document.getElementById('showReferenceCrosshairCheckbox').checked : true);
+        if (!enabled) return;
+
+        const x = padding + (refWorldX * view.scale + view.panX);
+        const y = padding + titleHeight + (refWorldY * view.scale + view.panY);
+        const size = 9;
+
+        ctx.save();
+        ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x - size, y);
+        ctx.lineTo(x + size, y);
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x, y + size);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Gather Data
+    let circleData = [];
+    rows.forEach((row, idx) => {
+        const dInput = row.querySelector('.circleDiameter');
+        const unit = row.querySelector('.unit').value;
+        let diam = parseFloat(dInput.value) || 0;
+        if(unit === 'inches') diam *= 25.4;
+
+        const fillSel = row.querySelector('.fillColorSelect');
+        const fillPick = row.querySelector('.fillColor');
+        let fill = (fillSel.value === 'other') ? fillPick.value : fillSel.value;
+
+        // Determine Text Color for Table
+        const known = config.fillColorOptions.find(c => c.value === fill);
+        const textColor = known ? known.textColor : '#000';
+
+        circleData.push({
+            diameter: diam,
+            fillColor: fill,
+            lineColor: row.querySelector('.lineColor').value,
+            lineThickness: parseFloat(row.querySelector('.lineThickness').value),
+            materialLabel: row.querySelector('.materialLabel').value || 'Layer ' + (idx+1),
+            eccentricityFactor: parseFloat(row.querySelector('.eccentricityFactor').value),
+            eccentricityAngle: parseFloat(row.querySelector('.eccentricityAngle').value),
+            wavinessAmp: parseFloat(row.querySelector('.wavinessAmp')?.value) || 0,
+            wavinessFreq: parseFloat(row.querySelector('.wavinessFreq')?.value) || 8,
+            wavinessSeed: parseFloat(row.querySelector('.wavinessSeed')?.value) || 0,
+            tableTextColor: textColor,
+            originalIndex: idx
+        });
+    });
+
+    // Sort by Diameter Descending
+    circleData.sort((a,b) => b.diameter - a.diameter);
+
+    // Render Setup (shared transforms)
+    ctx.translate(padding, padding + titleHeight); // Push down for title
+    ctx.translate(view.panX, view.panY);
+    ctx.scale(view.scale, view.scale);
+
+    // --- SCALING LOGIC (LOCKED VS AUTO) ---
+    const locked = document.getElementById('lockViewCheckbox').checked;
+    const lockVal = getLockViewSizeMmForCurrentView();
+
+    let referenceDiam;
+    if (locked && lockVal > 0) {
+        referenceDiam = lockVal;
+    } else {
+        // Auto-fit to largest pipe + small margin
+        const maxD = circleData[0]?.diameter || 100;
+        referenceDiam = maxD * 1.05; // 5% margin
+    }
+
+    // Scale: pixels per mm.
+    // - Locked mode maps lock value directly to visible plot width (requested behavior).
+    // - Auto mode fits to the limiting drawable dimension.
+    const scalingFactor = (locked && lockVal > 0)
+        ? (plotW / referenceDiam)
+        : (Math.min(plotW, drawPlotH) / referenceDiam);
+
+    circleHitboxes = [];
+    rectHitboxes = [];
+
+    const tableBody = document.querySelector('#areaTable tbody');
+    if (rebuildTable && tableBody) tableBody.innerHTML = '';
+
+    let rulerOverlayZeroWorldX = null;
+    let rulerOverlayPxPerMm = null;
+    let referenceOverlayWorldPoint = null;
+
+    // --------------------------------------------------------------------
+    // Draw: RADIAL (existing behavior)
+    // --------------------------------------------------------------------
+    if (viewMode === 'radial') {
+        let lastCenter = { x: plotW/2, y: drawPlotH/2 };
+        let smallestCenter = { x: plotW/2, y: drawPlotH/2 };
+        referenceOverlayWorldPoint = { x: plotW / 2, y: drawPlotH / 2 };
+
+        let lastRadius = (circleData[0]?.diameter || 10) / 2 * scalingFactor;
+        if(circleData.length > 0) {
+            lastRadius = (circleData[0].diameter/2) * scalingFactor;
+        }
+
+        circleData.forEach((data, i) => {
+            const radius = (data.diameter/2) * scalingFactor;
+
+            // Eccentricity calc
+            const offset = data.eccentricityFactor * (lastRadius - radius);
+            const angleRad = ((data.eccentricityAngle - 90) * Math.PI) / 180;
+            const x = lastCenter.x + offset * Math.cos(angleRad);
+            const y = lastCenter.y + offset * Math.sin(angleRad);
+
+            // Store for hit detection (inflate by waviness amplitude)
+            const hitR = radius + getWavyMaxAmplitudePx(data, scalingFactor, radius);
+            circleHitboxes.push({ cx:x, cy:y, r:hitR, data });
+
+            // Draw
+            traceWavyCirclePath(ctx, x, y, radius, data, scalingFactor);
+            ctx.fillStyle = data.fillColor;
+            ctx.fill();
+            ctx.strokeStyle = data.lineColor;
+
+            // Keep visual line width consistent regardless of zoom
+            ctx.lineWidth = data.lineThickness / view.scale;
+            if(ctx.lineWidth < 0.1) ctx.lineWidth = 0.1;
+            ctx.stroke();
+
+            lastCenter = {x, y};
+            smallestCenter = {x, y};
+            lastRadius = radius;
+
+            // TABLE (same calculations)
+            if (rebuildTable && tableBody) appendTableRow(circleData, data, i, tableBody);
+        });
+
+        rulerOverlayZeroWorldX = smallestCenter.x;
+        rulerOverlayPxPerMm = scalingFactor * view.scale;
+    }
+
+    // --------------------------------------------------------------------
+    // Draw: LONGITUDINAL (side view, lowside down / highside up)
+    // - Uses the same diameters and eccentricity, but only the vertical
+    //   component of eccentricity is visible in the max-inclination plane.
+    // - Eccentricity angle convention is unchanged:
+    //   90° = up (high side), 270° = down (low side).
+    // --------------------------------------------------------------------
+    if (viewMode === 'longitudinal') {
+        const secLenMm = Math.max(50, parseFloat(document.getElementById('sectionLengthInput').value) || 500);
+        const desiredLenPx = secLenMm * scalingFactor;
+
+        // Inclination is from vertical: 0° = vertical, 90° = horizontal
+        const incDegRaw = parseFloat(document.getElementById('inclinationInput')?.value);
+        const incDeg = isFinite(incDegRaw) ? Math.max(0, Math.min(90, incDegRaw)) : 0;
+        const incRad = (incDeg * Math.PI) / 180;
+
+        // We draw along +X in a local coordinate system, then rotate so that:
+        // inc=0 => axis points up/down, inc=90 => axis points left/right.
+        const axisAngle = incRad - (Math.PI / 2);
+
+        // Fit length into plotW/plotH with a little margin.
+        // Conservatively limit length to 95% of the smaller plot dimension.
+        const lengthPx = Math.min(Math.min(plotW, drawPlotH) * 0.95, desiredLenPx);
+
+        // Local coordinates (before rotation): center at (0,0), axis is X
+        const x0 = -lengthPx / 2;
+        const x1 =  lengthPx / 2;
+
+        // Global center
+        const cx = plotW / 2;
+        const cy = drawPlotH / 2;
+        let smallestCenterGlobalX = cx;
+
+        // In longitudinal view we work in the "max-inclination" vertical plane.
+        // Offsets (eccentricity) must be applied *perpendicular to the well axis* within that plane.
+        // When we rotate the canvas by axisAngle, the local +Y axis is that perpendicular direction.
+        // Therefore, eccentricity should be applied as a pure local-Y shift (no along-axis/X shift).
+        let centerOffsetY_local = 0;
+        let lastRadius = (circleData[0]?.diameter || 10) / 2 * scalingFactor;
+        if(circleData.length > 0) {
+            lastRadius = (circleData[0].diameter/2) * scalingFactor;
+        }
+
+        circleData.forEach((data, i) => {
+            const radius = (data.diameter/2) * scalingFactor;
+
+            // Eccentricity: only keep vertical component
+            const offset = data.eccentricityFactor * (lastRadius - radius);
+            const angleRad = ((data.eccentricityAngle - 90) * Math.PI) / 180;
+            // Only the component along high/low-side is visible in this plane.
+            // Angle convention is unchanged from radial view: 90° up, 270° down.
+            const dy_local = offset * Math.sin(angleRad);
+
+            // Accumulate offsets hierarchically (same as radial view does for centers)
+            centerOffsetY_local += dy_local;
+
+            // Draw in a rotated frame so inclination changes orientation.
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(axisAngle);
+            ctx.translate(0, 0);
+
+            // Base center is 0 in local Y; apply perpendicular (local Y) eccentricity.
+            const layerCenterY = centerOffsetY_local;
+
+            // Fill: draw outer-to-inner rectangles (like radial: later draws overwrite inner)
+            ctx.fillStyle = data.fillColor;
+            ctx.fillRect(x0, layerCenterY - radius, lengthPx, 2*radius);
+
+            // Stroke boundaries (top & bottom) to preserve layer edges
+            ctx.strokeStyle = data.lineColor;
+            ctx.lineWidth = data.lineThickness / view.scale;
+            if(ctx.lineWidth < 0.1) ctx.lineWidth = 0.1;
+
+            // Top edge
+            ctx.beginPath();
+            ctx.moveTo(x0, layerCenterY - radius);
+            ctx.lineTo(x1, layerCenterY - radius);
+            ctx.stroke();
+
+            // Bottom edge
+            ctx.beginPath();
+            ctx.moveTo(x0, layerCenterY + radius);
+            ctx.lineTo(x1, layerCenterY + radius);
+            ctx.stroke();
+
+            // End caps (thin verticals in local frame)
+            ctx.beginPath();
+            ctx.moveTo(x0, layerCenterY - radius);
+            ctx.lineTo(x0, layerCenterY + radius);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x1, layerCenterY - radius);
+            ctx.lineTo(x1, layerCenterY + radius);
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Store for hit detection (axis-aligned bbox in global frame)
+            // Compute bbox of the rotated rectangle in global coords.
+            const rect = {
+              x0: x0,
+              x1: x1,
+              y0: layerCenterY - radius,
+              y1: layerCenterY + radius
+            };
+            const corners = [
+              {x: rect.x0, y: rect.y0},
+              {x: rect.x1, y: rect.y0},
+              {x: rect.x1, y: rect.y1},
+              {x: rect.x0, y: rect.y1}
+            ].map(p => {
+              // global = R(axisAngle) * local + (cx,cy)
+              return {
+                x: cx + p.x * Math.cos(axisAngle) - p.y * Math.sin(axisAngle),
+                y: cy + p.x * Math.sin(axisAngle) + p.y * Math.cos(axisAngle)
+              };
+            });
+            const minX = Math.min(...corners.map(p => p.x));
+            const maxX = Math.max(...corners.map(p => p.x));
+            const minY = Math.min(...corners.map(p => p.y));
+            const maxY = Math.max(...corners.map(p => p.y));
+            rectHitboxes.push({
+              x0:minX, x1:maxX, y0:minY, y1:maxY,
+              minX, maxX, minY, maxY,
+              cx, cy,
+              angle: axisAngle,
+              localX0: x0,
+              localX1: x1,
+              localY0: layerCenterY - radius,
+              localY1: layerCenterY + radius,
+              data
+            });
+            smallestCenterGlobalX = cx - layerCenterY * Math.sin(axisAngle);
+
+            lastRadius = radius;
+
+            // TABLE (same calculations)
+            if (rebuildTable && tableBody) appendTableRow(circleData, data, i, tableBody);
+        });
+
+        rulerOverlayZeroWorldX = smallestCenterGlobalX;
+        rulerOverlayPxPerMm = scalingFactor * view.scale;
+    }
+
+    ctx.restore();
+    if (rulerOverlayZeroWorldX !== null && rulerOverlayPxPerMm !== null) {
+        drawBottomRulerOverlay(rulerOverlayZeroWorldX, rulerOverlayPxPerMm, rulerUnits);
+    }
+    if (referenceOverlayWorldPoint) {
+        drawReferenceCrosshairOverlay(referenceOverlayWorldPoint.x, referenceOverlayWorldPoint.y);
+    }
+    drawPlotTitleOverlay();
+}
+
+function appendTableRow(circleData, data, i, tableBody) {
+    let areaVal;
+    let deltaR = 'N/A';
+    const cmRad = data.diameter/20;
+
+    if (i === circleData.length - 1) {
+        // Innermost
+        areaVal = Math.PI * Math.pow(cmRad, 2);
+    } else {
+        // Annulus
+        const nextCmRad = circleData[i + 1].diameter / 20;
+        areaVal = Math.PI * (Math.pow(cmRad, 2) - Math.pow(nextCmRad, 2));
+
+        const thisRad_mm = data.diameter / 2;
+        const nextRad_mm = circleData[i + 1].diameter / 2;
+        deltaR = (thisRad_mm - nextRad_mm).toFixed(2);
+    }
+
+    // L/m Calculation: Area(cm^2) / 10
+    const litersPerMeter = (areaVal / 10).toFixed(2);
+    const inchesOD = (data.diameter / 25.4).toFixed(3);
+
+    const rowHTML = `
+      <tr data-original-index="${data.originalIndex}">
+        <td class="color-cell" style="background-color: ${data.fillColor}; color: ${data.tableTextColor};" contenteditable="true" data-field="material">
+          ${data.materialLabel}
+        </td>
+        <td class="od-column" contenteditable="true" data-field="odmm">${data.diameter.toFixed(2)}</td>
+        <td class="od-column" contenteditable="true" data-field="odin">${inchesOD}</td>
+        <td>${deltaR}</td>
+        <td>${areaVal.toFixed(2)}</td>
+        <td>${litersPerMeter}</td>
+      </tr>
+    `;
+    tableBody.insertAdjacentHTML('beforeend', rowHTML);
+}
+
+
+function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+function isViewInteractionLocked() {
+  const lockEl = document.getElementById('lockViewCheckbox');
+  return !!(lockEl && lockEl.checked);
+}
+
+function resetViewTransform() {
+  view.scale = 1;
+  view.panX = 0;
+  view.panY = 0;
+}
+
+function requestPlot(options = {}) {
+  const needsTable = options.rebuildTable !== false;
+  if (needsTable) plotNeedsTableRefresh = true;
+  if (plotFrameRequested) return;
+  plotFrameRequested = true;
+  requestAnimationFrame(() => {
+    plotFrameRequested = false;
+    plotCircles({ rebuildTable: plotNeedsTableRefresh });
+    plotNeedsTableRefresh = false;
+  });
+}
+
+/***************************************************************
+ * INTERACTIONS & EXPORTS
+ ***************************************************************/
+
+function wireCanvasInteractions() {
+  const canvas = document.getElementById('circleCanvas');
+  const tooltip = document.getElementById('tooltip');
+  let isPanning = false, lastX = 0, lastY = 0;
+
+  const resetView = () => {
+    resetViewTransform();
+    requestPlot({ rebuildTable: false });
+  };
+
+  canvas.addEventListener('dblclick', resetView);
+  canvas.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0 && e.changedTouches.length === 1 && e.detail === 2) {
+      resetView();
+    }
+  });
+
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (isViewInteractionLocked()) return;
+    const point = getCanvasInteractionPoint(e);
+    const prev = view.scale;
+    const z = e.deltaY < 0 ? 1.1 : 0.9;
+    const next = Math.max(0.2, Math.min(10, prev * z));
+    const wx = (point.x - view.panX) / prev;
+    const wy = (point.y - view.panY) / prev;
+    view.panX = point.x - wx * next;
+    view.panY = point.y - wy * next;
+    view.scale = next;
+    requestPlot({ rebuildTable: false });
+  }, { passive: false });
+
+  canvas.addEventListener('mousedown', (e) => {
+    if (isViewInteractionLocked()) return;
+    isPanning = true;
+    lastX = e.clientX;
+    lastY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', () => {
+    isPanning = false;
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isViewInteractionLocked()) {
+      isPanning = false;
+    } else if (isPanning) {
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      view.panX += dx / view.scale;
+      view.panY += dy / view.scale;
+      requestPlot({ rebuildTable: false });
+    }
+
+    updateTooltipAtClientPoint(e.clientX, e.clientY);
+  });
+
+  canvas.addEventListener('touchstart', (e) => {
+    if (isViewInteractionLocked()) {
+      activeTouches.clear();
+      touchState = null;
+      return;
+    }
+    for (const touch of e.changedTouches) {
+      activeTouches.set(touch.identifier, { clientX: touch.clientX, clientY: touch.clientY });
+    }
+
+    if (activeTouches.size === 1) {
+      const touch = [...activeTouches.values()][0];
+      touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
+      updateTooltipAtClientPoint(touch.clientX, touch.clientY);
+    } else if (activeTouches.size >= 2) {
+      const touches = [...activeTouches.values()].slice(0, 2);
+      const midpoint = getTouchMidpoint(touches[0], touches[1]);
+      const point = getCanvasInteractionPoint(midpoint);
+      touchState = {
+        mode: 'pinch',
+        startDistance: getTouchDistance(touches[0], touches[1]),
+        startScale: view.scale,
+        worldX: (point.x - view.panX) / view.scale,
+        worldY: (point.y - view.panY) / view.scale,
+        midpoint
+      };
+      tooltip.style.display = 'none';
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (isViewInteractionLocked()) {
+      activeTouches.clear();
+      touchState = null;
+      tooltip.style.display = 'none';
+      return;
+    }
+    for (const touch of e.changedTouches) {
+      activeTouches.set(touch.identifier, { clientX: touch.clientX, clientY: touch.clientY });
+    }
+
+    if (activeTouches.size === 1) {
+      const touch = [...activeTouches.values()][0];
+      if (!touchState || touchState.mode !== 'pan') {
+        touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
+      }
+      const dx = touch.clientX - touchState.lastX;
+      const dy = touch.clientY - touchState.lastY;
+      touchState.lastX = touch.clientX;
+      touchState.lastY = touch.clientY;
+      view.panX += dx / view.scale;
+      view.panY += dy / view.scale;
+      requestPlot({ rebuildTable: false });
+      updateTooltipAtClientPoint(touch.clientX, touch.clientY);
+    } else if (activeTouches.size >= 2) {
+      const touches = [...activeTouches.values()].slice(0, 2);
+      const midpoint = getTouchMidpoint(touches[0], touches[1]);
+      const point = getCanvasInteractionPoint(midpoint);
+      const distance = Math.max(1, getTouchDistance(touches[0], touches[1]));
+
+      if (!touchState || touchState.mode !== 'pinch') {
+        touchState = {
+          mode: 'pinch',
+          startDistance: distance,
+          startScale: view.scale,
+          worldX: (point.x - view.panX) / view.scale,
+          worldY: (point.y - view.panY) / view.scale,
+          midpoint
+        };
+      }
+
+      const next = Math.max(0.2, Math.min(10, touchState.startScale * (distance / touchState.startDistance)));
+      view.scale = next;
+      view.panX = point.x - touchState.worldX * next;
+      view.panY = point.y - touchState.worldY * next;
+      requestPlot({ rebuildTable: false });
+      tooltip.style.display = 'none';
+    }
+  }, { passive: false });
+
+  const clearEndedTouches = (e) => {
+    for (const touch of e.changedTouches) {
+      activeTouches.delete(touch.identifier);
+    }
+
+    if (activeTouches.size === 0) {
+      touchState = null;
+      tooltip.style.display = 'none';
+    } else if (activeTouches.size === 1) {
+      const touch = [...activeTouches.values()][0];
+      touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
+    }
+  };
+
+  canvas.addEventListener('touchend', clearEndedTouches);
+  canvas.addEventListener('touchcancel', clearEndedTouches);
+
+  const lockEl = document.getElementById('lockViewCheckbox');
+  if (lockEl) {
+    lockEl.addEventListener('change', () => {
+      if (lockEl.checked) {
+        isPanning = false;
+        activeTouches.clear();
+        touchState = null;
+        tooltip.style.display = 'none';
+        resetViewTransform();
+        requestPlot({ rebuildTable: false });
+      }
+    });
+  }
+}
+
+function wireTableEditing() {
+  const tbody = document.querySelector('#areaTable tbody');
+  tbody.addEventListener('blur', (e) => {
+    const cell = e.target.closest('[contenteditable]'); if (!cell) return;
+    const tr = cell.closest('tr'); 
+    
+    const idx = parseInt(tr.getAttribute('data-original-index'), 10);
+    const rows = document.querySelectorAll('.layer-row');
+    const inputRow = rows[idx]; 
+    if (!inputRow) return;
+
+    if (cell.dataset.field === 'material') { 
+        inputRow.querySelector('.materialLabel').value = cell.innerText.trim(); 
+    }
+    if (cell.dataset.field === 'odmm') {
+      const v = parseFloat(cell.innerText.trim()); 
+      if (!isNaN(v) && v > 0) { 
+          inputRow.querySelector('.unit').value='mm'; 
+          inputRow.querySelector('.circleDiameter').value=String(v); 
+      }
+    }
+    sortLayerRowsByDiameter();
+    requestPlot();
+  }, true);
+}
+
+function getViewFilenameSuffixShort() {
+    const viewSel = document.getElementById('viewModeSelect');
+    const activeView = viewSel ? viewSel.value : viewMode;
+    return activeView === 'longitudinal' ? '_lon' : '_rad';
+}
+
+// Helper to get filename from title
+function getSafeFilename(ext, options = {}) {
+    const includeViewSuffix = Boolean(options.includeViewSuffix);
+    let name = document.getElementById('configNameInput').value.trim();
+    if (!name) name = "Well_Plot";
+    if (includeViewSuffix) name += getViewFilenameSuffixShort();
+    return name + ext;
+}
+
+function isExportOutlineEnabled() {
+    const el = document.getElementById('exportOutlineCheckbox');
+    return !el || el.checked;
+}
+
+function withExportOutlineApplied(action) {
+    action();
+}
+
+function drawExportOutlineOnCanvas(ctx, width, height) {
+    if (!isExportOutlineEnabled()) return;
+    ctx.save();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, Math.max(0, width - 2), Math.max(0, height - 2));
+    ctx.restore();
+}
+
+
+function escapeXml(str) {
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+function triggerBlobDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function getPickerTypeFromFilename(filename) {
+    const lower = String(filename || '').toLowerCase();
+    if (lower.endsWith('.png')) {
+        return { description: 'PNG Image', accept: { 'image/png': ['.png'] } };
+    }
+    if (lower.endsWith('.svg')) {
+        return { description: 'SVG Image', accept: { 'image/svg+xml': ['.svg'] } };
+    }
+    if (lower.endsWith('.json')) {
+        return { description: 'JSON File', accept: { 'application/json': ['.json'] } };
+    }
+    return null;
+}
+
+async function saveBlobWithSharedPicker(blob, filename) {
+    try {
+        if (window.showSaveFilePicker) {
+            const opts = {
+                id: SHARED_PICKER_ID,
+                suggestedName: filename
+            };
+            const type = getPickerTypeFromFilename(filename);
+            if (type) opts.types = [type];
+            if (lastUsedFileHandle) opts.startIn = lastUsedFileHandle;
+
+            const handle = await window.showSaveFilePicker(opts);
+            lastUsedFileHandle = handle;
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return;
+        }
+    } catch (err) {
+        if (err.name === 'AbortError') return;
+        console.error(err);
+    }
+    triggerBlobDownload(blob, filename);
+}
+
+function downloadSvg(svgText, filename) {
+    const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+    saveBlobWithSharedPicker(blob, filename);
+}
+
+function getPlotState() {
+    const canvas = document.getElementById('circleCanvas');
+    const logicalWidth = canvas.width / RESOLUTION_SCALE;
+    const logicalHeight = canvas.height / RESOLUTION_SCALE;
+    const padding = 20;
+    const titleHeight = 30;
+    const plotW = logicalWidth - 2 * padding;
+    const plotH = logicalHeight - 2 * padding - titleHeight;
+    const rulerEnabled = (document.getElementById('showRulerCheckbox') ? document.getElementById('showRulerCheckbox').checked : true);
+    const rulerGap = rulerEnabled ? 6 : 0;
+    const rulerHeight = rulerEnabled ? 30 : 0;
+    const drawPlotH = plotH - rulerGap - rulerHeight;
+
+    const bgSel = document.getElementById('bgColorSelect');
+    const bgPick = document.getElementById('bgColorOther');
+    const bgColor = (bgSel.value === 'other') ? bgPick.value : bgSel.value;
+
+    const rows = document.querySelectorAll('.layer-row');
+    let circleData = [];
+    rows.forEach((row, idx) => {
+        const dInput = row.querySelector('.circleDiameter');
+        const unit = row.querySelector('.unit').value;
+        let diam = parseFloat(dInput.value) || 0;
+        if (unit === 'inches') diam *= 25.4;
+
+        const fillSel = row.querySelector('.fillColorSelect');
+        const fillPick = row.querySelector('.fillColor');
+        let fill = (fillSel.value === 'other') ? fillPick.value : fillSel.value;
+
+        const known = config.fillColorOptions.find(c => c.value === fill);
+        const textColor = known ? known.textColor : '#000000';
+
+        circleData.push({
+            diameter: diam,
+            fillColor: fill,
+            lineColor: row.querySelector('.lineColor').value,
+            lineThickness: parseFloat(row.querySelector('.lineThickness').value) || 0.25,
+            materialLabel: row.querySelector('.materialLabel').value || ('Layer ' + (idx + 1)),
+            eccentricityFactor: parseFloat(row.querySelector('.eccentricityFactor').value) || 0,
+            eccentricityAngle: parseFloat(row.querySelector('.eccentricityAngle').value) || 0,
+            wavinessAmp: parseFloat(row.querySelector('.wavinessAmp')?.value) || 0,
+            wavinessFreq: parseFloat(row.querySelector('.wavinessFreq')?.value) || 8,
+            wavinessSeed: parseFloat(row.querySelector('.wavinessSeed')?.value) || 0,
+            tableTextColor: textColor,
+            originalIndex: idx
+        });
+    });
+
+    circleData.sort((a, b) => b.diameter - a.diameter);
+
+    const locked = document.getElementById('lockViewCheckbox').checked;
+    const lockVal = getLockViewSizeMmForCurrentView();
+    let referenceDiam;
+    if (locked && lockVal > 0) {
+        referenceDiam = lockVal;
+    } else {
+        const maxD = circleData[0]?.diameter || 100;
+        referenceDiam = maxD * 1.05;
+    }
+    const scalingFactor = (locked && lockVal > 0)
+        ? (plotW / referenceDiam)
+        : (Math.min(plotW, drawPlotH) / referenceDiam);
+
+    return {
+        logicalWidth,
+        logicalHeight,
+        padding,
+        titleHeight,
+        plotW,
+        plotH,
+        drawPlotH,
+        bgColor,
+        titleText: document.getElementById('configNameInput').value || '',
+        circleData,
+        scalingFactor,
+        viewMode,
+        sectionLengthMm: Math.max(50, parseFloat(document.getElementById('sectionLengthInput')?.value) || 500),
+        inclinationDeg: Math.max(0, Math.min(90, parseFloat(document.getElementById('inclinationInput')?.value) || 0))
+    };
+}
+
+function getTableMetrics() {
+    const table = document.getElementById('areaTable');
+    const rows = [...table.querySelectorAll('tr')];
+    const colCount = rows[0] ? rows[0].children.length : 0;
+    const colWidths = [];
+    for (let c = 0; c < colCount; c++) {
+        let w = 0;
+        rows.forEach(r => {
+            const cell = r.children[c];
+            if (!cell) return;
+            w = Math.max(w, cell.getBoundingClientRect().width);
+        });
+        colWidths.push(Math.ceil(w));
+    }
+    const rowHeights = rows.map(r => Math.ceil(r.getBoundingClientRect().height));
+    return {
+        table,
+        rows,
+        colCount,
+        colWidths,
+        rowHeights,
+        width: colWidths.reduce((a, b) => a + b, 0),
+        height: rowHeights.reduce((a, b) => a + b, 0)
+    };
+}
+
+function buildPlotSvg(includeExportOutline = false) {
+    const s = getPlotState();
+    const bgRgb = hexToRgb(s.bgColor) || { r: 255, g: 255, b: 255 };
+    const brightness = (bgRgb.r * 299 + bgRgb.g * 587 + bgRgb.b * 114) / 1000;
+    const titleColor = (brightness > 125) ? '#000000' : '#FFFFFF';
+
+    let parts = [];
+    parts.push(`<?xml version="1.0" encoding="UTF-8"?>`);
+    parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${s.logicalWidth}" height="${s.logicalHeight}" viewBox="0 0 ${s.logicalWidth} ${s.logicalHeight}">`);
+    parts.push(`<rect x="0" y="0" width="${s.logicalWidth}" height="${s.logicalHeight}" fill="${escapeXml(s.bgColor)}"/>`);
+
+    if (s.titleText) {
+        parts.push(`<text x="${s.logicalWidth / 2}" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="${titleColor}">${escapeXml(s.titleText)}</text>`);
+    }
+
+    const tx = s.padding + view.panX;
+    const ty = s.padding + s.titleHeight + view.panY;
+    parts.push(`<g transform="translate(${tx} ${ty}) scale(${view.scale})">`);
+
+    if (s.viewMode === 'radial') {
+        let lastCenter = { x: s.plotW / 2, y: s.drawPlotH / 2 };
+        let lastRadius = (s.circleData[0]?.diameter || 10) / 2 * s.scalingFactor;
+
+        s.circleData.forEach((data) => {
+            const radius = (data.diameter / 2) * s.scalingFactor;
+            const offset = data.eccentricityFactor * (lastRadius - radius);
+            const angleRad = ((data.eccentricityAngle - 90) * Math.PI) / 180;
+            const x = lastCenter.x + offset * Math.cos(angleRad);
+            const y = lastCenter.y + offset * Math.sin(angleRad);
+            const strokeWidth = Math.max(0.1, data.lineThickness / view.scale);
+            const d = buildWavyCirclePathD(x, y, radius, data, s.scalingFactor, 240);
+            parts.push(`<path d="${d}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"/>`);
+            lastCenter = { x, y };
+            lastRadius = radius;
+        });
+    } else {
+        const desiredLenPx = s.sectionLengthMm * s.scalingFactor;
+        const incRad = (s.inclinationDeg * Math.PI) / 180;
+        const axisAngle = incRad - (Math.PI / 2);
+        const lengthPx = Math.min(Math.min(s.plotW, s.drawPlotH) * 0.95, desiredLenPx);
+        const x0 = -lengthPx / 2;
+        const x1 = lengthPx / 2;
+        const cx = s.plotW / 2;
+        const cy = s.drawPlotH / 2;
+        let centerOffsetY = 0;
+        let lastRadius = (s.circleData[0]?.diameter || 10) / 2 * s.scalingFactor;
+
+        s.circleData.forEach((data) => {
+            const radius = (data.diameter / 2) * s.scalingFactor;
+            const offset = data.eccentricityFactor * (lastRadius - radius);
+            const angleRad = ((data.eccentricityAngle - 90) * Math.PI) / 180;
+            centerOffsetY += offset * Math.sin(angleRad);
+            const strokeWidth = Math.max(0.1, data.lineThickness / view.scale);
+
+            parts.push(`<g transform="translate(${cx} ${cy}) rotate(${axisAngle * 180 / Math.PI})">`);
+            parts.push(`<rect x="${x0}" y="${centerOffsetY - radius}" width="${lengthPx}" height="${2 * radius}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"/>`);
+            parts.push(`</g>`);
+            lastRadius = radius;
+        });
+    }
+
+    parts.push(`</g>`);
+    if (includeExportOutline && isExportOutlineEnabled()) {
+        parts.push(`<rect x="0" y="0" width="${s.logicalWidth}" height="${s.logicalHeight}" fill="none" stroke="#000000" stroke-width="2" vector-effect="non-scaling-stroke"/>`);
+    }
+    parts.push(`</svg>`);
+    return parts.join('');
+}
+
+function buildTableSvg(xOffset = 0, yOffset = 0) {
+    const m = getTableMetrics();
+    let parts = [];
+    parts.push(`<g transform="translate(${xOffset} ${yOffset})">`);
+    parts.push(`<rect x="0" y="0" width="${m.width}" height="${m.height}" fill="#ffffff"/>`);
+
+    let y = 0;
+    m.rows.forEach((row, ri) => {
+        let x = 0;
+        for (let ci = 0; ci < m.colCount; ci++) {
+            const cell = row.children[ci];
+            const w = m.colWidths[ci];
+            const h = m.rowHeights[ri];
+            const isColorCell = !!(cell && cell.classList.contains('color-cell'));
+            let fill = '#ffffff';
+            let textColor = '#000000';
+            let fontSize = 14;
+            let fontWeight = '400';
+            let fontFamily = 'Arial, sans-serif';
+            let text = '';
+
+            if (cell) {
+                const cs = getComputedStyle(cell);
+                fill = isColorCell ? cs.backgroundColor : '#ffffff';
+                textColor = cs.color || '#000000';
+                fontSize = parseFloat(cs.fontSize) || 14;
+                fontWeight = (cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD' || parseInt(cs.fontWeight, 10) >= 600 || cs.fontWeight === 'bold') ? '700' : '400';
+                fontFamily = cs.fontFamily || 'Arial, sans-serif';
+                text = cell.innerText;
+            }
+
+            parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${escapeXml(fill)}" stroke="#000000" stroke-width="1"/>`);
+            if (text) {
+                const textY = y + h / 2 + fontSize * 0.35;
+                parts.push(`<text x="${x + 6}" y="${textY}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${escapeXml(textColor)}">${escapeXml(text)}</text>`);
+            }
+            x += w;
+        }
+        y += m.rowHeights[ri];
+    });
+
+    parts.push(`</g>`);
+    return { svg: parts.join(''), width: m.width, height: m.height };
+}
+
+function exportPlotSvg() {
+    plotCircles({ rebuildTable: false });
+    withExportOutlineApplied(() => {
+        downloadSvg(buildPlotSvg(true), getSafeFilename('.svg', { includeViewSuffix: true }));
+    });
+}
+
+function exportTableSvg() {
+    plotCircles();
+    const tableSvg = buildTableSvg(0, 0);
+    const svg = `<?xml version="1.0" encoding="UTF-8"?>` +
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${tableSvg.width}" height="${tableSvg.height}" viewBox="0 0 ${tableSvg.width} ${tableSvg.height}">` +
+        tableSvg.svg +
+        `</svg>`;
+    downloadSvg(svg, getSafeFilename('_table.svg'));
+}
+
+function exportAllSvg() {
+    plotCircles();
+    withExportOutlineApplied(() => {
+        const s = getPlotState();
+        const tableSvg = buildTableSvg(0, 0);
+        const finalW = Math.max(s.logicalWidth, tableSvg.width) + 40;
+        const finalH = s.logicalHeight + tableSvg.height + 60;
+        const plotX = (finalW - s.logicalWidth) / 2;
+        const tableX = (finalW - tableSvg.width) / 2;
+        const tableY = s.logicalHeight + 40;
+
+        const svg = `<?xml version="1.0" encoding="UTF-8"?>` +
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${finalW}" height="${finalH}" viewBox="0 0 ${finalW} ${finalH}">` +
+            `<rect x="0" y="0" width="${finalW}" height="${finalH}" fill="#ffffff"/>` +
+            `<g transform="translate(${plotX} 20)">${buildPlotSvg().replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')}</g>` +
+            buildTableSvg(tableX, tableY).svg +
+            (isExportOutlineEnabled() ? `<rect x="0" y="0" width="${finalW}" height="${finalH}" fill="none" stroke="#000000" stroke-width="2" vector-effect="non-scaling-stroke"/>` : ``) +
+            `</svg>`;
+        downloadSvg(svg, getSafeFilename('_combo.svg', { includeViewSuffix: true }));
+    });
+}
+
+// Export Plot PNG
+function exportPlotPng() {
+  plotCircles({ rebuildTable: false });
+  withExportOutlineApplied(() => {
+    const sourceCanvas = document.getElementById('circleCanvas');
+    const filename = getSafeFilename('.png', { includeViewSuffix: true });
+    if (!isExportOutlineEnabled()) {
+      sourceCanvas.toBlob(b => {
+        if (!b) return;
+        saveBlobWithSharedPicker(b, filename);
+      });
+      return;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = sourceCanvas.width;
+    canvas.height = sourceCanvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(sourceCanvas, 0, 0);
+    drawExportOutlineOnCanvas(ctx, canvas.width, canvas.height);
+    canvas.toBlob(b => { 
+        if (!b) return;
+        saveBlobWithSharedPicker(b, filename);
+    });
+  });
+}
+
+// Export Table as PNG (Custom Rasterizer)
+function exportTableAsImage() {
+  plotCircles();
+  const table = document.getElementById('areaTable'); if (!table) return;
+  const rows = [...table.querySelectorAll('tr')];
+  const colCount = rows[0] ? rows[0].children.length : 0;
+  const colWidths = [];
+  for (let c = 0; c < colCount; c++) {
+    let w = 0;
+    rows.forEach(r => { const cell = r.children[c]; if (!cell) return; w = Math.max(w, cell.getBoundingClientRect().width); });
+    colWidths.push(Math.ceil(w));
+  }
+  const rowHeights = rows.map(r => Math.ceil(r.getBoundingClientRect().height));
+  const W = colWidths.reduce((a,b)=>a+b,0), H = rowHeights.reduce((a,b)=>a+b,0);
+  
+  // *** UPDATED: Use RESOLUTION_SCALE ***
+  const dpr = RESOLUTION_SCALE;
+  
+  const canvas = document.createElement('canvas');
+  canvas.width  = Math.max(1, Math.floor((W + 10) * dpr));
+  canvas.height = Math.max(1, Math.floor((H + 10) * dpr));
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W + 10, H + 10); ctx.translate(5, 5);
+
+  let y = 0;
+  rows.forEach((r, ri) => {
+    let x = 0;
+    for (let ci = 0; ci < colCount; ci++) {
+      const cell = r.children[ci]; const w = colWidths[ci]; const h = rowHeights[ri];
+      if (cell && cell.classList.contains('color-cell')) {
+        const bg = getComputedStyle(cell).backgroundColor; ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+      } else {
+        ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
+      }
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
+      if (cell) {
+        const cs = getComputedStyle(cell);
+        const fam = cs.fontFamily || 'Arial, sans-serif'; const size = cs.fontSize || '14px';
+        const weightVal = cs.fontWeight || '400';
+        const isHeader = cell.tagName === 'TH' || r.parentElement.tagName === 'THEAD';
+        const bold = isHeader || parseInt(weightVal, 10) >= 600 || weightVal === 'bold';
+        ctx.font = `${bold ? 'bold ' : ''}${size} ${fam}`;
+        ctx.fillStyle = cs.color || '#000'; ctx.textBaseline = 'middle';
+        ctx.fillText(cell.innerText, x + 6, y + h / 2);
+      }
+      x += w;
+    }
+    y += rowHeights[ri];
+  });
+  const filename = getSafeFilename('_table.png');
+  canvas.toBlob(b => {
+    if (!b) return;
+    saveBlobWithSharedPicker(b, filename);
+  });
+}
+
+// Export All
+function exportAllAsImage() {
+    plotCircles();
+    withExportOutlineApplied(() => {
+        // 1. Draw Plot
+        const plotC = document.getElementById('circleCanvas');
+        // 2. Draw Table (Logic duplicated for memory safety)
+        const table = document.getElementById('areaTable');
+        const rows = [...table.querySelectorAll('tr')];
+        const colCount = rows[0] ? rows[0].children.length : 0;
+        const colWidths = []; for (let c = 0; c < colCount; c++) { let w = 0; rows.forEach(r => { const cell = r.children[c]; if (!cell) return; w = Math.max(w, cell.getBoundingClientRect().width); }); colWidths.push(Math.ceil(w)); }
+        const rowHeights = rows.map(r => Math.ceil(r.getBoundingClientRect().height));
+        const W = colWidths.reduce((a,b)=>a+b,0), H = rowHeights.reduce((a,b)=>a+b,0);
+        
+        // *** UPDATED: Use RESOLUTION_SCALE ***
+        const dpr = RESOLUTION_SCALE;
+        
+        const tableC = document.createElement('canvas');
+        tableC.width  = Math.max(1, Math.floor(W * dpr)); tableC.height = Math.max(1, Math.floor(H * dpr));
+        const tctx = tableC.getContext('2d'); tctx.scale(dpr, dpr);
+        tctx.fillStyle = '#fff'; tctx.fillRect(0, 0, W, H);
+        let y = 0;
+        rows.forEach((r, ri) => {
+            let x = 0;
+            for (let ci = 0; ci < colCount; ci++) {
+            const cell = r.children[ci]; const w = colWidths[ci]; const h = rowHeights[ri];
+            if (cell && cell.classList.contains('color-cell')) { const bg = getComputedStyle(cell).backgroundColor; tctx.fillStyle = bg; tctx.fillRect(x, y, w, h); } else { tctx.fillStyle = '#fff'; tctx.fillRect(x, y, w, h); }
+            tctx.strokeStyle = '#000'; tctx.lineWidth = 1; tctx.strokeRect(x, y, w, h);
+            if (cell) {
+                const cs = getComputedStyle(cell); const bold = (cell.tagName === 'TH' || r.parentElement.tagName === 'THEAD') ? 'bold ' : '';
+                tctx.font = `${bold}${cs.fontSize} ${cs.fontFamily}`; tctx.fillStyle = cs.color || '#000'; tctx.textBaseline = 'middle';
+                tctx.fillText(cell.innerText, x + 6, y + h / 2);
+            }
+            x += w;
+            }
+            y += rowHeights[ri];
+        });
+
+        // 3. Compose
+        const outW = Math.max(plotC.width, tableC.width);
+        
+        // Let's rely on pixel dims
+        const pW = plotC.width; const pH = plotC.height;
+        const tW = tableC.width / dpr; const tH = tableC.height / dpr;
+        
+        // Final Calculation adjusted for resolution scale
+        const finalW = Math.max(pW/dpr, tW) + 40;
+        const finalH = (pH/dpr) + tH + 60;
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = finalW * dpr; canvas.height = finalH * dpr;
+        const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+        ctx.fillStyle = '#fff'; ctx.fillRect(0,0, finalW, finalH);
+        
+        const pX = (finalW - (pW/dpr))/2;
+        // Draw Image draws logical pixels onto context
+        ctx.drawImage(plotC, 0, 0, plotC.width, plotC.height, pX, 20, pW/dpr, pH/dpr);
+        
+        const tX = (finalW - tW)/2;
+        ctx.drawImage(tableC, 0, 0, tableC.width, tableC.height, tX, (pH/dpr) + 40, tW, tH);
+        drawExportOutlineOnCanvas(ctx, finalW, finalH);
+        
+        const filename = getSafeFilename('_combo.png', { includeViewSuffix: true });
+        canvas.toBlob(b => {
+            if (!b) return;
+            saveBlobWithSharedPicker(b, filename);
+        });
+    });
+}
+
+/***************************************************************
+ * SETTINGS IMPORT/EXPORT (Updated for File Access API)
+ ***************************************************************/
+function getSettingsObj() {
+    const rows = document.querySelectorAll('.layer-row');
+    const data = Array.from(rows).map((row, idx) => ({
+        diameter: row.querySelector('.circleDiameter').value,
+        unit: row.querySelector('.unit').value,
+        materialLabel: row.querySelector('.materialLabel').value,
+        fillColor: row.querySelector('.fillColorSelect').value === 'other' ? row.querySelector('.fillColor').value : row.querySelector('.fillColorSelect').value,
+        lineColor: row.querySelector('.lineColor').value,
+        lineThickness: row.querySelector('.lineThickness').value,
+        eccentricityFactor: row.querySelector('.eccentricityFactor').value,
+        eccentricityAngle: row.querySelector('.eccentricityAngle').value,
+        wavinessAmp: row.querySelector('.wavinessAmp').value,
+        wavinessFreq: row.querySelector('.wavinessFreq').value,
+        wavinessSeed: row.querySelector('.wavinessSeed').value
+    }));
+    const bgSel = document.getElementById('bgColorSelect');
+    const bg = bgSel.value === 'other' ? document.getElementById('bgColorOther').value : bgSel.value;
+    
+    // Lock settings
+    const lock = document.getElementById('lockViewCheckbox').checked;
+    const lockSizeRadial = document.getElementById('lockViewSizeRadial').value;
+    const lockSizeLongitudinal = document.getElementById('lockViewSizeLongitudinal').value;
+    const rulerEnabled = document.getElementById('showRulerCheckbox').checked;
+    const rulerUnits = document.getElementById('rulerUnitsSelect').value;
+    const showReferenceCrosshair = document.getElementById('showReferenceCrosshairCheckbox').checked;
+    const exportOutlineEnabled = document.getElementById('exportOutlineCheckbox').checked;
+    const configName = document.getElementById('configNameInput').value;
+    
+    return { 
+        configName: configName,
+        nightMode: (document.getElementById('nightMode') ? document.getElementById('nightMode').checked : false),
+        viewMode: (document.getElementById("viewModeSelect") ? document.getElementById("viewModeSelect").value : "radial"),
+        sectionLengthMm: (document.getElementById("sectionLengthInput") ? document.getElementById("sectionLengthInput").value : 500),
+        inclinationFromVerticalDeg: (document.getElementById("inclinationInput") ? document.getElementById("inclinationInput").value : 0),
+        backgroundColor: bg, 
+        lockedView: lock,
+        lockedViewSize: lockSizeRadial, // backward compatibility
+        lockedViewSizeRadial: lockSizeRadial,
+        lockedViewSizeLongitudinal: lockSizeLongitudinal,
+        rulerEnabled: rulerEnabled,
+        rulerUnits: rulerUnits,
+        showReferenceCrosshair: showReferenceCrosshair,
+        exportOutlineEnabled: exportOutlineEnabled,
+        circles: data 
+    };
+}
+
+// Modern Save As...
+async function saveConfigAs() {
+    try {
+        const settings = getSettingsObj();
+        const jsonStr = JSON.stringify(settings, null, 2);
+        
+        let filename = 'well_plot_config.json';
+        if(settings.configName && settings.configName.trim() !== '') {
+            filename = settings.configName.trim() + '.json';
+        }
+
+        const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+        await saveBlobWithSharedPicker(blob, filename);
+    } catch (err) {
+        if (err.name !== 'AbortError') console.error(err);
+    }
+}
+
+// Modern Open...
+async function openConfig() {
+    try {
+        if (window.showOpenFilePicker) {
+            
+            const opts = {
+                id: SHARED_PICKER_ID,
+                types: [{
+                    description: 'JSON Config File',
+                    accept: { 'application/json': ['.json'] },
+                }],
+                multiple: false
+            };
+            
+            if(lastUsedFileHandle) {
+                opts.startIn = lastUsedFileHandle;
+            }
+
+            const [handle] = await window.showOpenFilePicker(opts);
+            
+            // Update global handle
+            lastUsedFileHandle = handle;
+            
+            // Auto-set config name from filename (Priority Rule)
+            const fname = handle.name;
+            const nameBase = fname.replace(/\.json$/i, '');
+            document.getElementById('configNameInput').value = nameBase;
+
+            const file = await handle.getFile();
+            const text = await file.text();
+            
+            // Pass true to say "preserve title from filename"
+            applySettingsData(JSON.parse(text), true);
+        } else {
+            document.getElementById('fallbackFileInput').click();
+        }
+    } catch (err) {
+        if (err.name !== 'AbortError') console.error(err);
+    }
+}
+
+function fallbackLoad(input) {
+    const file = input.files[0];
+    if(!file) return;
+    
+    // Auto-set config name
+    const fname = file.name;
+    const nameBase = fname.replace(/\.json$/i, '');
+    document.getElementById('configNameInput').value = nameBase;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            applySettingsData(data, true);
+        } catch(err) {
+            alert("Error parsing JSON file");
+        }
+    };
+    reader.readAsText(file);
+    input.value = ''; 
+}
+
+function applySettingsData(data, preserveTitle) {
+    // Apply Name if inside JSON AND we didn't just set it from filename
+    // Actually, user requested: "title should just be 'Case 14' (filename)"
+    // So if preserveTitle is true, we skip this.
+    if(!preserveTitle && data.configName) {
+        document.getElementById('configNameInput').value = data.configName;
+    }
+
+    if (data.nightMode !== undefined) {
+        setNightMode(Boolean(data.nightMode));
+    }
+
+    // Apply BG
+    const bgSel = document.getElementById('bgColorSelect');
+    const knownColors = config.fillColorOptions.map(c => c.value);
+    if (knownColors.includes(data.backgroundColor)) {
+        bgSel.value = data.backgroundColor;
+        document.getElementById('bgColorOther').style.display = 'none';
+    } else {
+        bgSel.value = 'other';
+        const otherPick = document.getElementById('bgColorOther');
+        otherPick.style.display = 'block';
+        otherPick.value = data.backgroundColor;
+    }
+    
+    // Apply Lock
+    if(data.lockedView !== undefined) {
+        document.getElementById('lockViewCheckbox').checked = data.lockedView;
+        const radial = data.lockedViewSizeRadial ?? data.lockedViewSize ?? 300;
+        const longitudinal = data.lockedViewSizeLongitudinal ?? data.lockedViewSize ?? 300;
+        document.getElementById('lockViewSizeRadial').value = radial;
+        document.getElementById('lockViewSizeLongitudinal').value = longitudinal;
+    }
+    if (data.rulerEnabled !== undefined) {
+        document.getElementById('showRulerCheckbox').checked = Boolean(data.rulerEnabled);
+    } else {
+        document.getElementById('showRulerCheckbox').checked = true;
+    }
+    if (data.rulerUnits === 'imperial' || data.rulerUnits === 'metric') {
+        document.getElementById('rulerUnitsSelect').value = data.rulerUnits;
+    } else {
+        document.getElementById('rulerUnitsSelect').value = 'metric';
+    }
+    if (data.showReferenceCrosshair !== undefined) {
+        document.getElementById('showReferenceCrosshairCheckbox').checked = Boolean(data.showReferenceCrosshair);
+    } else {
+        document.getElementById('showReferenceCrosshairCheckbox').checked = true;
+    }
+    if (data.exportOutlineEnabled !== undefined) {
+        document.getElementById('exportOutlineCheckbox').checked = Boolean(data.exportOutlineEnabled);
+    } else {
+        document.getElementById('exportOutlineCheckbox').checked = true;
+    }
+    
+    // Apply View Mode (optional)
+    if(data.viewMode && document.getElementById('viewModeSelect')) {
+        document.getElementById('viewModeSelect').value = data.viewMode;
+        // Sync UI visibility
+        const show = (data.viewMode === 'longitudinal');
+        const secLenInput = document.getElementById('sectionLengthInput');
+        const secLenLabel = document.getElementById('sectionLengthLabel');
+        const incInput = document.getElementById('inclinationInput');
+        const incLabel = document.getElementById('inclinationLabel');
+        if(secLenInput && secLenLabel) {
+            secLenInput.style.display = show ? 'inline-block' : 'none';
+            secLenLabel.style.display = show ? 'inline' : 'none';
+        }
+        if(incInput && incLabel) {
+            incInput.style.display = show ? 'inline-block' : 'none';
+            incLabel.style.display = show ? 'inline' : 'none';
+        }
+        viewMode = data.viewMode;
+    }
+    if(data.sectionLengthMm && document.getElementById('sectionLengthInput')) {
+        document.getElementById('sectionLengthInput').value = data.sectionLengthMm;
+    }
+    if(data.inclinationFromVerticalDeg !== undefined && document.getElementById('inclinationInput')) {
+        document.getElementById('inclinationInput').value = data.inclinationFromVerticalDeg;
+    }
+    // Clear Lists
+    document.getElementById('layer-list').innerHTML = '';
+    
+    // Build rows
+    if(data.circles) {
+        data.circles.forEach(c => {
+           const div = buildCircleEntry(c.diameter, c.fillColor, c.materialLabel);
+           div.querySelector('.unit').value = c.unit;
+           div.querySelector('.lineColor').value = c.lineColor;
+           div.querySelector('.lineThickness').value = c.lineThickness;
+           div.querySelector('.eccentricityFactor').value = c.eccentricityFactor;
+           div.querySelector('.eccentricityAngle').value = c.eccentricityAngle;
+           div.querySelector('.wavinessAmp').value = c.wavinessAmp ?? 0;
+           div.querySelector('.wavinessFreq').value = c.wavinessFreq ?? 8;
+           div.querySelector('.wavinessSeed').value = c.wavinessSeed ?? 0;
+           document.getElementById('layer-list').appendChild(div);
+        });
+    }
+    sortLayerRowsByDiameter();
+    
+    plotCircles();
+}
+</script>
+</body>
+</html>
