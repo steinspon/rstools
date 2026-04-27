@@ -6,12 +6,12 @@
   <title>Image Annotating Tool</title>
   <style>
     :root {
-      --bg: #f5f7fa;
-      --bg-accent: #f5f7fa;
+      --bg: #f3f6f9;
+      --bg-accent: #f3f6f9;
       --surface: #ffffff;
-      --surface-2: #f8fafc;
+      --surface-2: #f7f9fc;
       --surface-3: #f1f5f9;
-      --border: #d8dee6;
+      --border: #d5dce5;
       --border-strong: #cbd5e1;
       --text: #111827;
       --muted: #6b7280;
@@ -20,14 +20,18 @@
       --danger: #c53030;
       --danger-soft: #fff3f3;
       --focus: #60a5fa;
-      --radius-lg: 14px;
-      --radius-md: 11px;
-      --space-1: 6px;
-      --space-2: 10px;
-      --space-3: 14px;
-      --space-4: 18px;
-      --space-5: 24px;
-      --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.05);
+      --radius-lg: 3px;
+      --radius-md: 3px;
+      --space-1: 2px;
+      --space-2: 4px;
+      --space-3: 6px;
+      --space-4: 8px;
+      --space-5: 10px;
+      --shadow-sm: 0 2px 10px rgba(15, 23, 42, 0.05);
+      --control-height: 22px;
+      --control-font: 10px;
+      --control-px: 6px;
+      --control-py: 2px;
       --field-bg: #ffffff;
       --field-border: #cbd5e1;
       --field-text: #111827;
@@ -49,7 +53,7 @@
       --danger: #f85149;
       --danger-soft: #332227;
       --focus: #8cc0ff;
-      --shadow-sm: 0 18px 45px rgba(0, 0, 0, 0.38);
+      --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
       --field-bg: #131a24;
       --field-border: #30363d;
       --field-text: #e6edf3;
@@ -61,6 +65,7 @@
     body {
       margin: 0;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 11px;
       background: var(--bg);
       color: var(--text);
     }
@@ -85,42 +90,42 @@
 
     .app-header {
       display: grid;
-      gap: 12px;
-      padding: 12px 16px;
+      gap: 4px;
+      padding: 5px 7px;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius-lg);
       background: var(--surface);
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       flex-shrink: 0;
     }
     .app-header-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 8px;
     }
     .app-brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px;
       min-width: 0;
     }
     .app-logo {
-      height: 40px;
+      height: 22px;
       width: auto;
       flex-shrink: 0;
     }
     .app-title-wrap { min-width: 0; }
     .app-header h1 {
       margin: 0;
-      font-size: 1.18rem;
+      font-size: 0.82rem;
       line-height: 1.2;
       letter-spacing: 0.01em;
     }
     .app-header p {
-      margin: 2px 0 0;
+      margin: 1px 0 0;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
     }
     .app-header p a {
       color: inherit;
@@ -132,39 +137,39 @@
       text-decoration: underline;
     }
     .app-meta {
-      font-size: 12px;
+      font-size: 10px;
       color: var(--muted);
       text-align: right;
-      line-height: 1.45;
+      line-height: 1.4;
       white-space: nowrap;
     }
     .header-actions {
       display: flex;
       align-items: center;
-      gap: var(--space-2);
+      gap: 3px;
       flex-wrap: wrap;
       justify-content: flex-end;
-      padding-top: 10px;
+      padding-top: 4px;
       border-top: 1px solid var(--border);
     }
     .header-actions > button,
     .header-actions .menu-group > button {
-      min-height: 38px;
-      padding: 8px 13px;
-      font-size: 13px;
-      font-weight: 760;
+      min-height: var(--control-height);
+      padding: var(--control-py) 8px;
+      font-size: var(--control-font);
+      font-weight: 500;
     }
 
     button {
-      min-height: 36px;
-      padding: 7px 12px;
+      min-height: var(--control-height);
+      padding: var(--control-py) var(--control-px);
       border: 1px solid var(--border-strong);
-      border-radius: 9px;
+      border-radius: var(--radius-md);
       background: var(--surface);
       cursor: pointer;
       transition: background .14s ease, border-color .14s ease, color .14s ease, transform .12s ease;
-      font-size: 13px;
-      font-weight: 700;
+      font-size: var(--control-font);
+      font-weight: 500;
     }
     button:hover { transform: translateY(-1px); }
     button:active { transform: translateY(0); }
@@ -187,10 +192,10 @@
       color: color-mix(in srgb, var(--danger) 86%, var(--text));
     }
     .button-short {
-      min-height: 32px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 700;
+      min-height: 20px;
+      padding: 2px 8px;
+      font-size: 9px;
+      font-weight: 500;
     }
 
     .menu-group { position: relative; }
@@ -199,9 +204,9 @@
       top: calc(100% + 8px);
       right: 0;
       min-width: 220px;
-      padding: 7px;
+      padding: 5px;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--surface);
       box-shadow: 0 14px 26px rgba(13, 26, 43, 0.2);
       display: none;
@@ -220,19 +225,19 @@
     .theme-switch {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      min-height: 40px;
-      padding: 0 12px;
+      gap: 4px;
+      min-height: var(--control-height);
+      padding: 0 6px;
       border: 1px solid var(--border);
       border-radius: 999px;
       background: var(--surface-2);
-      font-size: 13px;
-      font-weight: 700;
+      font-size: var(--control-font);
+      font-weight: 500;
       cursor: pointer;
     }
     .theme-switch input[type="checkbox"] {
-      width: 16px;
-      min-height: 16px;
+      width: 14px;
+      min-height: 14px;
       accent-color: var(--primary);
       margin: 0;
     }
@@ -257,7 +262,7 @@
     }
     .controls-stack {
       display: grid;
-      gap: 10px;
+      gap: 6px;
     }
 
     details.section-card {
@@ -273,8 +278,8 @@
       justify-content: space-between;
       gap: var(--space-2);
       cursor: pointer;
-      padding: 10px 12px;
-      font-size: 12px;
+      padding: 6px 8px;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: .04em;
       color: var(--muted);
@@ -288,39 +293,39 @@
       background: var(--surface-3);
     }
     .summary-icon {
-      font-size: 11px;
+      font-size: 10px;
       color: var(--muted);
       transition: transform .14s ease;
     }
     .section-card[open] .summary-icon { transform: rotate(90deg); }
     .section-inner {
-      padding: 12px;
+      padding: 8px;
     }
 
-    .field { margin-bottom: 10px; }
+    .field { margin-bottom: 6px; }
     .field:last-child { margin-bottom: 0; }
     .field label {
       display: block;
-      margin-bottom: 5px;
+      margin-bottom: 3px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 650;
     }
     input[type="text"], input[type="number"], textarea, select {
       width: 100%;
-      min-height: 36px;
-      padding: 7px 10px;
+      min-height: var(--control-height);
+      padding: var(--control-py) var(--control-px);
       border: 1px solid var(--field-border);
-      border-radius: 9px;
+      border-radius: var(--radius-md);
       background: var(--field-bg);
       color: var(--field-text);
-      font-size: 13px;
+      font-size: var(--control-font);
     }
     input[type="color"] {
       width: 100%;
-      min-height: 36px;
+      min-height: var(--control-height);
       border: 1px solid var(--field-border);
-      border-radius: 9px;
+      border-radius: var(--radius-md);
       background: var(--field-bg);
       padding: 2px 4px;
     }
@@ -386,14 +391,14 @@
     }
 
     .small-note {
-      font-size: 12px;
+      font-size: 10px;
       color: var(--muted);
       line-height: 1.35;
     }
     .hint-block {
       border: 1px dashed var(--border-strong);
-      border-radius: 9px;
-      padding: 8px 10px;
+      border-radius: 8px;
+      padding: 6px 8px;
       background: color-mix(in srgb, var(--surface-3) 70%, transparent);
     }
     .hint-block summary {
@@ -445,9 +450,9 @@
       align-items: center;
       justify-content: space-between;
       gap: var(--space-2);
-      padding: 8px 10px;
+      padding: 5px 8px;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 8px;
       background: var(--toolbar-bg);
       flex-wrap: wrap;
       width: fit-content;
@@ -457,17 +462,17 @@
     .workspace-toolbar-group {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       flex-wrap: wrap;
     }
     .status-bar {
       flex: 1 1 260px;
-      min-height: 32px;
-      font-size: 12px;
+      min-height: var(--control-height);
+      font-size: 10px;
       color: var(--muted);
       border: 1px solid var(--border);
-      border-radius: 9px;
-      padding: 7px 10px;
+      border-radius: 8px;
+      padding: 2px 8px;
       background: var(--surface);
       font-variant-numeric: tabular-nums;
       display: flex;
@@ -478,7 +483,7 @@
       flex: 0 0 auto;
       min-height: 0;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 8px;
       background: #dce3ea;
       overflow: auto;
       position: relative;
@@ -488,7 +493,7 @@
       width: fit-content;
       max-width: 100%;
       margin: 0 auto;
-      padding: 14px;
+      padding: 8px;
     }
     #workCanvas {
       width: auto;

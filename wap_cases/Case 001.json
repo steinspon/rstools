@@ -1,0 +1,58 @@
+{
+  "configName": "Case 001",
+  "nightMode": false,
+  "viewMode": "radial",
+  "sectionLengthMm": "500",
+  "inclinationFromVerticalDeg": "0",
+  "backgroundColor": "#FFFFFF",
+  "lockedView": false,
+  "lockedViewSize": "300",
+  "lockedViewSizeRadial": "300",
+  "lockedViewSizeLongitudinal": "300",
+  "rulerEnabled": true,
+  "rulerUnits": "metric",
+  "rulerPadding": "0",
+  "showReferenceCrosshair": true,
+  "exportOutlineEnabled": true,
+  "circles": [
+    {
+      "diameter": "311.15",
+      "unit": "mm",
+      "materialLabel": "Cement",
+      "fillColor": "#E3DFEB",
+      "lineColor": "#000000",
+      "lineThickness": "1",
+      "lineType": "dashed",
+      "eccentricityFactor": "0",
+      "eccentricityAngle": "0",
+      "wavinessAmp": "3",
+      "wavinessFreq": "8"
+    },
+    {
+      "diameter": "244.48",
+      "unit": "mm",
+      "materialLabel": "9.625'' 40#",
+      "fillColor": "#210D2A",
+      "lineColor": "#000000",
+      "lineThickness": "0.25",
+      "lineType": "solid",
+      "eccentricityFactor": "0",
+      "eccentricityAngle": "0",
+      "wavinessAmp": "0",
+      "wavinessFreq": "8"
+    },
+    {
+      "diameter": "224.41",
+      "unit": "mm",
+      "materialLabel": "N/A",
+      "fillColor": "#FFFFFF",
+      "lineColor": "#000000",
+      "lineThickness": "0.25",
+      "lineType": "solid",
+      "eccentricityFactor": "0",
+      "eccentricityAngle": "0",
+      "wavinessAmp": "0",
+      "wavinessFreq": "8"
+    }
+  ]
+}

@@ -6,22 +6,27 @@
   <title>Interwell Well Architecture Plotter v6.6 (High Res)</title>
   <style>
     :root {
-      --bg: #f5f7fa;
+      --bg: #f3f6f9;
       --surface: #ffffff;
-      --surface-alt: #f8fafc;
-      --border: #d8dee6;
+      --surface-alt: #f7f9fc;
+      --border: #d5dce5;
       --text: #111827;
       --muted: #6b7280;
       --primary: #1f5fae;
       --primary-strong: #174b8b;
       --success: #0f8a4b;
       --danger: #c53030;
-      --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
-      --radius: 14px;
-      --space-sm: 8px;
-      --space-md: 14px;
-      --space-lg: 20px;
-      --space-xl: 28px;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+      --radius: 3px;
+      --space-sm: 2px;
+      --space-md: 4px;
+      --space-lg: 6px;
+      --space-xl: 8px;
+      --control-height: 22px;
+      --control-font: 10px;
+      --control-px: 6px;
+      --control-py: 2px;
+      --layer-cols: 84px 56px minmax(0, 1fr) 108px 24px 24px;
       --panel: var(--surface);
       --field-bg: #ffffff;
       --field-text: var(--text);
@@ -43,7 +48,7 @@
       --primary-strong: #79b8ff;
       --success: #3fb950;
       --danger: #f85149;
-      --shadow: 0 18px 45px rgba(0, 0, 0, 0.38);
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
       --panel: var(--surface);
       --field-bg: #0f141b;
       --field-text: var(--text);
@@ -60,15 +65,16 @@
     body {
       margin: 0;
       min-height: 100vh;
-      overflow: hidden;
+      overflow: auto;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 11px;
       background: var(--bg);
       color: var(--text);
       -webkit-text-size-adjust: 100%;
     }
 
     .wrap.app-shell {
-      height: 100vh;
+      min-height: 100vh;
       padding: var(--space-lg);
       display: flex;
       flex-direction: column;
@@ -79,28 +85,28 @@
     .app-header {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
-      gap: 12px;
-      padding: 12px 16px;
+      gap: 4px;
+      padding: 5px 7px;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: var(--radius);
       background: var(--surface);
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
       flex-shrink: 0;
     }
     .app-header-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
+      gap: 8px;
     }
     .app-brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 6px;
       min-width: 0;
     }
     .app-logo {
-      height: 40px;
+      height: 22px;
       width: auto;
       flex-shrink: 0;
     }
@@ -109,14 +115,14 @@
     }
     .app-header h1 {
       margin: 0;
-      font-size: 1.18rem;
+      font-size: 0.82rem;
       line-height: 1.2;
       letter-spacing: 0.01em;
     }
     .app-header p {
-      margin: 2px 0 0;
+      margin: 1px 0 0;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 10px;
     }
     .app-header p a {
       color: inherit;
@@ -128,20 +134,56 @@
       text-decoration: underline;
     }
     .app-meta {
-      font-size: 12px;
+      font-size: 10px;
       color: var(--muted);
       text-align: right;
-      line-height: 1.45;
+      line-height: 1.4;
       white-space: nowrap;
     }
     .header-actions {
       display: flex;
       align-items: center;
-      gap: var(--space-sm);
+      gap: 3px;
       flex-wrap: wrap;
       justify-content: flex-end;
-      padding-top: 10px;
+      padding-top: 4px;
       border-top: 1px solid var(--border);
+    }
+    .view-controls-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .view-inline-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .header-actions .menu-group > button,
+    .header-actions .view-controls-bar > button,
+    .header-actions .theme-switch {
+      min-height: var(--control-height);
+      padding: var(--control-py) var(--control-px);
+      font-size: var(--control-font);
+      border-radius: var(--radius);
+    }
+    .header-actions .view-controls-bar select,
+    .header-actions .view-controls-bar input[type="number"] {
+      min-height: var(--control-height);
+      padding: var(--control-py) 5px;
+      font-size: var(--control-font);
+      border-radius: var(--radius);
+    }
+    #viewModeSelect {
+      min-width: 160px;
+    }
+    #sectionLengthInput {
+      width: 60px;
+    }
+    #inclinationInput {
+      width: 50px;
     }
     .menu-bar {
       display: flex;
@@ -161,9 +203,9 @@
       right: 0;
       display: none;
       min-width: 230px;
-      padding: 8px;
+      padding: 6px;
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 8px;
       background: var(--surface);
       box-shadow: 0 20px 42px rgba(0,0,0,.18);
       z-index: 40;
@@ -184,6 +226,14 @@
       background: var(--surface-alt);
       transform: none;
     }
+    .menu-popover .menu-label {
+      padding: 3px 4px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 2px;
+    }
     body.night-mode .app-header {
       background: var(--surface);
     }
@@ -199,7 +249,7 @@
 
     /* LEFT PANEL - SCROLLABLE INPUTS */
     .controls-panel {
-      width: 700px;
+      width: clamp(360px, 43vw, 564px);
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -221,7 +271,7 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       box-sizing: border-box;
     }
 
@@ -229,29 +279,29 @@
     .section-card {
       background: var(--surface-alt);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
+      border-radius: var(--radius);
+      padding: 6px;
+      margin-bottom: 6px;
     }
     .section-title {
-      font-weight: 760;
-      margin-bottom: 10px;
-      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 0.7rem;
       text-transform: uppercase;
       color: var(--muted);
       border-bottom: 1px solid var(--border);
-      padding-bottom: 5px;
+      padding-bottom: 2px;
       letter-spacing: 0.03em;
     }
 
     /* FORM ELEMENTS */
-    .flex-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+    .flex-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 5px; }
     select, input[type="text"], input[type="number"] {
-      min-height: 40px;
-      padding: 9px 11px;
+      min-height: var(--control-height);
+      padding: var(--control-py) var(--control-px);
       border: 1px solid var(--field-border);
-      border-radius: 10px;
-      font-size: 14px;
+      border-radius: var(--radius);
+      font-size: var(--control-font);
       background: var(--field-bg);
       color: var(--field-text);
       outline: none;
@@ -266,12 +316,12 @@
     button {
       background: var(--surface);
       border: 1px solid var(--border);
-      min-height: 38px;
-      padding: 8px 13px;
-      border-radius: 10px;
+      min-height: var(--control-height);
+      padding: var(--control-py) 8px;
+      border-radius: var(--radius);
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 760;
+      font-size: var(--control-font);
+      font-weight: 500;
       color: var(--text);
       transition: transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease;
     }
@@ -282,25 +332,25 @@
     button.success { background: color-mix(in srgb, var(--success) 10%, #fff); color: var(--success); border-color: color-mix(in srgb, var(--success) 35%, var(--border)); }
     button.success:hover { background: color-mix(in srgb, var(--success) 16%, #fff); }
     button.danger { background: color-mix(in srgb, var(--danger) 12%, #fff); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
-    button.icon-btn { padding: 4px 8px; font-size: 12px; }
+    button.icon-btn { padding: 2px 6px; font-size: 11px; }
     .layer-action-btn {
       min-width: 0;
-      min-height: 30px;
-      padding: 4px 8px;
+      min-height: 20px;
+      padding: 2px 5px;
       border: 1px solid var(--field-border);
-      border-radius: 8px;
+      border-radius: var(--radius);
       background: var(--surface-alt);
       color: var(--muted);
-      font-size: 11px;
+      font-size: 9px;
       font-weight: 700;
       letter-spacing: 0.02em;
       box-shadow: none;
     }
     .layer-action-btn.layer-icon-btn {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 600;
       line-height: 1;
-      padding: 4px 0;
+      padding: 2px 0;
     }
     .layer-action-btn:hover {
       background: var(--surface);
@@ -313,19 +363,19 @@
       color: var(--primary);
     }
     
-    label { font-size: 14px; }
+    label { font-size: 10px; }
     .checkbox-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       margin: 0;
       color: var(--muted);
       font-weight: 600;
-      font-size: 13px;
+      font-size: 11px;
     }
     .checkbox-row input[type="checkbox"] {
-      width: 16px;
-      min-height: 16px;
+      width: 14px;
+      min-height: 14px;
       accent-color: var(--primary);
       padding: 0;
       margin: 0;
@@ -333,20 +383,20 @@
     .theme-switch {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      min-height: 40px;
-      padding: 0 12px;
+      gap: 4px;
+      min-height: var(--control-height);
+      padding: 0 6px;
       border: 1px solid var(--border);
       border-radius: 999px;
       background: var(--surface-alt);
       color: var(--text);
-      font-size: 13px;
-      font-weight: 700;
+      font-size: var(--control-font);
+      font-weight: 500;
       cursor: pointer;
     }
     .theme-switch input[type="checkbox"] {
-      width: 16px;
-      min-height: 16px;
+      width: 14px;
+      min-height: 14px;
       accent-color: var(--primary);
       padding: 0;
       margin: 0;
@@ -358,53 +408,95 @@
     .layer-row {
       background: var(--surface);
       border: 1px solid var(--field-border);
-      border-radius: 10px;
-      padding: 8px;
+      border-radius: var(--radius);
+      padding: 4px;
       transition: box-shadow 0.2s;
     }
-    .layer-row:hover { box-shadow: 0 6px 16px rgba(15,23,42,0.08); }
+    .layer-row:hover { box-shadow: 0 2px 6px rgba(15,23,42,0.06); }
     
     .layer-primary {
       display: grid;
-      grid-template-columns: 80px 60px 1fr 100px 30px 30px; 
-      gap: 8px;
+      grid-template-columns: var(--layer-cols);
+      gap: 4px;
       align-items: center;
+    }
+    .layer-primary > * { min-width: 0; }
+    .layer-primary .fill-wrap {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 2px;
+      width: 100%;
+      min-width: 0;
+    }
+    .layer-primary .fillColorSelect {
+      width: 100% !important;
+      min-width: 0;
+    }
+    .layer-primary .fillColor {
+      width: 24px !important;
+      min-width: 24px;
+      height: var(--control-height) !important;
+    }
+    .layer-primary .layer-action-btn {
+      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
     }
     
     .layer-advanced {
       display: none; 
-      margin-top: 10px;
-      padding-top: 10px;
+      margin-top: 4px;
+      padding-top: 4px;
       border-top: 1px dashed #eee;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 4px;
       background: var(--surface-alt);
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 0.85rem;
+      padding: 5px;
+      border-radius: var(--radius);
+      font-size: 0.68rem;
     }
     .layer-advanced.show { display: grid; }
     
-    .layer-advanced label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 2px; }
+    .layer-advanced label { display: block; font-size: 0.6rem; color: #888; margin-bottom: 1px; }
     .layer-advanced input,
     .layer-advanced select { width: 100%; box-sizing: border-box; }
 
-    /* CANVAS TOOLBAR */
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-      justify-content: center;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--surface-alt);
+    .viz-content {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-lg);
+      align-items: start;
+    }
+    .viz-content > * {
+      min-width: 0;
+    }
+    .plot-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-lg);
+      width: 100%;
+      align-items: start;
+    }
+    .plot-pane {
+      min-width: 0;
+    }
+    .plot-title {
+      font-size: 0.66rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin: 0 0 4px;
+      text-align: center;
     }
 
     canvas {
-      box-shadow: 0 8px 24px rgba(15,23,42,0.08);
-      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(15,23,42,0.06);
+      border-radius: 4px;
       /* Max width ensures it fits the screen even if high res internally */
       max-width: 100%;
       border: 1px solid var(--plot-line);
@@ -413,19 +505,20 @@
 
     /* RESULT TABLE */
     table {
-      width: 700px;
+      width: 100%;
+      max-width: 700px;
       border-collapse: separate;
       border-spacing: 0;
       margin-top: 0;
-      font-size: 0.84rem;
+      font-size: 0.7rem;
       background: var(--surface);
       border: 1px solid var(--table-border);
-      border-radius: 12px;
+      border-radius: 4px;
       overflow: hidden;
     }
     th, td {
       border-top: 1px solid var(--table-border);
-      padding: 8px;
+      padding: 4px;
       text-align: center;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
@@ -434,7 +527,11 @@
     tr:first-child td { border-top: 0; }
     th { background: var(--table-head); font-weight: 760; }
     .color-cell { font-weight: bold; width: 160px; }
-    .od-column { width: 80px; }
+    .od-column { width: 108px; }
+    #areaTable th:not(:first-child),
+    #areaTable td:not(:first-child) {
+      width: 108px;
+    }
 
     /* Tooltip */
     #tooltip {
@@ -442,24 +539,26 @@
       pointer-events: none;
       background: var(--surface);
       color: var(--text);
-      padding: 8px 12px;
-      border-radius: 10px;
+      padding: 3px 6px;
+      border-radius: 3px;
       border: 1px solid var(--border);
-      font-size: 0.85em;
+      font-size: 0.75em;
       display: none;
       z-index: 9999;
       box-shadow: var(--shadow);
     }
 
 
-    #canvasWrap {
+    .canvas-wrap {
       position: relative;
-      display: inline-block;
-      width: min(100%, 700px);
+      display: block;
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
       overflow: visible;
     }
 
-    #circleCanvas {
+    .plot-canvas {
       display: block;
       width: 100%;
       height: auto;
@@ -474,27 +573,170 @@
       -webkit-overflow-scrolling: touch;
       display: flex;
       justify-content: center;
-      margin-top: 30px;
+      margin-top: 0;
     }
 
     .layer-header-row {
       display: grid;
-      grid-template-columns: 80px 60px 1fr 100px 30px 30px;
-      gap: 8px;
-      padding: 0 8px;
-      font-size: 0.75rem;
-      font-weight: bold;
+      grid-template-columns: var(--layer-cols);
+      gap: 4px;
+      padding: 0 4px;
+      font-size: 0.62rem;
+      font-weight: 600;
       color: var(--muted);
-      margin-bottom: 5px;
+      margin-bottom: 3px;
+      align-items: center;
+    }
+    .layer-header-row > div {
+      min-width: 0;
+      min-height: var(--control-height);
+      display: flex;
+      align-items: center;
     }
 
-    @media (max-width: 980px) {
+    @media (max-width: 1320px) {
+      .wrap.app-shell {
+        padding: var(--space-md);
+        gap: var(--space-md);
+      }
+
+      .app-layout {
+        gap: var(--space-md);
+      }
+
+      .controls-panel,
+      .viz-panel {
+        padding: var(--space-md);
+      }
+
+      .controls-panel {
+        width: clamp(340px, 48vw, 552px);
+      }
+
+      .viz-content {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .plot-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @media (max-height: 860px) and (min-width: 981px) {
+      .wrap.app-shell {
+        padding: 8px;
+        gap: 8px;
+      }
+
+      .app-header {
+        padding: 6px 8px;
+        gap: 6px;
+      }
+
+      .app-layout {
+        gap: 8px;
+      }
+
+      .controls-panel,
+      .viz-panel {
+        padding: 8px;
+      }
+
+      .section-card {
+        margin-bottom: 6px;
+        padding: 6px;
+      }
+    }
+
+    @media (min-width: 981px) {
       body {
-        overflow: auto;
+        overflow: hidden;
       }
 
       .wrap.app-shell {
-        height: auto;
+        height: 100vh;
+        padding: 8px;
+        gap: 8px;
+      }
+
+      .app-header {
+        padding: 6px 8px;
+        gap: 6px;
+      }
+
+      .app-header h1 {
+        font-size: 0.84rem;
+      }
+
+      .app-header p,
+      .app-meta {
+        font-size: 10px;
+      }
+
+      .header-actions {
+        padding-top: 4px;
+      }
+
+      .header-actions .menu-group > button,
+      .header-actions .theme-switch {
+        min-height: var(--control-height);
+      }
+
+      .app-layout {
+        gap: 8px;
+      }
+
+      .controls-panel,
+      .viz-panel {
+        padding: 8px;
+      }
+
+      .section-card {
+        padding: 6px;
+        margin-bottom: 6px;
+        border-radius: var(--radius);
+      }
+
+      .section-title {
+        margin-bottom: 4px;
+        font-size: 0.68rem;
+      }
+
+      .flex-row {
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+
+      select,
+      input[type="text"],
+      input[type="number"] {
+        min-height: var(--control-height);
+        padding: var(--control-py) var(--control-px);
+        font-size: var(--control-font);
+        border-radius: var(--radius);
+      }
+
+      button {
+        min-height: var(--control-height);
+        padding: var(--control-py) 8px;
+        font-size: var(--control-font);
+        border-radius: var(--radius);
+      }
+
+      label {
+        font-size: 10px;
+      }
+
+      .canvas-wrap {
+        width: min(100%, 700px, calc(100vh - 250px));
+      }
+
+      .table-scroll {
+        margin-top: 6px;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .wrap.app-shell {
         min-height: 100vh;
         padding: var(--space-md);
       }
@@ -510,15 +752,18 @@
       }
 
       .app-logo {
-        height: 34px;
+        height: 24px;
       }
 
       .app-header {
-        padding: 12px;
+        padding: 8px;
       }
       .header-actions {
         width: 100%;
         justify-content: flex-start;
+      }
+      .view-controls-bar {
+        width: 100%;
       }
       .menu-bar {
         width: 100%;
@@ -539,7 +784,7 @@
       .viz-panel {
         width: 100%;
         max-width: 100%;
-        padding: 12px;
+        padding: 8px;
         overflow: visible;
         box-sizing: border-box;
       }
@@ -552,28 +797,13 @@
       .viz-panel {
         align-items: flex-start;
       }
-
-      .toolbar {
-        justify-content: stretch;
-        gap: 8px;
+      .viz-content {
+        grid-template-columns: minmax(0, 1fr);
       }
 
-      .toolbar > * {
-        flex: 1 1 calc(50% - 8px);
+      #viewModeSelect {
         min-width: 0;
-      }
-
-      .toolbar label {
-        flex: 1 1 100%;
-        margin-top: 4px;
-      }
-
-      .toolbar select,
-      .toolbar input,
-      .toolbar button {
         width: 100%;
-        min-height: 40px;
-        box-sizing: border-box;
       }
 
       .layer-primary {
@@ -585,37 +815,39 @@
       }
 
       .flex-row {
-        gap: 8px;
+        gap: 6px;
       }
 
       .flex-row > input[type="text"],
       .flex-row > input[type="number"],
       .flex-row > select,
       .flex-row > button {
-        min-height: 40px;
+        min-height: 24px;
         box-sizing: border-box;
       }
 
       table {
-        width: max-content;
+        width: 100%;
         min-width: 700px;
-        margin-top: 16px;
+        margin-top: 0;
         font-size: 0.82em;
+      }
+      .table-scroll {
+        margin-top: 10px;
       }
 
       th, td {
-        padding: 6px;
+        padding: 4px;
         white-space: nowrap;
       }
     }
 
     @media (max-width: 540px) {
-      .toolbar > * {
-        flex-basis: 100%;
-      }
+      .view-controls-bar > * { width: 100%; }
+      .view-inline-label { width: auto; }
 
       .section-card {
-        padding: 12px;
+        padding: 8px;
       }
 
       .layer-primary {
@@ -643,10 +875,10 @@
     }
     .controls-panel,
     .viz-panel {
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
     }
     .section-card {
-      border-radius: 12px;
+      border-radius: var(--radius);
     }
     input,
     select,
@@ -655,11 +887,11 @@
       font-variant-numeric: tabular-nums;
     }
     .header-actions .menu-group > button,
-    .theme-switch {
-      min-height: 40px;
+    .header-actions .theme-switch {
+      min-height: var(--control-height);
     }
     .menu-popover {
-      border-radius: 12px;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -691,15 +923,22 @@
         <div class="menu-group" id="exportMenu">
           <button type="button" class="primary" id="exportMenuButton" aria-expanded="false" aria-controls="exportMenuPanel">Export</button>
           <div class="menu-popover" id="exportMenuPanel">
-            <button type="button" class="menu-item" id="exportSettings">Configuration JSON</button>
-            <button type="button" class="menu-item" id="exportPlotPngMenu">Plot PNG</button>
-            <button type="button" class="menu-item" id="exportPlotSvgMenu">Plot SVG</button>
-            <button type="button" class="menu-item" id="exportTablePngMenu">Table PNG</button>
-            <button type="button" class="menu-item" id="exportTableSvgMenu">Table SVG</button>
-            <button type="button" class="menu-item" id="exportComboPngMenu">Combo PNG</button>
-            <button type="button" class="menu-item" id="exportComboSvgMenu">Combo SVG</button>
+            <button type="button" class="menu-item" id="exportSettings">Configuration (JSON)</button>
+            <div class="menu-label">Image</div>
+            <button type="button" class="menu-item" id="exportRadialPngMenu">Image / Radial Plot / PNG</button>
+            <button type="button" class="menu-item" id="exportRadialSvgMenu">Image / Radial Plot / SVG</button>
+            <button type="button" class="menu-item" id="exportLongitudinalPngMenu">Image / Longitudinal Plot / PNG</button>
+            <button type="button" class="menu-item" id="exportLongitudinalSvgMenu">Image / Longitudinal Plot / SVG</button>
+            <button type="button" class="menu-item" id="exportTablePngMenu">Image / Table / PNG</button>
+            <button type="button" class="menu-item" id="exportTableSvgMenu">Image / Table / SVG</button>
+            <button type="button" class="menu-item" id="exportComboPngMenu">Image / Combined / PNG</button>
+            <button type="button" class="menu-item" id="exportComboSvgMenu">Image / Combined / SVG</button>
           </div>
         </div>
+      </div>
+      <div class="view-controls-bar">
+        <button type="button" id="resetViewBtn">Reset View</button>
+        <button type="button" id="lockViewBtn" aria-pressed="false">Lock View</button>
       </div>
       <label class="theme-switch" for="nightMode">
         <input type="checkbox" id="nightMode">
@@ -715,6 +954,10 @@
       
       <div class="section-card">
         <div class="section-title">Quick Add</div>
+        <div class="flex-row">
+          <select id="boreholeSelect" style="flex:1"></select>
+          <button type="button" class="primary" onclick="addStandardBorehole()">+ Add Borehole</button>
+        </div>
         <div class="flex-row">
           <select id="pipeSelect" style="flex:1"></select>
           <button type="button" class="primary" onclick="addStandardPipe()">+ Add Pipe</button>
@@ -742,6 +985,13 @@
            <label style="width:100px;">Background:</label>
            <select id="bgColorSelect" style="flex:1"></select>
            <input type="color" id="bgColorOther" style="display:none;" />
+        </div>
+        <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+           <label style="width:100px;">Longitudinal:</label>
+           <label for="sectionLengthInput">Length (mm)</label>
+           <input id="sectionLengthInput" type="number" value="1000" min="50" step="10" style="width:110px;">
+           <label for="inclinationInput" style="margin-left:8px;">Inclination (deg)</label>
+           <input id="inclinationInput" type="number" value="0" min="0" max="90" step="1" style="width:90px;">
         </div>
 
         <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
@@ -771,9 +1021,13 @@
              <option value="metric" selected>Metric (cm/mm)</option>
              <option value="imperial">Imperial (in)</option>
            </select>
+           <div class="flex-row" style="width:100%; margin:2px 0 0 100px;">
+             <label for="rulerPaddingInput">Padding (px):</label>
+             <input type="number" id="rulerPaddingInput" min="0" step="1" value="0" style="width:90px;">
+           </div>
         </div>
         <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
-           Applies to radial view ruler. Major ticks are labeled; minor ticks are unlabeled.
+           Applies to radial view ruler. Major ticks are labeled; minor ticks are unlabeled. Padding insets ruler from left/right/bottom edges.
         </div>
 
         <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
@@ -812,47 +1066,44 @@
         </div>
       
       <div style="margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.8em;">
-        <i>Drag to pan, pinch/scroll to zoom, double-tap or double-click to reset</i>
+        <i>Drag/zoom on the radial plot (left). Longitudinal view (right) updates live from the same layer data.</i>
       </div>
 
     </div>
 
     <div class="viz-panel">
       
-      <div class="toolbar">
-        <button type="button" id="resetViewBtn">Reset View</button>
-        
-        <label style="font-size:13px; align-self:center;">View:</label>
-        <select id="viewModeSelect">
-          <option value="radial" selected>Radial (Cross Section)</option>
-          <option value="longitudinal">Longitudinal (Side View)</option>
-        </select>
-        <label id="sectionLengthLabel" style="font-size:13px; align-self:center; display:none;">Section length (mm):</label>
-        <input id="sectionLengthInput" type="number" value="500" min="50" step="10" style="width:90px; display:none;">
-
-        <label id="inclinationLabel" style="font-size:13px; align-self:center; display:none;">Inclination from vertical (deg):</label>
-        <input id="inclinationInput" type="number" value="0" min="0" max="90" step="1" style="width:70px; display:none;">
-      </div>
-
-      <div id="canvasWrap">
-        <canvas id="circleCanvas" width="700" height="700"></canvas>
-        <div id="tooltip"></div>
-      </div>
-
-      <div class="table-scroll">
-      <table id="areaTable">
-        <thead>
-          <tr>
-            <th class="color-cell">Material</th>
-            <th class="od-column">OD (mm)</th>
-            <th class="od-column">OD (in)</th>
-            <th>Delta R (mm)</th>
-            <th>Area (cm<sup>2</sup>)</th>
-            <th>L/m</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="viz-content">
+        <div class="plot-grid">
+          <div class="plot-pane">
+            <div class="plot-title">Radial View</div>
+            <div id="canvasWrap" class="canvas-wrap">
+              <canvas id="circleCanvas" class="plot-canvas" width="700" height="700"></canvas>
+              <div id="tooltip"></div>
+            </div>
+            <div class="table-scroll">
+            <table id="areaTable">
+              <thead>
+                <tr>
+                  <th class="color-cell">Material</th>
+                  <th class="od-column">OD (mm)</th>
+                  <th class="od-column">OD (in)</th>
+                  <th>Delta R (mm)</th>
+                  <th>Area (cm<sup>2</sup>)</th>
+                  <th>L/m</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            </div>
+          </div>
+          <div class="plot-pane">
+            <div class="plot-title">Longitudinal View</div>
+            <div id="canvasWrapLongitudinal" class="canvas-wrap">
+              <canvas id="longitudinalCanvas" class="plot-canvas" width="700" height="700"></canvas>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -876,6 +1127,25 @@ const config = {
     { name: 'Water',     value: '#C6EFFE', textColor: '#000000' },
     { name: 'Aluminium', value: '#00B0F0', textColor: '#FFFFFF' },
     { name: 'N/A',       value: '#FFFFFF', textColor: '#000000' }
+  ],
+  // Common oilfield bit/hole sizes used in drilling programs (inches).
+  boreholeBitSizes: [
+        { desc: '36"',      od_in: 36.0 },
+        { desc: '26"',      od_in: 26.0 },
+        { desc: '22"',      od_in: 22.0 },
+        { desc: '17 1/2"',  od_in: 17.5 },
+        { desc: '16"',      od_in: 16.0 },
+        { desc: '14 3/4"',  od_in: 14.75 },
+        { desc: '12 1/4"',  od_in: 12.25 },
+        { desc: '9 7/8"',   od_in: 9.875 },
+        { desc: '8 1/2"',   od_in: 8.5 },
+        { desc: '8 3/8"',   od_in: 8.375 },
+        { desc: '6 1/8"',   od_in: 6.125 },
+        { desc: '6"',       od_in: 6.0 },
+        { desc: '5 7/8"',   od_in: 5.875 },
+        { desc: '4 3/4"',   od_in: 4.75 },
+        { desc: '4 1/8"',   od_in: 4.125 },
+        { desc: '3 7/8"',   od_in: 3.875 }
   ],
   pipeList: [
         { desc: "--- RS Thermite ---",  od_mm:1, id_mm:0 },
@@ -1037,6 +1307,7 @@ let view = { scale: 1, panX: 0, panY: 0 };
 let circleHitboxes = [];
 let rectHitboxes = [];
 let viewMode = "radial";
+const AVAILABLE_PLOT_MODES = ["radial", "longitudinal"];
 // Global handle to remember last used file location in session
 let lastUsedFileHandle = null;
 const SHARED_PICKER_ID = 'interwell-wap-shared-location';
@@ -1056,22 +1327,67 @@ function setNightMode(enabled) {
   document.body.classList.toggle('night-mode', enabled);
 }
 
-function getLockViewSizeMmForCurrentView() {
+function getLockViewSizeMmForMode(mode) {
   const radial = parseFloat(document.getElementById('lockViewSizeRadial')?.value);
   const longitudinal = parseFloat(document.getElementById('lockViewSizeLongitudinal')?.value);
-  if (viewMode === 'longitudinal') return longitudinal;
+  if (mode === 'longitudinal') return longitudinal;
   return radial;
 }
 
-function setCanvasDisplaySize() {
-  const canvas = document.getElementById('circleCanvas');
-  const wrap = document.getElementById('canvasWrap');
-  if (!canvas || !wrap) return;
+function getLockViewSizeMmForCurrentView() {
+  return getLockViewSizeMmForMode(viewMode);
+}
 
+function getRulerPaddingPx() {
+  const raw = parseFloat(document.getElementById('rulerPaddingInput')?.value);
+  if (!Number.isFinite(raw) || raw < 0) return 0;
+  return raw;
+}
+
+function getCurrentVisibleSpanMm() {
+  const canvas = document.getElementById('circleCanvas');
+  if (!canvas) return null;
+
+  const padding = 20;
+  const titleHeight = 30;
+  const logicalWidth = canvas.width / RESOLUTION_SCALE;
+  const logicalHeight = canvas.height / RESOLUTION_SCALE;
+  const plotW = logicalWidth - 2 * padding;
+  const plotH = logicalHeight - 2 * padding - titleHeight;
+  const rulerEnabled = (document.getElementById('showRulerCheckbox') ? document.getElementById('showRulerCheckbox').checked : true);
+  const rulerPadding = getRulerPaddingPx();
+  const rulerGap = rulerEnabled ? 6 : 0;
+  const rulerHeight = rulerEnabled ? 30 : 0;
+  const drawPlotH = Math.max(10, plotH - rulerGap - rulerHeight - (rulerEnabled ? rulerPadding : 0));
+
+  const rows = document.querySelectorAll('.layer-row');
+  const diameters = Array.from(rows).map(getRowDiameterMm).filter(v => Number.isFinite(v) && v > 0);
+  const maxD = diameters.length ? Math.max(...diameters) : 100;
+  const locked = document.getElementById('lockViewCheckbox')?.checked;
+  const lockVal = getLockViewSizeMmForCurrentView();
+  const referenceDiam = (locked && lockVal > 0) ? lockVal : (maxD * 1.05);
+  const basePxPerMm = (locked && lockVal > 0)
+    ? (plotW / referenceDiam)
+    : (Math.min(plotW, drawPlotH) / referenceDiam);
+  const effectivePxPerMm = basePxPerMm * Math.max(0.001, view.scale || 1);
+
+  if (!Number.isFinite(effectivePxPerMm) || effectivePxPerMm <= 0) return null;
+  return plotW / effectivePxPerMm;
+}
+
+function setCanvasDisplaySize() {
   const logicalSize = 700;
-  const availableWidth = Math.max(280, Math.min(logicalSize, Math.floor(wrap.clientWidth || logicalSize)));
-  canvas.style.width = `${availableWidth}px`;
-  canvas.style.height = `${availableWidth}px`;
+  const bindings = [
+    { canvas: document.getElementById('circleCanvas'), wrap: document.getElementById('canvasWrap') },
+    { canvas: document.getElementById('longitudinalCanvas'), wrap: document.getElementById('canvasWrapLongitudinal') }
+  ];
+
+  bindings.forEach(({ canvas, wrap }) => {
+    if (!canvas || !wrap) return;
+    const availableWidth = Math.max(280, Math.min(logicalSize, Math.floor(wrap.clientWidth || logicalSize)));
+    canvas.style.width = `${availableWidth}px`;
+    canvas.style.height = `${availableWidth}px`;
+  });
 }
 
 function getCanvasInteractionPoint(evt) {
@@ -1088,9 +1404,32 @@ function getCanvasInteractionPoint(evt) {
 function updateTooltipAtClientPoint(clientX, clientY) {
   const canvas = document.getElementById('circleCanvas');
   const tooltip = document.getElementById('tooltip');
+  if (!canvas || !tooltip) return;
   const rect = canvas.getBoundingClientRect();
+  const insideCanvas =
+    clientX >= rect.left &&
+    clientX <= rect.right &&
+    clientY >= rect.top &&
+    clientY <= rect.bottom;
+  if (!insideCanvas) {
+    tooltip.style.display = 'none';
+    return;
+  }
   const padding = 20;
   const titleOffset = 30;
+  const logicalX = clientX - rect.left;
+  const logicalY = clientY - rect.top;
+  const logicalW = canvas.width / RESOLUTION_SCALE;
+  const logicalH = canvas.height / RESOLUTION_SCALE;
+  const insidePlotFrame =
+    logicalX >= padding &&
+    logicalX <= (logicalW - padding) &&
+    logicalY >= (padding + titleOffset) &&
+    logicalY <= (logicalH - padding);
+  if (!insidePlotFrame) {
+    tooltip.style.display = 'none';
+    return;
+  }
   const sx = clientX - rect.left - padding;
   const sy = clientY - rect.top - (padding + titleOffset);
   const wx = (sx - view.panX) / view.scale;
@@ -1132,9 +1471,15 @@ function updateTooltipAtClientPoint(clientX, clientY) {
   }
 
   if (hit) {
+    const deltaR = hit.data.deltaRText ?? 'N/A';
+    const area = hit.data.areaText ?? '0.00';
+    const lpm = hit.data.litersPerMeterText ?? '0.00';
     tooltip.style.display = 'block';
     tooltip.innerHTML = `<div><strong>${hit.data.materialLabel}</strong></div>
-    <div>OD: ${hit.data.diameter.toFixed(2)} mm (${(hit.data.diameter / 25.4).toFixed(3)} in)</div>`;
+    <div>OD: ${hit.data.diameter.toFixed(2)} mm (${(hit.data.diameter / 25.4).toFixed(3)} in)</div>
+    <div>Delta R: ${deltaR} mm</div>
+    <div>Area: ${area} cm<sup>2</sup></div>
+    <div>L/m: ${lpm}</div>`;
     tooltip.style.left = (clientX + 15) + 'px';
     tooltip.style.top = (clientY + 15) + 'px';
   } else {
@@ -1161,15 +1506,17 @@ function getTouchMidpoint(t1, t2) {
 window.onload = function () {
   // 0. Setup High-Res Canvas
   const canvas = document.getElementById('circleCanvas');
+  const canvasLongitudinal = document.getElementById('longitudinalCanvas');
   const logicalSize = 700; // The display size in pixels
   
-  // Set the CSS size (how big it looks on screen)
-  canvas.style.width = `${logicalSize}px`;
-  canvas.style.height = `${logicalSize}px`;
-  
-  // Set the internal memory size (how many pixels it actually has for high-res)
-  canvas.width = logicalSize * RESOLUTION_SCALE;
-  canvas.height = logicalSize * RESOLUTION_SCALE;
+  // Set the CSS and internal memory size for both plot canvases.
+  [canvas, canvasLongitudinal].forEach((c) => {
+    if (!c) return;
+    c.style.width = `${logicalSize}px`;
+    c.style.height = `${logicalSize}px`;
+    c.width = logicalSize * RESOLUTION_SCALE;
+    c.height = logicalSize * RESOLUTION_SCALE;
+  });
 
   setCanvasDisplaySize();
   window.addEventListener('resize', () => { setCanvasDisplaySize(); requestPlot({ rebuildTable: false }); });
@@ -1208,12 +1555,15 @@ window.onload = function () {
   if (rulerToggle) rulerToggle.checked = true;
   const rulerUnitsSelect = document.getElementById('rulerUnitsSelect');
   if (rulerUnitsSelect && !rulerUnitsSelect.value) rulerUnitsSelect.value = 'metric';
+  const rulerPaddingInput = document.getElementById('rulerPaddingInput');
+  if (rulerPaddingInput && !rulerPaddingInput.value) rulerPaddingInput.value = '0';
   const crosshairToggle = document.getElementById('showReferenceCrosshairCheckbox');
   if (crosshairToggle) crosshairToggle.checked = true;
   const exportOutlineToggle = document.getElementById('exportOutlineCheckbox');
   if (exportOutlineToggle) exportOutlineToggle.checked = true;
 
   // 2. Populate Pipe List
+  populateBoreholeList(document.getElementById('boreholeSelect'));
   populatePipeList(document.getElementById('pipeSelect'));
 
   // 3. Wire events
@@ -1231,26 +1581,10 @@ window.onload = function () {
     });
   }
 
-  // View mode controls
-  const viewSel = document.getElementById('viewModeSelect');
   const secLenInput = document.getElementById('sectionLengthInput');
-  const secLenLabel = document.getElementById('sectionLengthLabel');
   const incInput = document.getElementById('inclinationInput');
-  const incLabel = document.getElementById('inclinationLabel');
-
-  function syncViewModeUI() {
-    viewMode = viewSel.value;
-    const show = (viewMode === 'longitudinal');
-    secLenInput.style.display = show ? 'inline-block' : 'none';
-    secLenLabel.style.display = show ? 'inline' : 'none';
-    incInput.style.display = show ? 'inline-block' : 'none';
-    incLabel.style.display = show ? 'inline' : 'none';
-  }
-
-  viewSel.addEventListener('change', () => { syncViewModeUI(); requestPlot(); });
-  secLenInput.addEventListener('input', () => requestPlot());
-  incInput.addEventListener('input', () => requestPlot());
-  syncViewModeUI();
+  if (secLenInput) secLenInput.addEventListener('input', () => requestPlot({ rebuildTable: false }));
+  if (incInput) incInput.addEventListener('input', () => requestPlot({ rebuildTable: false }));
 
   // 4. Watch for Real-time Updates
   document.querySelector('.controls-panel').addEventListener('input', function(e) {
@@ -1274,7 +1608,7 @@ window.onload = function () {
   });
 
   // Initial plot
-  plotCircles();
+  requestPlot();
 };
 
 function closeMenus() {
@@ -1296,10 +1630,41 @@ function toggleMenu(menu, button) {
     button.setAttribute('aria-expanded', String(willOpen));
 }
 
+function syncLockViewToolbarButton() {
+    const lockViewBtn = document.getElementById('lockViewBtn');
+    const lockEl = document.getElementById('lockViewCheckbox');
+    if (!lockViewBtn || !lockEl) return;
+
+    const locked = !!lockEl.checked;
+    lockViewBtn.textContent = locked ? 'Unlock View' : 'Lock View';
+    lockViewBtn.setAttribute('aria-pressed', String(locked));
+    lockViewBtn.classList.toggle('primary', locked);
+}
+
 function wireButtons() {
     const resetViewBtn = document.getElementById('resetViewBtn');
     if (resetViewBtn) {
         resetViewBtn.onclick = () => { view.scale=1; view.panX=0; view.panY=0; requestPlot({ rebuildTable: false }); };
+    }
+    const lockViewBtn = document.getElementById('lockViewBtn');
+    const lockEl = document.getElementById('lockViewCheckbox');
+    if (lockViewBtn && lockEl) {
+        syncLockViewToolbarButton();
+        lockViewBtn.addEventListener('click', () => {
+            if (!lockEl.checked) {
+                const currentSpanMm = getCurrentVisibleSpanMm();
+                if (Number.isFinite(currentSpanMm) && currentSpanMm > 0) {
+                    const lockInputId = 'lockViewSizeRadial';
+                    const lockInput = document.getElementById(lockInputId);
+                    if (lockInput) lockInput.value = (Math.round(currentSpanMm * 100) / 100).toFixed(2);
+                }
+            }
+            lockEl.checked = !lockEl.checked;
+            lockEl.dispatchEvent(new Event('change', { bubbles: true }));
+            if (!lockEl.checked) requestPlot({ rebuildTable: false });
+            syncLockViewToolbarButton();
+        });
+        lockEl.addEventListener('change', syncLockViewToolbarButton);
     }
 
     const importMenu = document.getElementById('importMenu');
@@ -1308,8 +1673,10 @@ function wireButtons() {
     const exportMenuButton = document.getElementById('exportMenuButton');
     const importSettings = document.getElementById('importSettings');
     const exportSettings = document.getElementById('exportSettings');
-    const exportPlotPngMenu = document.getElementById('exportPlotPngMenu');
-    const exportPlotSvgMenu = document.getElementById('exportPlotSvgMenu');
+    const exportRadialPngMenu = document.getElementById('exportRadialPngMenu');
+    const exportRadialSvgMenu = document.getElementById('exportRadialSvgMenu');
+    const exportLongitudinalPngMenu = document.getElementById('exportLongitudinalPngMenu');
+    const exportLongitudinalSvgMenu = document.getElementById('exportLongitudinalSvgMenu');
     const exportTablePngMenu = document.getElementById('exportTablePngMenu');
     const exportTableSvgMenu = document.getElementById('exportTableSvgMenu');
     const exportComboPngMenu = document.getElementById('exportComboPngMenu');
@@ -1341,11 +1708,17 @@ function wireButtons() {
             closeMenus();
         });
     }
-    if (exportPlotPngMenu) {
-        exportPlotPngMenu.addEventListener('click', function () { exportPlotPng(); closeMenus(); });
+    if (exportRadialPngMenu) {
+        exportRadialPngMenu.addEventListener('click', function () { exportRadialPlotPng(); closeMenus(); });
     }
-    if (exportPlotSvgMenu) {
-        exportPlotSvgMenu.addEventListener('click', function () { exportPlotSvg(); closeMenus(); });
+    if (exportRadialSvgMenu) {
+        exportRadialSvgMenu.addEventListener('click', function () { exportRadialPlotSvg(); closeMenus(); });
+    }
+    if (exportLongitudinalPngMenu) {
+        exportLongitudinalPngMenu.addEventListener('click', function () { exportLongitudinalPlotPng(); closeMenus(); });
+    }
+    if (exportLongitudinalSvgMenu) {
+        exportLongitudinalSvgMenu.addEventListener('click', function () { exportLongitudinalPlotSvg(); closeMenus(); });
     }
     if (exportTablePngMenu) {
         exportTablePngMenu.addEventListener('click', function () { exportTableAsImage(); closeMenus(); });
@@ -1439,7 +1812,7 @@ function buildCircleEntry(diameterValue, fillColorValue, materialName) {
         </div>
         <div>
            <label>Ecc. Angle</label>
-           <input type="number" class="eccentricityAngle" value="0" min="0" max="360">
+           <input type="number" class="eccentricityAngle" value="180" min="0" max="360">
         </div>
         <div>
            <label>Wavy Amp (mm)</label>
@@ -1553,6 +1926,47 @@ function populatePipeList(selectEl) {
         selectEl.appendChild(opt);
     });
     selectEl.selectedIndex = 0;
+}
+
+function populateBoreholeList(selectEl) {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+    config.boreholeBitSizes.forEach(size => {
+        const opt = document.createElement('option');
+        opt.value = String(size.od_in);
+        opt.textContent = `${size.desc} (${(size.od_in * 25.4).toFixed(2)} mm)`;
+        selectEl.appendChild(opt);
+    });
+    selectEl.selectedIndex = 0;
+}
+
+function addStandardBorehole() {
+    const boreholeSelect = document.getElementById('boreholeSelect');
+    if (!boreholeSelect) return;
+
+    const odIn = parseFloat(boreholeSelect.value);
+    if (!Number.isFinite(odIn) || odIn <= 0) return alert('Select a borehole size');
+
+    const odMm = odIn * 25.4;
+    const cement = config.fillColorOptions.find(c => c.name.toLowerCase() === 'cement');
+    const cementColor = cement ? cement.value : '#E3DFEB';
+
+    const list = document.getElementById('layer-list');
+    const newRow = buildCircleEntry(odMm.toFixed(2), cementColor, 'Cement');
+    list.appendChild(newRow);
+
+    newRow.querySelector('.unit').value = 'mm';
+    newRow.querySelector('.materialLabel').value = 'Cement';
+    newRow.querySelector('.lineColor').value = '#000000';
+    newRow.querySelector('.lineThickness').value = '1';
+    newRow.querySelector('.lineType').value = 'dashed';
+    newRow.querySelector('.eccentricityFactor').value = '0';
+    newRow.querySelector('.eccentricityAngle').value = '180';
+    newRow.querySelector('.wavinessAmp').value = '3';
+    newRow.querySelector('.wavinessFreq').value = '8';
+
+    sortLayerRowsByDiameter();
+    requestPlot();
 }
 
 function addStandardPipe() {
@@ -1717,14 +2131,40 @@ function getSvgLineStyleAttrs(lineType) {
     return '';
 }
 
+function getLayerComputedValues(circleData, index) {
+    const data = circleData[index];
+    if (!data) return { deltaRText: 'N/A', areaText: '0.00', litersPerMeterText: '0.00' };
+
+    let areaVal;
+    let deltaR = 'N/A';
+    const cmRad = data.diameter / 20;
+
+    if (index === circleData.length - 1) {
+        areaVal = Math.PI * Math.pow(cmRad, 2);
+    } else {
+        const nextCmRad = circleData[index + 1].diameter / 20;
+        areaVal = Math.PI * (Math.pow(cmRad, 2) - Math.pow(nextCmRad, 2));
+        const thisRadMm = data.diameter / 2;
+        const nextRadMm = circleData[index + 1].diameter / 2;
+        deltaR = (thisRadMm - nextRadMm).toFixed(2);
+    }
+
+    return {
+        deltaRText: deltaR,
+        areaText: areaVal.toFixed(2),
+        litersPerMeterText: (areaVal / 10).toFixed(2)
+    };
+}
+
 
 /***************************************************************
  * PLOTTING ENGINE (with Title Logic)
  ***************************************************************/
 function plotCircles(options = {}) {
     const rebuildTable = options.rebuildTable !== false;
+    const mode = options.mode || viewMode;
     const rows = document.querySelectorAll('.layer-row');
-    const canvas = document.getElementById('circleCanvas');
+    const canvas = options.canvas || document.getElementById('circleCanvas');
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
@@ -1749,10 +2189,11 @@ function plotCircles(options = {}) {
     const plotH = logicalHeight - 2*padding - titleHeight;
     const rulerEnabled = (document.getElementById('showRulerCheckbox') ? document.getElementById('showRulerCheckbox').checked : true);
     const rulerUnits = (document.getElementById('rulerUnitsSelect') ? document.getElementById('rulerUnitsSelect').value : 'metric');
+    const rulerPadding = getRulerPaddingPx();
     const showRuler = rulerEnabled;
     const rulerGap = showRuler ? 6 : 0;
     const rulerHeight = showRuler ? 30 : 0;
-    const drawPlotH = plotH - rulerGap - rulerHeight;
+    const drawPlotH = Math.max(10, plotH - rulerGap - rulerHeight - (showRuler ? rulerPadding : 0));
 
     // --- APPLY SCALE FOR HIGH RES ---
     ctx.save();
@@ -1762,35 +2203,49 @@ function plotCircles(options = {}) {
     function drawPlotTitleOverlay() {
         const titleText = document.getElementById('configNameInput').value;
         if(!titleText) return;
+        const bannerHeight = padding + titleHeight;
         ctx.save();
         ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, logicalWidth, bannerHeight);
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, bannerHeight);
+        ctx.lineTo(logicalWidth, bannerHeight);
+        ctx.stroke();
+
         ctx.font = "bold 18px Arial";
         ctx.textAlign = "center";
-        const rgb = hexToRgb(bgColor) || {r:255,g:255,b:255};
-        const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-        ctx.fillStyle = (brightness > 125) ? "#000000" : "#FFFFFF";
-        ctx.fillText(titleText, logicalWidth/2, 28);
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#000000";
+        ctx.fillText(titleText, logicalWidth / 2, bannerHeight / 2);
         ctx.restore();
     }
 
         function drawBottomRulerOverlay(zeroWorldX, pxPerMm, units) {
         if (!showRuler || !isFinite(pxPerMm) || pxPerMm <= 0) return;
 
-        const xStart = padding;
-        const xEnd = padding + plotW;
-        const yTop = padding + titleHeight + drawPlotH + rulerGap;
+        // Anchor ruler to the canvas edges (not the inner plot padding box),
+        // so padding=0 is truly flush with left/right/bottom edges.
+        const xStart = rulerPadding;
+        const xEnd = logicalWidth - rulerPadding;
+        const yTop = logicalHeight - rulerHeight - rulerPadding;
         const yBottom = yTop + rulerHeight;
         const zeroX = padding + (zeroWorldX * view.scale + view.panX);
+        const rulerWidth = xEnd - xStart;
+
+        if (rulerWidth <= 0) return;
 
         ctx.save();
         ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
 
         // White ruler strip
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(xStart, yTop, plotW, rulerHeight);
+        ctx.fillRect(xStart, yTop, rulerWidth, rulerHeight);
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
-        ctx.strokeRect(xStart + 0.5, yTop + 0.5, plotW - 1, rulerHeight - 1);
+        ctx.strokeRect(xStart, yTop, rulerWidth, rulerHeight);
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
@@ -1843,16 +2298,18 @@ function plotCircles(options = {}) {
             }
         }
 
-        const rulerInnerLeft = xStart + 1;
-        const rulerInnerRight = xEnd - 1;
+        const rulerInnerLeft = xStart;
+        const rulerInnerRight = xEnd;
         ctx.font = 'bold 11px Arial';
         const unitText = displayUnit;
         const unitPadX = 6;
         const unitBoxWidth = Math.max(24, Math.ceil(ctx.measureText(unitText).width + unitPadX * 2));
-        const unitBoxX = Math.max(rulerInnerLeft + 1, rulerInnerRight - unitBoxWidth);
-        const labelLeftBound = rulerInnerLeft + 2;
-        const labelRightBound = unitBoxX - 3;
+        const unitBoxX = Math.max(rulerInnerLeft, rulerInnerRight - unitBoxWidth);
+        const labelLeftBound = rulerInnerLeft + 1;
+        const labelRightBound = unitBoxX - 1;
         ctx.font = '11px Arial';
+        const tickTop = yTop;
+        const tickBottomPad = 2;
 
         const pxPerMinor = pxPerMm * minorMm;
         if (pxPerMinor > 0) {
@@ -1879,10 +2336,11 @@ function plotCircles(options = {}) {
                 if (majorTick) tickLen = 12;
                 else if (midTick) tickLen = 8;
                 else tickLen = 5;
+                const tickEndY = Math.min(yBottom - tickBottomPad, tickTop + tickLen);
 
                 ctx.beginPath();
-                ctx.moveTo(x, yTop);
-                ctx.lineTo(x, yTop + tickLen);
+                ctx.moveTo(x, tickTop);
+                ctx.lineTo(x, tickEndY);
                 ctx.stroke();
 
                 if (majorTick && (x - lastLabelX) >= minLabelPxGap) {
@@ -1904,7 +2362,7 @@ function plotCircles(options = {}) {
         ctx.fillRect(unitBoxX, yTop, unitBoxW, rulerHeight);
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
-        ctx.strokeRect(unitBoxX + 0.5, yTop + 0.5, Math.max(0, unitBoxW - 1), Math.max(0, rulerHeight - 1));
+        ctx.strokeRect(unitBoxX, yTop, Math.max(0, unitBoxW), rulerHeight);
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1916,7 +2374,7 @@ function plotCircles(options = {}) {
     }
 
     function drawReferenceCrosshairOverlay(refWorldX, refWorldY) {
-        if (viewMode !== 'radial') return;
+        if (mode !== 'radial') return;
         const enabled = (document.getElementById('showReferenceCrosshairCheckbox') ? document.getElementById('showReferenceCrosshairCheckbox').checked : true);
         if (!enabled) return;
 
@@ -1976,6 +2434,12 @@ function plotCircles(options = {}) {
 
     // Sort by Diameter Descending
     circleData.sort((a,b) => b.diameter - a.diameter);
+    circleData.forEach((data, i) => {
+        const m = getLayerComputedValues(circleData, i);
+        data.deltaRText = m.deltaRText;
+        data.areaText = m.areaText;
+        data.litersPerMeterText = m.litersPerMeterText;
+    });
 
     // Render Setup (shared transforms)
     ctx.translate(padding, padding + titleHeight); // Push down for title
@@ -1984,7 +2448,7 @@ function plotCircles(options = {}) {
 
     // --- SCALING LOGIC (LOCKED VS AUTO) ---
     const locked = document.getElementById('lockViewCheckbox').checked;
-    const lockVal = getLockViewSizeMmForCurrentView();
+    const lockVal = getLockViewSizeMmForMode(mode);
 
     let referenceDiam;
     if (locked && lockVal > 0) {
@@ -2015,7 +2479,7 @@ function plotCircles(options = {}) {
     // --------------------------------------------------------------------
     // Draw: RADIAL (existing behavior)
     // --------------------------------------------------------------------
-    if (viewMode === 'radial') {
+    if (mode === 'radial') {
         let lastCenter = { x: plotW/2, y: drawPlotH/2 };
         let smallestCenter = { x: plotW/2, y: drawPlotH/2 };
         referenceOverlayWorldPoint = { x: plotW / 2, y: drawPlotH / 2 };
@@ -2070,8 +2534,8 @@ function plotCircles(options = {}) {
     // - Eccentricity angle convention is unchanged:
     //   90° = up (high side), 270° = down (low side).
     // --------------------------------------------------------------------
-    if (viewMode === 'longitudinal') {
-        const secLenMm = Math.max(50, parseFloat(document.getElementById('sectionLengthInput').value) || 500);
+    if (mode === 'longitudinal') {
+        const secLenMm = Math.max(50, parseFloat(document.getElementById('sectionLengthInput').value) || 1000);
         const desiredLenPx = secLenMm * scalingFactor;
 
         // Inclination is from vertical: 0° = vertical, 90° = horizontal
@@ -2085,7 +2549,7 @@ function plotCircles(options = {}) {
 
         // Fit length into plotW/plotH with a little margin.
         // Conservatively limit length to 95% of the smaller plot dimension.
-        const lengthPx = Math.min(Math.min(plotW, drawPlotH) * 0.95, desiredLenPx);
+        const lengthPx = Math.max(1, desiredLenPx);
 
         // Local coordinates (before rotation): center at (0,0), axis is X
         const x0 = -lengthPx / 2;
@@ -2222,25 +2686,7 @@ function plotCircles(options = {}) {
 }
 
 function appendTableRow(circleData, data, i, tableBody) {
-    let areaVal;
-    let deltaR = 'N/A';
-    const cmRad = data.diameter/20;
-
-    if (i === circleData.length - 1) {
-        // Innermost
-        areaVal = Math.PI * Math.pow(cmRad, 2);
-    } else {
-        // Annulus
-        const nextCmRad = circleData[i + 1].diameter / 20;
-        areaVal = Math.PI * (Math.pow(cmRad, 2) - Math.pow(nextCmRad, 2));
-
-        const thisRad_mm = data.diameter / 2;
-        const nextRad_mm = circleData[i + 1].diameter / 2;
-        deltaR = (thisRad_mm - nextRad_mm).toFixed(2);
-    }
-
-    // L/m Calculation: Area(cm^2) / 10
-    const litersPerMeter = (areaVal / 10).toFixed(2);
+    const metrics = getLayerComputedValues(circleData, i);
     const inchesOD = (data.diameter / 25.4).toFixed(3);
 
     const rowHTML = `
@@ -2250,9 +2696,9 @@ function appendTableRow(circleData, data, i, tableBody) {
         </td>
         <td class="od-column" contenteditable="true" data-field="odmm">${data.diameter.toFixed(2)}</td>
         <td class="od-column" contenteditable="true" data-field="odin">${inchesOD}</td>
-        <td>${deltaR}</td>
-        <td>${areaVal.toFixed(2)}</td>
-        <td>${litersPerMeter}</td>
+        <td>${metrics.deltaRText}</td>
+        <td>${metrics.areaText}</td>
+        <td>${metrics.litersPerMeterText}</td>
       </tr>
     `;
     tableBody.insertAdjacentHTML('beforeend', rowHTML);
@@ -2286,9 +2732,31 @@ function requestPlot(options = {}) {
   plotFrameRequested = true;
   requestAnimationFrame(() => {
     plotFrameRequested = false;
-    plotCircles({ rebuildTable: plotNeedsTableRefresh });
+    renderAllPlots({ rebuildTable: plotNeedsTableRefresh });
     plotNeedsTableRefresh = false;
   });
+}
+
+function renderAllPlots(options = {}) {
+  const rebuildTable = options.rebuildTable !== false;
+  const radialCanvas = document.getElementById('circleCanvas');
+  const longitudinalCanvas = document.getElementById('longitudinalCanvas');
+
+  if (longitudinalCanvas) {
+    plotCircles({
+      canvas: longitudinalCanvas,
+      mode: 'longitudinal',
+      rebuildTable: false
+    });
+  }
+
+  if (radialCanvas) {
+    plotCircles({
+      canvas: radialCanvas,
+      mode: 'radial',
+      rebuildTable
+    });
+  }
 }
 
 /***************************************************************
@@ -2346,12 +2814,17 @@ function wireCanvasInteractions() {
       const dy = e.clientY - lastY;
       lastX = e.clientX;
       lastY = e.clientY;
-      view.panX += dx / view.scale;
-      view.panY += dy / view.scale;
+      view.panX += dx;
+      view.panY += dy;
       requestPlot({ rebuildTable: false });
+      tooltip.style.display = 'none';
     }
-
+  });
+  canvas.addEventListener('mousemove', (e) => {
     updateTooltipAtClientPoint(e.clientX, e.clientY);
+  });
+  canvas.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
   });
 
   canvas.addEventListener('touchstart', (e) => {
@@ -2405,8 +2878,8 @@ function wireCanvasInteractions() {
       const dy = touch.clientY - touchState.lastY;
       touchState.lastX = touch.clientX;
       touchState.lastY = touch.clientY;
-      view.panX += dx / view.scale;
-      view.panY += dy / view.scale;
+      view.panX += dx;
+      view.panY += dy;
       requestPlot({ rebuildTable: false });
       updateTooltipAtClientPoint(touch.clientX, touch.clientY);
     } else if (activeTouches.size >= 2) {
@@ -2494,9 +2967,7 @@ function wireTableEditing() {
 }
 
 function getViewFilenameSuffixShort() {
-    const viewSel = document.getElementById('viewModeSelect');
-    const activeView = viewSel ? viewSel.value : viewMode;
-    return activeView === 'longitudinal' ? '_lon' : '_rad';
+    return '_dual';
 }
 
 // Helper to get filename from title
@@ -2589,7 +3060,7 @@ function downloadSvg(svgText, filename) {
     saveBlobWithSharedPicker(blob, filename);
 }
 
-function getPlotState() {
+function getPlotState(mode = 'radial') {
     const canvas = document.getElementById('circleCanvas');
     const logicalWidth = canvas.width / RESOLUTION_SCALE;
     const logicalHeight = canvas.height / RESOLUTION_SCALE;
@@ -2598,9 +3069,10 @@ function getPlotState() {
     const plotW = logicalWidth - 2 * padding;
     const plotH = logicalHeight - 2 * padding - titleHeight;
     const rulerEnabled = (document.getElementById('showRulerCheckbox') ? document.getElementById('showRulerCheckbox').checked : true);
+    const rulerPadding = getRulerPaddingPx();
     const rulerGap = rulerEnabled ? 6 : 0;
     const rulerHeight = rulerEnabled ? 30 : 0;
-    const drawPlotH = plotH - rulerGap - rulerHeight;
+    const drawPlotH = Math.max(10, plotH - rulerGap - rulerHeight - (rulerEnabled ? rulerPadding : 0));
 
     const bgSel = document.getElementById('bgColorSelect');
     const bgPick = document.getElementById('bgColorOther');
@@ -2641,7 +3113,7 @@ function getPlotState() {
     circleData.sort((a, b) => b.diameter - a.diameter);
 
     const locked = document.getElementById('lockViewCheckbox').checked;
-    const lockVal = getLockViewSizeMmForCurrentView();
+    const lockVal = getLockViewSizeMmForMode(mode);
     let referenceDiam;
     if (locked && lockVal > 0) {
         referenceDiam = lockVal;
@@ -2665,17 +3137,38 @@ function getPlotState() {
         titleText: document.getElementById('configNameInput').value || '',
         circleData,
         scalingFactor,
-        viewMode,
-        sectionLengthMm: Math.max(50, parseFloat(document.getElementById('sectionLengthInput')?.value) || 500),
+        viewMode: mode,
+        sectionLengthMm: Math.max(50, parseFloat(document.getElementById('sectionLengthInput')?.value) || 1000),
         inclinationDeg: Math.max(0, Math.min(90, parseFloat(document.getElementById('inclinationInput')?.value) || 0))
     };
 }
 
-function getTableMetrics() {
+function fitColumnWidthsToTarget(colWidths, targetWidth) {
+    const currentWidth = colWidths.reduce((a, b) => a + b, 0);
+    if (!currentWidth || !Number.isFinite(targetWidth) || targetWidth <= 0) {
+        return colWidths.map(w => Math.max(1, Math.ceil(w)));
+    }
+
+    const fitted = [];
+    let used = 0;
+    for (let i = 0; i < colWidths.length; i++) {
+        if (i === colWidths.length - 1) {
+            fitted.push(Math.max(1, Math.round(targetWidth - used)));
+            continue;
+        }
+        const next = Math.max(1, Math.round((colWidths[i] / currentWidth) * targetWidth));
+        fitted.push(next);
+        used += next;
+    }
+    return fitted;
+}
+
+function getTableMetrics(options = {}) {
+    const targetWidth = options.targetWidth;
     const table = document.getElementById('areaTable');
     const rows = [...table.querySelectorAll('tr')];
     const colCount = rows[0] ? rows[0].children.length : 0;
-    const colWidths = [];
+    let colWidths = [];
     for (let c = 0; c < colCount; c++) {
         let w = 0;
         rows.forEach(r => {
@@ -2685,31 +3178,34 @@ function getTableMetrics() {
         });
         colWidths.push(Math.ceil(w));
     }
+    if (targetWidth) {
+        colWidths = fitColumnWidthsToTarget(colWidths, targetWidth);
+    }
     const rowHeights = rows.map(r => Math.ceil(r.getBoundingClientRect().height));
+    const width = colWidths.reduce((a, b) => a + b, 0);
     return {
         table,
         rows,
         colCount,
         colWidths,
         rowHeights,
-        width: colWidths.reduce((a, b) => a + b, 0),
+        width,
         height: rowHeights.reduce((a, b) => a + b, 0)
     };
 }
 
-function buildPlotSvg(includeExportOutline = false) {
-    const s = getPlotState();
-    const bgRgb = hexToRgb(s.bgColor) || { r: 255, g: 255, b: 255 };
-    const brightness = (bgRgb.r * 299 + bgRgb.g * 587 + bgRgb.b * 114) / 1000;
-    const titleColor = (brightness > 125) ? '#000000' : '#FFFFFF';
-
+function buildPlotSvg(includeExportOutline = false, mode = 'radial') {
+    const s = getPlotState(mode);
     let parts = [];
     parts.push(`<?xml version="1.0" encoding="UTF-8"?>`);
     parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${s.logicalWidth}" height="${s.logicalHeight}" viewBox="0 0 ${s.logicalWidth} ${s.logicalHeight}">`);
     parts.push(`<rect x="0" y="0" width="${s.logicalWidth}" height="${s.logicalHeight}" fill="${escapeXml(s.bgColor)}"/>`);
 
     if (s.titleText) {
-        parts.push(`<text x="${s.logicalWidth / 2}" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="${titleColor}">${escapeXml(s.titleText)}</text>`);
+        const bannerHeight = s.padding + s.titleHeight;
+        parts.push(`<rect x="0" y="0" width="${s.logicalWidth}" height="${bannerHeight}" fill="#ffffff"/>`);
+        parts.push(`<line x1="0" y1="${bannerHeight}" x2="${s.logicalWidth}" y2="${bannerHeight}" stroke="#000000" stroke-width="1"/>`);
+        parts.push(`<text x="${s.logicalWidth / 2}" y="${bannerHeight / 2}" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#000000">${escapeXml(s.titleText)}</text>`);
     }
 
     const tx = s.padding + view.panX;
@@ -2736,7 +3232,7 @@ function buildPlotSvg(includeExportOutline = false) {
         const desiredLenPx = s.sectionLengthMm * s.scalingFactor;
         const incRad = (s.inclinationDeg * Math.PI) / 180;
         const axisAngle = incRad - (Math.PI / 2);
-        const lengthPx = Math.min(Math.min(s.plotW, s.drawPlotH) * 0.95, desiredLenPx);
+        const lengthPx = Math.max(1, desiredLenPx);
         const x0 = -lengthPx / 2;
         const x1 = lengthPx / 2;
         const cx = s.plotW / 2;
@@ -2766,8 +3262,8 @@ function buildPlotSvg(includeExportOutline = false) {
     return parts.join('');
 }
 
-function buildTableSvg(xOffset = 0, yOffset = 0) {
-    const m = getTableMetrics();
+function buildTableSvg(xOffset = 0, yOffset = 0, options = {}) {
+    const m = getTableMetrics(options);
     let parts = [];
     parts.push(`<g transform="translate(${xOffset} ${yOffset})">`);
     parts.push(`<rect x="0" y="0" width="${m.width}" height="${m.height}" fill="#ffffff"/>`);
@@ -2811,15 +3307,22 @@ function buildTableSvg(xOffset = 0, yOffset = 0) {
     return { svg: parts.join(''), width: m.width, height: m.height };
 }
 
-function exportPlotSvg() {
-    plotCircles({ rebuildTable: false });
+function exportRadialPlotSvg() {
+    renderAllPlots({ rebuildTable: false });
     withExportOutlineApplied(() => {
-        downloadSvg(buildPlotSvg(true), getSafeFilename('.svg', { includeViewSuffix: true }));
+        downloadSvg(buildPlotSvg(true, 'radial'), getSafeFilename('_radial_plot.svg'));
+    });
+}
+
+function exportLongitudinalPlotSvg() {
+    renderAllPlots({ rebuildTable: false });
+    withExportOutlineApplied(() => {
+        downloadSvg(buildPlotSvg(true, 'longitudinal'), getSafeFilename('_longitudinal_plot.svg'));
     });
 }
 
 function exportTableSvg() {
-    plotCircles();
+    renderAllPlots();
     const tableSvg = buildTableSvg(0, 0);
     const svg = `<?xml version="1.0" encoding="UTF-8"?>` +
         `<svg xmlns="http://www.w3.org/2000/svg" width="${tableSvg.width}" height="${tableSvg.height}" viewBox="0 0 ${tableSvg.width} ${tableSvg.height}">` +
@@ -2829,45 +3332,43 @@ function exportTableSvg() {
 }
 
 function exportAllSvg() {
-    plotCircles();
+    renderAllPlots();
     withExportOutlineApplied(() => {
-        const s = getPlotState();
-        const tableSvg = buildTableSvg(0, 0);
-        const finalW = Math.max(s.logicalWidth, tableSvg.width) + 40;
+        const s = getPlotState('radial');
+        const targetTableWidth = s.logicalWidth;
+        const tableSvg = buildTableSvg(0, 0, { targetWidth: targetTableWidth });
+        const finalW = s.logicalWidth + 40;
         const finalH = s.logicalHeight + tableSvg.height + 60;
-        const plotX = (finalW - s.logicalWidth) / 2;
-        const tableX = (finalW - tableSvg.width) / 2;
+        const plotX = 20;
+        const tableX = 20;
         const tableY = s.logicalHeight + 40;
 
         const svg = `<?xml version="1.0" encoding="UTF-8"?>` +
             `<svg xmlns="http://www.w3.org/2000/svg" width="${finalW}" height="${finalH}" viewBox="0 0 ${finalW} ${finalH}">` +
             `<rect x="0" y="0" width="${finalW}" height="${finalH}" fill="#ffffff"/>` +
-            `<g transform="translate(${plotX} 20)">${buildPlotSvg().replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')}</g>` +
-            buildTableSvg(tableX, tableY).svg +
+            `<g transform="translate(${plotX} 20)">${buildPlotSvg(false, 'radial').replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')}</g>` +
+            buildTableSvg(tableX, tableY, { targetWidth: targetTableWidth }).svg +
             (isExportOutlineEnabled() ? `<rect x="0" y="0" width="${finalW}" height="${finalH}" fill="none" stroke="#000000" stroke-width="2" vector-effect="non-scaling-stroke"/>` : ``) +
             `</svg>`;
-        downloadSvg(svg, getSafeFilename('_combo.svg', { includeViewSuffix: true }));
+        downloadSvg(svg, getSafeFilename('_combined.svg'));
     });
 }
 
-// Export Plot PNG
-function exportPlotPng() {
-  plotCircles({ rebuildTable: false });
+function exportPlotCanvasPng(canvasEl, filename) {
+  if (!canvasEl) return;
   withExportOutlineApplied(() => {
-    const sourceCanvas = document.getElementById('circleCanvas');
-    const filename = getSafeFilename('.png', { includeViewSuffix: true });
     if (!isExportOutlineEnabled()) {
-      sourceCanvas.toBlob(b => {
+      canvasEl.toBlob(b => {
         if (!b) return;
         saveBlobWithSharedPicker(b, filename);
       });
       return;
     }
     const canvas = document.createElement('canvas');
-    canvas.width = sourceCanvas.width;
-    canvas.height = sourceCanvas.height;
+    canvas.width = canvasEl.width;
+    canvas.height = canvasEl.height;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(sourceCanvas, 0, 0);
+    ctx.drawImage(canvasEl, 0, 0);
     drawExportOutlineOnCanvas(ctx, canvas.width, canvas.height);
     canvas.toBlob(b => { 
         if (!b) return;
@@ -2876,9 +3377,19 @@ function exportPlotPng() {
   });
 }
 
+function exportRadialPlotPng() {
+  renderAllPlots({ rebuildTable: false });
+  exportPlotCanvasPng(document.getElementById('circleCanvas'), getSafeFilename('_radial_plot.png'));
+}
+
+function exportLongitudinalPlotPng() {
+  renderAllPlots({ rebuildTable: false });
+  exportPlotCanvasPng(document.getElementById('longitudinalCanvas'), getSafeFilename('_longitudinal_plot.png'));
+}
+
 // Export Table as PNG (Custom Rasterizer)
 function exportTableAsImage() {
-  plotCircles();
+  renderAllPlots();
   const table = document.getElementById('areaTable'); if (!table) return;
   const rows = [...table.querySelectorAll('tr')];
   const colCount = rows[0] ? rows[0].children.length : 0;
@@ -2934,20 +3445,20 @@ function exportTableAsImage() {
 
 // Export All
 function exportAllAsImage() {
-    plotCircles();
+    renderAllPlots();
     withExportOutlineApplied(() => {
         // 1. Draw Plot
         const plotC = document.getElementById('circleCanvas');
+        const dpr = RESOLUTION_SCALE;
+        const targetTableW = plotC.width / dpr;
         // 2. Draw Table (Logic duplicated for memory safety)
         const table = document.getElementById('areaTable');
         const rows = [...table.querySelectorAll('tr')];
         const colCount = rows[0] ? rows[0].children.length : 0;
         const colWidths = []; for (let c = 0; c < colCount; c++) { let w = 0; rows.forEach(r => { const cell = r.children[c]; if (!cell) return; w = Math.max(w, cell.getBoundingClientRect().width); }); colWidths.push(Math.ceil(w)); }
+        const fittedColWidths = fitColumnWidthsToTarget(colWidths, targetTableW);
         const rowHeights = rows.map(r => Math.ceil(r.getBoundingClientRect().height));
-        const W = colWidths.reduce((a,b)=>a+b,0), H = rowHeights.reduce((a,b)=>a+b,0);
-        
-        // *** UPDATED: Use RESOLUTION_SCALE ***
-        const dpr = RESOLUTION_SCALE;
+        const W = fittedColWidths.reduce((a,b)=>a+b,0), H = rowHeights.reduce((a,b)=>a+b,0);
         
         const tableC = document.createElement('canvas');
         tableC.width  = Math.max(1, Math.floor(W * dpr)); tableC.height = Math.max(1, Math.floor(H * dpr));
@@ -2957,7 +3468,7 @@ function exportAllAsImage() {
         rows.forEach((r, ri) => {
             let x = 0;
             for (let ci = 0; ci < colCount; ci++) {
-            const cell = r.children[ci]; const w = colWidths[ci]; const h = rowHeights[ri];
+            const cell = r.children[ci]; const w = fittedColWidths[ci]; const h = rowHeights[ri];
             if (cell && cell.classList.contains('color-cell')) { const bg = getComputedStyle(cell).backgroundColor; tctx.fillStyle = bg; tctx.fillRect(x, y, w, h); } else { tctx.fillStyle = '#fff'; tctx.fillRect(x, y, w, h); }
             tctx.strokeStyle = '#000'; tctx.lineWidth = 1; tctx.strokeRect(x, y, w, h);
             if (cell) {
@@ -2971,8 +3482,6 @@ function exportAllAsImage() {
         });
 
         // 3. Compose
-        const outW = Math.max(plotC.width, tableC.width);
-        
         // Let's rely on pixel dims
         const pW = plotC.width; const pH = plotC.height;
         const tW = tableC.width / dpr; const tH = tableC.height / dpr;
@@ -2994,7 +3503,7 @@ function exportAllAsImage() {
         ctx.drawImage(tableC, 0, 0, tableC.width, tableC.height, tX, (pH/dpr) + 40, tW, tH);
         drawExportOutlineOnCanvas(ctx, finalW, finalH);
         
-        const filename = getSafeFilename('_combo.png', { includeViewSuffix: true });
+        const filename = getSafeFilename('_combined.png');
         canvas.toBlob(b => {
             if (!b) return;
             saveBlobWithSharedPicker(b, filename);
@@ -3029,6 +3538,7 @@ function getSettingsObj() {
     const lockSizeLongitudinal = document.getElementById('lockViewSizeLongitudinal').value;
     const rulerEnabled = document.getElementById('showRulerCheckbox').checked;
     const rulerUnits = document.getElementById('rulerUnitsSelect').value;
+    const rulerPadding = document.getElementById('rulerPaddingInput').value;
     const showReferenceCrosshair = document.getElementById('showReferenceCrosshairCheckbox').checked;
     const exportOutlineEnabled = document.getElementById('exportOutlineCheckbox').checked;
     const configName = document.getElementById('configNameInput').value;
@@ -3036,8 +3546,8 @@ function getSettingsObj() {
     return { 
         configName: configName,
         nightMode: (document.getElementById('nightMode') ? document.getElementById('nightMode').checked : false),
-        viewMode: (document.getElementById("viewModeSelect") ? document.getElementById("viewModeSelect").value : "radial"),
-        sectionLengthMm: (document.getElementById("sectionLengthInput") ? document.getElementById("sectionLengthInput").value : 500),
+        viewMode: "dual",
+        sectionLengthMm: (document.getElementById("sectionLengthInput") ? document.getElementById("sectionLengthInput").value : 1000),
         inclinationFromVerticalDeg: (document.getElementById("inclinationInput") ? document.getElementById("inclinationInput").value : 0),
         backgroundColor: bg, 
         lockedView: lock,
@@ -3046,6 +3556,7 @@ function getSettingsObj() {
         lockedViewSizeLongitudinal: lockSizeLongitudinal,
         rulerEnabled: rulerEnabled,
         rulerUnits: rulerUnits,
+        rulerPadding: rulerPadding,
         showReferenceCrosshair: showReferenceCrosshair,
         exportOutlineEnabled: exportOutlineEnabled,
         circles: data 
@@ -3165,6 +3676,7 @@ function applySettingsData(data, preserveTitle) {
         const longitudinal = data.lockedViewSizeLongitudinal ?? data.lockedViewSize ?? 300;
         document.getElementById('lockViewSizeRadial').value = radial;
         document.getElementById('lockViewSizeLongitudinal').value = longitudinal;
+        syncLockViewToolbarButton();
     }
     if (data.rulerEnabled !== undefined) {
         document.getElementById('showRulerCheckbox').checked = Boolean(data.rulerEnabled);
@@ -3175,6 +3687,12 @@ function applySettingsData(data, preserveTitle) {
         document.getElementById('rulerUnitsSelect').value = data.rulerUnits;
     } else {
         document.getElementById('rulerUnitsSelect').value = 'metric';
+    }
+    if (data.rulerPadding !== undefined) {
+        const pad = Math.max(0, parseFloat(data.rulerPadding) || 0);
+        document.getElementById('rulerPaddingInput').value = String(pad);
+    } else {
+        document.getElementById('rulerPaddingInput').value = '0';
     }
     if (data.showReferenceCrosshair !== undefined) {
         document.getElementById('showReferenceCrosshairCheckbox').checked = Boolean(data.showReferenceCrosshair);
@@ -3187,25 +3705,6 @@ function applySettingsData(data, preserveTitle) {
         document.getElementById('exportOutlineCheckbox').checked = true;
     }
     
-    // Apply View Mode (optional)
-    if(data.viewMode && document.getElementById('viewModeSelect')) {
-        document.getElementById('viewModeSelect').value = data.viewMode;
-        // Sync UI visibility
-        const show = (data.viewMode === 'longitudinal');
-        const secLenInput = document.getElementById('sectionLengthInput');
-        const secLenLabel = document.getElementById('sectionLengthLabel');
-        const incInput = document.getElementById('inclinationInput');
-        const incLabel = document.getElementById('inclinationLabel');
-        if(secLenInput && secLenLabel) {
-            secLenInput.style.display = show ? 'inline-block' : 'none';
-            secLenLabel.style.display = show ? 'inline' : 'none';
-        }
-        if(incInput && incLabel) {
-            incInput.style.display = show ? 'inline-block' : 'none';
-            incLabel.style.display = show ? 'inline' : 'none';
-        }
-        viewMode = data.viewMode;
-    }
     if(data.sectionLengthMm && document.getElementById('sectionLengthInput')) {
         document.getElementById('sectionLengthInput').value = data.sectionLengthMm;
     }
@@ -3232,7 +3731,7 @@ function applySettingsData(data, preserveTitle) {
     }
     sortLayerRowsByDiameter();
     
-    plotCircles();
+    requestPlot();
 }
 </script>
 </body>
