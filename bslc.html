@@ -514,15 +514,19 @@ body.night-mode .app-header {
   grid-template-areas:
     "kpi kpi"
     "alerts alerts"
-    "plot chart"
-    "details .";
+    "left chart";
   gap:var(--space-lg);
 }
 .main > * { min-width:0; }
 .kpi-grid { grid-area:kpi; }
 .alerts-card { grid-area:alerts; }
-.plot-card { grid-area:plot; }
-#calculatedCard { grid-area:details; }
+.main-left-col {
+  grid-area:left;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:var(--space-lg);
+}
 
 /* 3. Cards */
 .card {
@@ -933,6 +937,23 @@ svg {
   grid-area:chart;
   display:block;
 }
+.chart-notes-wrap {
+  margin-top:12px;
+}
+.chart-notes {
+  width:100%;
+  box-sizing:border-box;
+  resize:none;
+  overflow:hidden;
+  min-height:calc(2 * 1.35em + 12px);
+  line-height:1.35;
+  padding:6px 8px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  background:var(--surface);
+  color:var(--text);
+  font-family:Consolas, "Courier New", monospace;
+}
 
 /* 7. Tables and alerts */
 .tbl {
@@ -1307,58 +1328,60 @@ button {
        <span class="metric-unit">L</span>
       </article>
      </section>
-     <section class="card plot-card">
-      <div class="card-head">
-        <h2>Cross Section</h2>
-      </div>
-      <div class="shell plot-shell">
-       <svg id="plot" viewBox="0 0 980 520"></svg>
-      </div>
-      <div class="plot-meta" id="plotMeta">
-       <span>BHID <strong id="metaDiameter">--</strong></span>
-       <span>Inclination <strong id="metaInclination">--</strong></span>
-       <span>Bismuth <strong id="metaVolume">--</strong></span>
-       <span>Thermite <strong id="metaThermite">--</strong></span>
-      </div>
-     </section>
      <section class="card alerts-card" id="alertsCard" hidden>
       <h2>Alerts</h2>
       <div id="warn"></div>
      </section>
-     <section class="card is-collapsed" id="calculatedCard">
-      <div class="card-head">
-       <h2>Detailed Results</h2>
-       <button class="btn btn-secondary collapse-btn" id="toggleCalculated" type="button" aria-expanded="false" aria-controls="calculatedBody">Expand</button>
-      </div>
-      <div class="collapsible-body" id="calculatedBody">
-       <table class="tbl">
-        <tbody>
-         <tr><td>Bismuth volume (total)</td><td id="outTotal"></td></tr>
-         <tr><td>Minimum Volume for Full Radial Coverage</td><td id="outMin"></td></tr>
-         <tr><td>Effective barrier length (mMD)</td><td id="outEff"></td></tr>
-         <tr><td>True Vertical Thickness (TVT, mTVT)</td><td id="outVert"></td></tr>
-         <tr><td>Volume required for 500 mmMD barrier</td><td id="out500"></td></tr>
-         <tr><td>Bismuth mass</td><td id="outBismuthMass"></td></tr>
-         <tr><td>Thermite mass used</td><td id="outThermiteMass"></td></tr>
-         <tr><td>Thermite length used</td><td id="outThermiteLength"></td></tr>
-         <tr><td>Required thermite mass</td><td id="outThermiteMassFromLength"></td></tr>
-        </tbody>
-       </table>
-       <div class="sub">Effective Barrier Length By Inclination</div>
-       <table class="tbl">
-        <thead>
-         <tr>
-          <th>Inclination (&deg;)</th>
-          <th>Minimum Volume for Full Radial Coverage (L)</th>
-          <th>Effective barrier length (mMD)</th>
-          <th>Effective vertical height (mTVT)</th>
-          <th>Volume for 500 mmMD barrier (L)</th>
-         </tr>
-        </thead>
-        <tbody id="sweep"></tbody>
-       </table>
-      </div>
-     </section>
+     <div class="main-left-col">
+      <section class="card plot-card">
+       <div class="card-head">
+         <h2>Cross Section</h2>
+       </div>
+       <div class="shell plot-shell">
+        <svg id="plot" viewBox="0 0 980 520"></svg>
+       </div>
+       <div class="plot-meta" id="plotMeta">
+        <span>BHID <strong id="metaDiameter">--</strong></span>
+        <span>Inclination <strong id="metaInclination">--</strong></span>
+        <span>Bismuth <strong id="metaVolume">--</strong></span>
+        <span>Thermite <strong id="metaThermite">--</strong></span>
+       </div>
+      </section>
+      <section class="card is-collapsed" id="calculatedCard">
+       <div class="card-head">
+        <h2>Detailed Results</h2>
+        <button class="btn btn-secondary collapse-btn" id="toggleCalculated" type="button" aria-expanded="false" aria-controls="calculatedBody">Expand</button>
+       </div>
+       <div class="collapsible-body" id="calculatedBody">
+        <table class="tbl">
+         <tbody>
+          <tr><td>Bismuth volume (total)</td><td id="outTotal"></td></tr>
+          <tr><td>Minimum Volume for Full Radial Coverage</td><td id="outMin"></td></tr>
+          <tr><td>Effective barrier length (mMD)</td><td id="outEff"></td></tr>
+          <tr><td>True Vertical Thickness (TVT, mTVT)</td><td id="outVert"></td></tr>
+          <tr><td>Volume required for 500 mmMD barrier</td><td id="out500"></td></tr>
+          <tr><td>Bismuth mass</td><td id="outBismuthMass"></td></tr>
+          <tr><td>Thermite mass used</td><td id="outThermiteMass"></td></tr>
+          <tr><td>Thermite length used</td><td id="outThermiteLength"></td></tr>
+          <tr><td>Required thermite mass</td><td id="outThermiteMassFromLength"></td></tr>
+         </tbody>
+        </table>
+        <div class="sub">Effective Barrier Length By Inclination</div>
+        <table class="tbl">
+         <thead>
+          <tr>
+           <th>Inclination (&deg;)</th>
+           <th>Minimum Volume for Full Radial Coverage (L)</th>
+           <th>Effective barrier length (mMD)</th>
+           <th>Effective vertical height (mTVT)</th>
+           <th>Volume for 500 mmMD barrier (L)</th>
+          </tr>
+         </thead>
+         <tbody id="sweep"></tbody>
+        </table>
+       </div>
+      </section>
+     </div>
      <section class="chart-grid">
       <article class="card chart-card">
        <div class="card-head">
@@ -1366,6 +1389,9 @@ button {
        </div>
        <div class="shell">
         <svg id="incChart" viewBox="0 0 900 430"></svg>
+       </div>
+       <div class="shell chart-notes-wrap">
+        <textarea id="chartNotes" class="chart-notes" rows="2" placeholder="Notes..." spellcheck="false"></textarea>
        </div>
       </article>
      </section>
@@ -1496,6 +1522,11 @@ setNightMode=(enabled,redraw=true)=> {
 },
 plotBg=()=>cssVar('--plot-bg','#fff'),
 plotLine=()=>cssVar('--plot-line','#000'),
+autoResizeTextarea=(el)=> {
+  if(!el) return;
+  el.style.height='auto';
+  el.style.height=`${el.scrollHeight}px`;
+},
 getGlobalPlotAspectRatio=()=> {
   const raw=parseFloat(E.plotAspectRatio?.value);
   const fallback=DEF.plotAspectRatio;
@@ -1548,6 +1579,7 @@ E= {
   exportOutline:$('exportOutline'),
   plot:$('plot'),
   incChart:$('incChart'),
+  chartNotes:$('chartNotes'),
   tip:$('tip'),
   outTotal:$('outTotal'),
   outMin:$('outMin'),
@@ -1590,6 +1622,8 @@ E= {
   calculatedBody:$('calculatedBody'),
   toggleCalculated:$('toggleCalculated')
 };
+const SHARED_PICKER_ID='rstools-bslc-settings';
+let lastUsedFileHandle=null;
 // Set default values for input fields
 E.plotTitle.value=DEF.plotTitle;
 Object.assign(E.diameter, {
@@ -1899,9 +1933,52 @@ exportSvg=(svgEl,name)=> {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 
+function triggerBlobDownload(blob, filename) {
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function getPickerTypeFromFilename(filename) {
+  const lower=String(filename || '').toLowerCase();
+  if(lower.endsWith('.json')) {
+    return {description:'JSON File', accept:{'application/json':['.json']}};
+  }
+  return null;
+}
+
+async function saveBlobWithSharedPicker(blob, filename) {
+  try {
+    if(window.showSaveFilePicker) {
+      const opts= {
+        id:SHARED_PICKER_ID,
+        suggestedName:filename
+      };
+      const type=getPickerTypeFromFilename(filename);
+      if(type) opts.types=[type];
+      if(lastUsedFileHandle) opts.startIn=lastUsedFileHandle;
+
+      const handle=await window.showSaveFilePicker(opts);
+      lastUsedFileHandle=handle;
+      const writable=await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;
+    }
+  } catch(err) {
+    if(err.name==='AbortError') return;
+    console.error(err);
+  }
+  triggerBlobDownload(blob, filename);
+}
+
 function getSettingsObject() {
   return {
     title: E.plotTitle.value.trim(),
+    chartNotes: E.chartNotes ? E.chartNotes.value : '',
     diameter: E.diameter.value,
     diameterUnit: E.diameterUnit.value,
     inclination: E.inclination.value,
@@ -1930,6 +2007,10 @@ function getSettingsObject() {
 function applySettingsObject(data) {
   if(!data || typeof data !== 'object') return;
   if('title' in data) E.plotTitle.value = data.title ?? '';
+  if(E.chartNotes) {
+    E.chartNotes.value = data.chartNotes ?? data.notes ?? '';
+    autoResizeTextarea(E.chartNotes);
+  }
   if('diameter' in data) E.diameter.value = data.diameter ?? '';
   if('diameterUnit' in data && (data.diameterUnit === 'mm' || data.diameterUnit === 'in')) { E.diameterUnit.value = data.diameterUnit; E.diameterUnit.dataset.prev = data.diameterUnit; }
   if('inclination' in data) E.inclination.value = data.inclination ?? '';
@@ -2564,6 +2645,10 @@ function draw() {
   };
 }
 // --- Event listeners for all input fields ---
+if(E.chartNotes) {
+  autoResizeTextarea(E.chartNotes);
+  E.chartNotes.addEventListener('input',()=>autoResizeTextarea(E.chartNotes));
+}
 ['plotTitle',
 'diameter',
 'inclination',
@@ -2662,21 +2747,42 @@ document.addEventListener('keydown',ev=> {
   if(ev.key==='Escape') closeMenus();
 });
 // --- Export buttons for PNG download ---
-E.exportSettings.onclick=()=>{
-  const blob=new Blob([JSON.stringify(getSettingsObject(),null,2)], {type:'application/json;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download=`${getFileBase()}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  closeMenus();
+E.exportSettings.onclick=async()=> {
+  try {
+    const blob=new Blob([JSON.stringify(getSettingsObject(),null,2)], {type:'application/json;charset=utf-8'});
+    await saveBlobWithSharedPicker(blob,`${getFileBase()}.json`);
+  } finally {
+    closeMenus();
+  }
 };
-E.importSettings.onclick=()=> {
-  E.importSettingsFile.click();
-  closeMenus();
+E.importSettings.onclick=async()=> {
+  try {
+    if(window.showOpenFilePicker) {
+      const opts= {
+        id:SHARED_PICKER_ID,
+        types:[{
+          description:'JSON Settings File',
+          accept:{'application/json':['.json']}
+        }],
+        multiple:false
+      };
+      if(lastUsedFileHandle) opts.startIn=lastUsedFileHandle;
+      const [handle]=await window.showOpenFilePicker(opts);
+      lastUsedFileHandle=handle;
+      const file=await handle.getFile();
+      const text=await file.text();
+      applySettingsObject(JSON.parse(text));
+    } else {
+      E.importSettingsFile.click();
+    }
+  } catch(err) {
+    if(err.name!=='AbortError') {
+      console.error(err);
+      alert('Could not import settings JSON. Please select a valid exported settings file.');
+    }
+  } finally {
+    closeMenus();
+  }
 };
 E.importSettingsFile.onchange=(ev)=>{
   const file=ev.target.files && ev.target.files[0];
@@ -2748,4 +2854,3 @@ draw()
 </script>
  </body>
 </html>
-

@@ -566,6 +566,24 @@
       -webkit-user-select: none;
       user-select: none;
     }
+    .longitudinal-notes-wrap {
+      width: 100%;
+      max-width: 700px;
+      margin: 8px auto 0;
+    }
+    .longitudinal-notes {
+      width: 100%;
+      box-sizing: border-box;
+      resize: none;
+      overflow: hidden;
+      line-height: 1.35;
+      font-family: Consolas, "Courier New", monospace;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 6px 8px;
+    }
 
     .table-scroll {
       width: 100%;
@@ -1098,6 +1116,9 @@
             <div id="canvasWrapLongitudinal" class="canvas-wrap">
               <canvas id="longitudinalCanvas" class="plot-canvas" width="700" height="700"></canvas>
             </div>
+            <div class="longitudinal-notes-wrap">
+              <textarea id="longitudinalNotes" class="longitudinal-notes" rows="2" placeholder="Notes..." spellcheck="false"></textarea>
+            </div>
           </div>
         </div>
       </div>
@@ -1521,6 +1542,12 @@ function getTouchMidpoint(t1, t2) {
   };
 }
 
+function autoResizeTextarea(textarea) {
+  if (!textarea) return;
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
 /***************************************************************
  * INITIALIZATION
  ***************************************************************/
@@ -1614,6 +1641,11 @@ window.onload = function () {
       requestPlot({ rebuildTable: false });
     });
   });
+  const longitudinalNotesEl = document.getElementById('longitudinalNotes');
+  if (longitudinalNotesEl) {
+    autoResizeTextarea(longitudinalNotesEl);
+    longitudinalNotesEl.addEventListener('input', () => autoResizeTextarea(longitudinalNotesEl));
+  }
 
   // 4. Watch for Real-time Updates
   document.querySelector('.controls-panel').addEventListener('input', function(e) {
@@ -2997,11 +3029,19 @@ function getViewFilenameSuffixShort() {
     return '_dual';
 }
 
+function sanitizeFilenameBase(name, fallback = 'Well Plot') {
+    const cleaned = String(name ?? '')
+        .replace(/[\\/:*?"<>|]+/g, '')
+        .replace(/[\x00-\x1F]/g, '')
+        .replace(/[. ]+$/g, '')
+        .trim();
+    return cleaned || fallback;
+}
+
 // Helper to get filename from title
 function getSafeFilename(ext, options = {}) {
     const includeViewSuffix = Boolean(options.includeViewSuffix);
-    let name = document.getElementById('configNameInput').value.trim();
-    if (!name) name = "Well_Plot";
+    let name = sanitizeFilenameBase(document.getElementById('configNameInput').value, 'Well Plot');
     if (includeViewSuffix) name += getViewFilenameSuffixShort();
     return name + ext;
 }
@@ -3560,9 +3600,11 @@ function getSettingsObj() {
     const showReferenceCrosshair = document.getElementById('showReferenceCrosshairCheckbox').checked;
     const exportOutlineEnabled = document.getElementById('exportOutlineCheckbox').checked;
     const configName = document.getElementById('configNameInput').value;
+    const longitudinalNotes = document.getElementById('longitudinalNotes')?.value || '';
     
     return { 
         configName: configName,
+        longitudinalNotes: longitudinalNotes,
         nightMode: (document.getElementById('nightMode') ? document.getElementById('nightMode').checked : false),
         viewMode: "dual",
         sectionLengthMm: (document.getElementById("sectionLengthInput") ? document.getElementById("sectionLengthInput").value : 1000),
@@ -3587,10 +3629,12 @@ async function saveConfigAs() {
         const settings = getSettingsObj();
         const jsonStr = JSON.stringify(settings, null, 2);
         
-        let filename = 'well_plot_config.json';
+        let filenameBase = 'well plot config';
         if(settings.configName && settings.configName.trim() !== '') {
-            filename = settings.configName.trim() + '.json';
+            filenameBase = settings.configName.trim();
         }
+        filenameBase = sanitizeFilenameBase(filenameBase, 'well plot config').replace(/_WAP$/i, '');
+        const filename = `${filenameBase}_WAP.json`;
 
         const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
         await saveBlobWithSharedPicker(blob, filename);
@@ -3621,17 +3665,11 @@ async function openConfig() {
             
             // Update global handle
             lastUsedFileHandle = handle;
-            
-            // Auto-set config name from filename (Priority Rule)
-            const fname = handle.name;
-            const nameBase = fname.replace(/\.json$/i, '');
-            document.getElementById('configNameInput').value = nameBase;
 
             const file = await handle.getFile();
             const text = await file.text();
             
-            // Pass true to say "preserve title from filename"
-            applySettingsData(JSON.parse(text), true);
+            applySettingsData(JSON.parse(text), false);
         } else {
             document.getElementById('fallbackFileInput').click();
         }
@@ -3643,17 +3681,12 @@ async function openConfig() {
 function fallbackLoad(input) {
     const file = input.files[0];
     if(!file) return;
-    
-    // Auto-set config name
-    const fname = file.name;
-    const nameBase = fname.replace(/\.json$/i, '');
-    document.getElementById('configNameInput').value = nameBase;
 
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
-            applySettingsData(data, true);
+            applySettingsData(data, false);
         } catch(err) {
             alert("Error parsing JSON file");
         }
@@ -3663,6 +3696,12 @@ function fallbackLoad(input) {
 }
 
 function applySettingsData(data, preserveTitle) {
+    const longitudinalNotesEl = document.getElementById('longitudinalNotes');
+    if (longitudinalNotesEl) {
+        longitudinalNotesEl.value = data.longitudinalNotes ?? data.notes ?? '';
+        autoResizeTextarea(longitudinalNotesEl);
+    }
+
     // Apply Name if inside JSON AND we didn't just set it from filename
     // Actually, user requested: "title should just be 'Case 14' (filename)"
     // So if preserveTitle is true, we skip this.
