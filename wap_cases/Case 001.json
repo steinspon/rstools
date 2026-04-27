@@ -6,8 +6,8 @@
   "inclinationFromVerticalDeg": "60",
   "backgroundColor": "#E4EBD7",
   "lockedView": false,
-  "lockedViewSize": "300",
-  "lockedViewSizeRadial": "300",
+  "lockedViewSize": "363.01",
+  "lockedViewSizeRadial": "363.01",
   "lockedViewSizeLongitudinal": "300",
   "rulerEnabled": true,
   "rulerUnits": "metric",
@@ -70,13 +70,26 @@
     {
       "diameter": "115",
       "unit": "mm",
-      "materialLabel": "N/A",
+      "materialLabel": "Thermite",
       "fillColor": "#CBE811",
       "lineColor": "#000000",
       "lineThickness": "0.25",
       "lineType": "solid",
       "eccentricityFactor": "0",
       "eccentricityAngle": "0",
+      "wavinessAmp": "0",
+      "wavinessFreq": "8"
+    },
+    {
+      "diameter": "20",
+      "unit": "mm",
+      "materialLabel": "Thermite ID",
+      "fillColor": "#e6f0a3",
+      "lineColor": "#000000",
+      "lineThickness": "0.25",
+      "lineType": "solid",
+      "eccentricityFactor": "0",
+      "eccentricityAngle": "180",
       "wavinessAmp": "0",
       "wavinessFreq": "8"
     }

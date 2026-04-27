@@ -1026,10 +1026,6 @@
              <input type="number" id="rulerPaddingInput" min="0" step="1" value="0" style="width:90px;">
            </div>
         </div>
-        <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
-           Applies to radial view ruler. Major ticks are labeled; minor ticks are unlabeled. Padding insets ruler from left/right/bottom edges.
-        </div>
-
         <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
            <label style="width:100px;">Reference:</label>
            <label class="checkbox-row" for="showReferenceCrosshairCheckbox">
@@ -1344,35 +1340,55 @@ function getRulerPaddingPx() {
   return raw;
 }
 
+function getSharedUnlockedReferenceMm() {
+  const radial = parseFloat(document.getElementById('lockViewSizeRadial')?.value);
+  const longitudinal = parseFloat(document.getElementById('lockViewSizeLongitudinal')?.value);
+  if (!Number.isFinite(radial) || !Number.isFinite(longitudinal)) return null;
+  if (radial <= 0 || longitudinal <= 0) return null;
+  if (Math.abs(radial - longitudinal) > 0.01) return null;
+  return (radial + longitudinal) / 2;
+}
+
+function getReferenceDiameterForMode(mode, circleData = null) {
+  const lockVal = getLockViewSizeMmForMode(mode);
+  const sharedUnlockedReference = getSharedUnlockedReferenceMm();
+  if (Number.isFinite(sharedUnlockedReference) && sharedUnlockedReference > 0) return sharedUnlockedReference;
+  if (Number.isFinite(lockVal) && lockVal > 0) return lockVal;
+
+  let maxD = 0;
+  if (Array.isArray(circleData) && circleData.length > 0) {
+    maxD = circleData.reduce((m, d) => Math.max(m, Number(d?.diameter) || 0), 0);
+  } else {
+    const rows = document.querySelectorAll('.layer-row');
+    rows.forEach((row) => {
+      maxD = Math.max(maxD, getRowDiameterMm(row));
+    });
+  }
+  if (!Number.isFinite(maxD) || maxD <= 0) maxD = 100;
+  return maxD * 1.05;
+}
+
+function getViewScaleSpanPx(plotW) {
+  // View values represent the horizontal visible span in mm. Keep this
+  // independent of title/ruler height so radial and longitudinal scales match.
+  return plotW;
+}
+
 function getCurrentVisibleSpanMm() {
   const canvas = document.getElementById('circleCanvas');
   if (!canvas) return null;
 
   const padding = 20;
-  const titleHeight = 30;
   const logicalWidth = canvas.width / RESOLUTION_SCALE;
-  const logicalHeight = canvas.height / RESOLUTION_SCALE;
   const plotW = logicalWidth - 2 * padding;
-  const plotH = logicalHeight - 2 * padding - titleHeight;
-  const rulerEnabled = (document.getElementById('showRulerCheckbox') ? document.getElementById('showRulerCheckbox').checked : true);
-  const rulerPadding = getRulerPaddingPx();
-  const rulerGap = rulerEnabled ? 6 : 0;
-  const rulerHeight = rulerEnabled ? 30 : 0;
-  const drawPlotH = Math.max(10, plotH - rulerGap - rulerHeight - (rulerEnabled ? rulerPadding : 0));
 
-  const rows = document.querySelectorAll('.layer-row');
-  const diameters = Array.from(rows).map(getRowDiameterMm).filter(v => Number.isFinite(v) && v > 0);
-  const maxD = diameters.length ? Math.max(...diameters) : 100;
-  const locked = document.getElementById('lockViewCheckbox')?.checked;
-  const lockVal = getLockViewSizeMmForCurrentView();
-  const referenceDiam = (locked && lockVal > 0) ? lockVal : (maxD * 1.05);
-  const basePxPerMm = (locked && lockVal > 0)
-    ? (plotW / referenceDiam)
-    : (Math.min(plotW, drawPlotH) / referenceDiam);
+  const referenceDiam = getReferenceDiameterForMode('radial');
+  const scaleSpanPx = getViewScaleSpanPx(plotW);
+  const basePxPerMm = scaleSpanPx / referenceDiam;
   const effectivePxPerMm = basePxPerMm * Math.max(0.001, view.scale || 1);
 
   if (!Number.isFinite(effectivePxPerMm) || effectivePxPerMm <= 0) return null;
-  return plotW / effectivePxPerMm;
+  return referenceDiam / Math.max(0.001, view.scale || 1);
 }
 
 function setCanvasDisplaySize() {
@@ -1382,11 +1398,16 @@ function setCanvasDisplaySize() {
     { canvas: document.getElementById('longitudinalCanvas'), wrap: document.getElementById('canvasWrapLongitudinal') }
   ];
 
-  bindings.forEach(({ canvas, wrap }) => {
-    if (!canvas || !wrap) return;
-    const availableWidth = Math.max(280, Math.min(logicalSize, Math.floor(wrap.clientWidth || logicalSize)));
-    canvas.style.width = `${availableWidth}px`;
-    canvas.style.height = `${availableWidth}px`;
+  const availableWidths = bindings
+    .map(({ wrap }) => (wrap ? Math.max(280, Math.min(logicalSize, Math.floor(wrap.clientWidth || logicalSize))) : null))
+    .filter((w) => Number.isFinite(w));
+
+  const sharedWidth = availableWidths.length ? Math.min(...availableWidths) : logicalSize;
+
+  bindings.forEach(({ canvas }) => {
+    if (!canvas) return;
+    canvas.style.width = `${sharedWidth}px`;
+    canvas.style.height = `${sharedWidth}px`;
   });
 }
 
@@ -1585,6 +1606,14 @@ window.onload = function () {
   const incInput = document.getElementById('inclinationInput');
   if (secLenInput) secLenInput.addEventListener('input', () => requestPlot({ rebuildTable: false }));
   if (incInput) incInput.addEventListener('input', () => requestPlot({ rebuildTable: false }));
+  ['lockViewSizeRadial', 'lockViewSizeLongitudinal'].forEach((id) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener('input', () => {
+      resetViewTransform();
+      requestPlot({ rebuildTable: false });
+    });
+  });
 
   // 4. Watch for Real-time Updates
   document.querySelector('.controls-panel').addEventListener('input', function(e) {
@@ -1641,6 +1670,27 @@ function syncLockViewToolbarButton() {
     lockViewBtn.classList.toggle('primary', locked);
 }
 
+function applyViewLockState(locked) {
+    const lockEl = document.getElementById('lockViewCheckbox');
+    if (!lockEl) return;
+
+    if (locked) {
+        const currentReferenceMm = getCurrentVisibleSpanMm();
+        if (Number.isFinite(currentReferenceMm) && currentReferenceMm > 0) {
+            const lockValue = (Math.round(currentReferenceMm * 100) / 100).toFixed(2);
+            const radialInput = document.getElementById('lockViewSizeRadial');
+            const longitudinalInput = document.getElementById('lockViewSizeLongitudinal');
+            if (radialInput) radialInput.value = lockValue;
+            if (longitudinalInput) longitudinalInput.value = lockValue;
+            view.scale = 1;
+        }
+    }
+
+    lockEl.checked = locked;
+    syncLockViewToolbarButton();
+    requestPlot({ rebuildTable: false });
+}
+
 function wireButtons() {
     const resetViewBtn = document.getElementById('resetViewBtn');
     if (resetViewBtn) {
@@ -1651,20 +1701,12 @@ function wireButtons() {
     if (lockViewBtn && lockEl) {
         syncLockViewToolbarButton();
         lockViewBtn.addEventListener('click', () => {
-            if (!lockEl.checked) {
-                const currentSpanMm = getCurrentVisibleSpanMm();
-                if (Number.isFinite(currentSpanMm) && currentSpanMm > 0) {
-                    const lockInputId = 'lockViewSizeRadial';
-                    const lockInput = document.getElementById(lockInputId);
-                    if (lockInput) lockInput.value = (Math.round(currentSpanMm * 100) / 100).toFixed(2);
-                }
-            }
             lockEl.checked = !lockEl.checked;
             lockEl.dispatchEvent(new Event('change', { bubbles: true }));
-            if (!lockEl.checked) requestPlot({ rebuildTable: false });
-            syncLockViewToolbarButton();
         });
-        lockEl.addEventListener('change', syncLockViewToolbarButton);
+        lockEl.addEventListener('change', () => {
+            applyViewLockState(lockEl.checked);
+        });
     }
 
     const importMenu = document.getElementById('importMenu');
@@ -2447,24 +2489,12 @@ function plotCircles(options = {}) {
     ctx.scale(view.scale, view.scale);
 
     // --- SCALING LOGIC (LOCKED VS AUTO) ---
-    const locked = document.getElementById('lockViewCheckbox').checked;
-    const lockVal = getLockViewSizeMmForMode(mode);
-
-    let referenceDiam;
-    if (locked && lockVal > 0) {
-        referenceDiam = lockVal;
-    } else {
-        // Auto-fit to largest pipe + small margin
-        const maxD = circleData[0]?.diameter || 100;
-        referenceDiam = maxD * 1.05; // 5% margin
-    }
+    const referenceDiam = getReferenceDiameterForMode(mode, circleData);
 
     // Scale: pixels per mm.
-    // - Locked mode maps lock value directly to visible plot width (requested behavior).
-    // - Auto mode fits to the limiting drawable dimension.
-    const scalingFactor = (locked && lockVal > 0)
-        ? (plotW / referenceDiam)
-        : (Math.min(plotW, drawPlotH) / referenceDiam);
+    // View values map directly to visible plot width for both plot types.
+    const scaleSpanPx = getViewScaleSpanPx(plotW);
+    const scalingFactor = scaleSpanPx / referenceDiam;
 
     circleHitboxes = [];
     rectHitboxes = [];
@@ -2928,14 +2958,11 @@ function wireCanvasInteractions() {
   const lockEl = document.getElementById('lockViewCheckbox');
   if (lockEl) {
     lockEl.addEventListener('change', () => {
-      if (lockEl.checked) {
-        isPanning = false;
-        activeTouches.clear();
-        touchState = null;
-        tooltip.style.display = 'none';
-        resetViewTransform();
-        requestPlot({ rebuildTable: false });
-      }
+      isPanning = false;
+      activeTouches.clear();
+      touchState = null;
+      tooltip.style.display = 'none';
+      requestPlot({ rebuildTable: false });
     });
   }
 }
@@ -3112,18 +3139,9 @@ function getPlotState(mode = 'radial') {
 
     circleData.sort((a, b) => b.diameter - a.diameter);
 
-    const locked = document.getElementById('lockViewCheckbox').checked;
-    const lockVal = getLockViewSizeMmForMode(mode);
-    let referenceDiam;
-    if (locked && lockVal > 0) {
-        referenceDiam = lockVal;
-    } else {
-        const maxD = circleData[0]?.diameter || 100;
-        referenceDiam = maxD * 1.05;
-    }
-    const scalingFactor = (locked && lockVal > 0)
-        ? (plotW / referenceDiam)
-        : (Math.min(plotW, drawPlotH) / referenceDiam);
+    const referenceDiam = getReferenceDiameterForMode(mode, circleData);
+    const scaleSpanPx = getViewScaleSpanPx(plotW);
+    const scalingFactor = scaleSpanPx / referenceDiam;
 
     return {
         logicalWidth,
@@ -3730,7 +3748,7 @@ function applySettingsData(data, preserveTitle) {
         });
     }
     sortLayerRowsByDiameter();
-    
+    resetViewTransform();
     requestPlot();
 }
 </script>
