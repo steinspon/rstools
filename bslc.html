@@ -1998,7 +1998,6 @@ function getSettingsObject() {
     trueVerticalThickness: E.trueVerticalThickness.value,
     plotAspectRatio: E.plotAspectRatio.value,
     calculationBasis: SOURCE_INPUT.active,
-    nightMode: E.nightMode.checked,
     bismuthColor: AESTHETICS.fillColor,
     exportOutline: E.exportOutline.checked,
     criticalVolumeOutline: Boolean(E.criticalVolumeOutline && E.criticalVolumeOutline.checked)
@@ -2030,9 +2029,6 @@ function applySettingsObject(data) {
   if('trueVerticalThickness' in data) E.trueVerticalThickness.value = data.trueVerticalThickness ?? '';
   if('plotAspectRatio' in data && Number.isFinite(parseFloat(data.plotAspectRatio))) E.plotAspectRatio.value = data.plotAspectRatio;
   if('calculationBasis' in data && ['volume','mass','length','effective','tvt'].includes(data.calculationBasis)) SOURCE_INPUT.active = data.calculationBasis;
-  if('nightMode' in data) {
-    setNightMode(Boolean(data.nightMode), false);
-  }
   if('exportOutline' in data) E.exportOutline.checked = Boolean(data.exportOutline);
   if('criticalVolumeOutline' in data && E.criticalVolumeOutline) E.criticalVolumeOutline.checked = Boolean(data.criticalVolumeOutline);
   if(E.thermiteType.value in THERMITE_PRESETS) {

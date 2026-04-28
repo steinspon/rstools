@@ -2788,7 +2788,6 @@
         view: state.view,
         viewZero: state.viewZero,
         viewLocked: !!state.viewLocked,
-        nightMode: !!els.nightMode.checked,
         calibration: state.calibration,
         settings: state.settings,
         annotations: state.annotations
@@ -2855,11 +2854,6 @@
         state.viewLocked = data.viewLocked;
       }
       syncViewLockButton();
-      if (typeof data.nightMode === 'boolean') {
-        els.nightMode.checked = data.nightMode;
-        document.body.classList.toggle('night-mode', data.nightMode);
-      }
-
       els.aspectRatioInput.value = state.settings.aspectRatio;
       els.imagePaddingInput.value = state.settings.imagePadding;
       els.monoCheckbox.checked = !!state.settings.monochrome;

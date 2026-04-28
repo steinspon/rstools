@@ -562,6 +562,7 @@
       display: block;
       width: 100%;
       height: auto;
+      cursor: crosshair;
       touch-action: none;
       -webkit-user-select: none;
       user-select: none;
@@ -592,6 +593,46 @@
       display: flex;
       justify-content: center;
       margin-top: 0;
+    }
+    .table-scroll.left-justified {
+      justify-content: center;
+    }
+    .table-scroll-inner {
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+    }
+    .table-scroll-inner.left {
+      justify-content: flex-start;
+    }
+    #annotationTable {
+      width: auto;
+      max-width: none;
+    }
+    #annotationTable th:nth-child(1),
+    #annotationTable td:nth-child(1) {
+      width: 160px;
+      text-align: left;
+      padding-left: 6px;
+    }
+    #annotationTable th:nth-child(2),
+    #annotationTable td:nth-child(2),
+    #annotationTable th:nth-child(3),
+    #annotationTable td:nth-child(3) {
+      width: 108px;
+    }
+    #annotationTable tbody tr.selected td {
+      outline: 1px solid var(--primary);
+      outline-offset: -1px;
+    }
+    .annotation-toolbar {
+      width: 100%;
+      max-width: 700px;
+      margin: 8px auto 4px;
+      display: flex;
+      justify-content: flex-start;
+      gap: 6px;
     }
 
     .layer-header-row {
@@ -956,7 +997,6 @@
       </div>
       <div class="view-controls-bar">
         <button type="button" id="resetViewBtn">Reset View</button>
-        <button type="button" id="lockViewBtn" aria-pressed="false">Lock View</button>
       </div>
       <label class="theme-switch" for="nightMode">
         <input type="checkbox" id="nightMode">
@@ -1070,7 +1110,7 @@
       <div class="layer-header-row">
         <div>Diameter</div>
         <div>Unit</div>
-        <div>Material Label</div>
+        <div>Description</div>
         <div>Fill Color</div>
         <div>Adv</div>
         <div>Del</div>
@@ -1078,6 +1118,19 @@
 
       <div id="layer-list">
         </div>
+      <div class="flex-row" style="justify-content: space-between; align-items: flex-end; margin: 14px 0 5px;">
+        <div class="section-title" style="margin-bottom:0; border:none;">Annotation Layers</div>
+        <button type="button" onclick="addAnnotationInput()">+ Annotation Layer</button>
+      </div>
+      <div class="layer-header-row">
+        <div>Diameter</div>
+        <div>Unit</div>
+        <div>Description</div>
+        <div>Line Color</div>
+        <div>Adv</div>
+        <div>Del</div>
+      </div>
+      <div id="annotation-layer-list"></div>
       
       <div style="margin-top: 20px; text-align: center; color: var(--muted); font-size: 0.8em;">
         <i>Drag/zoom on the radial plot (left). Longitudinal view (right) updates live from the same layer data.</i>
@@ -1099,16 +1152,30 @@
             <table id="areaTable">
               <thead>
                 <tr>
-                  <th class="color-cell">Material</th>
+                  <th class="color-cell">Description</th>
                   <th class="od-column">OD (mm)</th>
                   <th class="od-column">OD (in)</th>
                   <th>Delta R (mm)</th>
                   <th>Area (cm<sup>2</sup>)</th>
-                  <th>L/m</th>
+                  <th>l/m</th>
                 </tr>
               </thead>
               <tbody></tbody>
             </table>
+            </div>
+            <div class="table-scroll left-justified">
+              <div class="table-scroll-inner left">
+                <table id="annotationTable">
+                  <thead>
+                    <tr>
+                      <th class="color-cell">Description</th>
+                      <th>OD (mm)</th>
+                      <th>OD (in)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
           <div class="plot-pane">
@@ -1321,8 +1388,17 @@ const RESOLUTION_SCALE = Math.min(4, Math.max(2, Math.ceil(window.devicePixelRat
 // =========================================================================================
 
 let view = { scale: 1, panX: 0, panY: 0 };
-let circleHitboxes = [];
-let rectHitboxes = [];
+let circleHitboxesRadial = [];
+let rectHitboxesLongitudinal = [];
+let annotationHitboxesRadial = [];
+let annotationHitboxesLongitudinal = [];
+let hoveredFillHit = null;
+let hoveredAnnotationHit = null;
+let rulerCursorWorldXByMode = { radial: null, longitudinal: null };
+let measurementStateByMode = {
+  radial: { active: false, startWorldX: null, currentWorldX: null },
+  longitudinal: { active: false, startWorldX: null, currentWorldX: null }
+};
 let viewMode = "radial";
 const AVAILABLE_PLOT_MODES = ["radial", "longitudinal"];
 // Global handle to remember last used file location in session
@@ -1332,6 +1408,68 @@ let activeTouches = new Map();
 let touchState = null;
 let plotFrameRequested = false;
 let plotNeedsTableRefresh = true;
+
+function collectAnnotationLayerData() {
+  const rows = document.querySelectorAll('#annotation-layer-list .layer-row');
+  return Array.from(rows).map((row, idx) => {
+    const unit = row.querySelector('.unit')?.value || 'mm';
+    let diam = parseFloat(row.querySelector('.circleDiameter')?.value) || 0;
+    if (unit === 'inches') diam *= 25.4;
+    return {
+      diameterMm: diam,
+      description: row.querySelector('.materialLabel')?.value || `Annotation ${idx + 1}`,
+      concentricToIndex: parseInt(row.querySelector('.concentricLayerRef')?.value ?? '-1', 10),
+      lineColor: row.querySelector('.lineColor')?.value || '#cc0000',
+      lineThickness: parseFloat(row.querySelector('.lineThickness')?.value) || config.defaultLineThickness,
+      lineType: row.querySelector('.lineType')?.value || config.defaultLineType,
+      wavinessAmp: Math.max(0, parseFloat(row.querySelector('.wavinessAmp')?.value) || 0),
+      wavinessFreq: Math.max(1, parseFloat(row.querySelector('.wavinessFreq')?.value) || 8)
+    };
+  });
+}
+
+function getWellboreReferenceOptions() {
+  const rows = Array.from(document.querySelectorAll('#layer-list .layer-row'));
+  return rows.map((row, idx) => ({
+    originalIndex: idx,
+    label: row.querySelector('.materialLabel')?.value?.trim() || `Layer ${idx + 1}`
+  }));
+}
+
+function refreshAnnotationReferenceDropdowns() {
+  const options = getWellboreReferenceOptions();
+  const selects = document.querySelectorAll('#annotation-layer-list .concentricLayerRef');
+  selects.forEach((sel) => {
+    const fallbackRef = parseInt(sel.getAttribute('data-default-ref') ?? '-1', 10);
+    const previous = Number.isFinite(parseInt(sel.value ?? '', 10)) ? parseInt(sel.value, 10) : fallbackRef;
+    sel.innerHTML = options.map(o => `<option value="${o.originalIndex}">${o.label}</option>`).join('');
+    if (options.length === 0) {
+      sel.innerHTML = `<option value="-1">No wellbore layers</option>`;
+      sel.value = '-1';
+    } else if (options.some(o => o.originalIndex === previous)) {
+      sel.value = String(previous);
+    } else {
+      sel.value = String(options[0].originalIndex);
+    }
+    sel.removeAttribute('data-default-ref');
+  });
+}
+
+function renderAnnotationResultTable(annotationData) {
+  const tbody = document.querySelector('#annotationTable tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  annotationData.forEach((entry) => {
+    const inchesOD = (entry.diameterMm / 25.4).toFixed(3);
+    tbody.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td class="color-cell" style="background-color:#ffffff; color:${entry.lineColor};">${entry.description || ''}</td>
+        <td>${Number(entry.diameterMm || 0).toFixed(2)}</td>
+        <td>${inchesOD}</td>
+      </tr>
+    `);
+  });
+}
 
 function isNightByTime() {
   const h = new Date().getHours();
@@ -1380,7 +1518,7 @@ function getReferenceDiameterForMode(mode, circleData = null) {
   if (Array.isArray(circleData) && circleData.length > 0) {
     maxD = circleData.reduce((m, d) => Math.max(m, Number(d?.diameter) || 0), 0);
   } else {
-    const rows = document.querySelectorAll('.layer-row');
+    const rows = document.querySelectorAll('#layer-list .layer-row');
     rows.forEach((row) => {
       maxD = Math.max(maxD, getRowDiameterMm(row));
     });
@@ -1432,21 +1570,25 @@ function setCanvasDisplaySize() {
   });
 }
 
-function getCanvasInteractionPoint(evt) {
-  const canvas = document.getElementById('circleCanvas');
+function getCanvasInteractionPoint(evt, canvasOverride = null) {
+  const canvas = canvasOverride || document.getElementById('circleCanvas');
   const rect = canvas.getBoundingClientRect();
   const padding = 20;
   const titleOffset = 30;
+  const logicalW = canvas.width / RESOLUTION_SCALE;
+  const logicalH = canvas.height / RESOLUTION_SCALE;
+  const sx = logicalW / Math.max(1, rect.width);
+  const sy = logicalH / Math.max(1, rect.height);
   return {
-    x: evt.clientX - rect.left - padding,
-    y: evt.clientY - rect.top - (padding + titleOffset)
+    x: ((evt.clientX - rect.left) * sx) - padding,
+    y: ((evt.clientY - rect.top) * sy) - (padding + titleOffset)
   };
 }
 
-function updateTooltipAtClientPoint(clientX, clientY) {
-  const canvas = document.getElementById('circleCanvas');
+function updateTooltipAtClientPointFor(canvas, mode, clientX, clientY) {
   const tooltip = document.getElementById('tooltip');
   if (!canvas || !tooltip) return;
+  let cursorChanged = false;
   const rect = canvas.getBoundingClientRect();
   const insideCanvas =
     clientX >= rect.left &&
@@ -1455,14 +1597,20 @@ function updateTooltipAtClientPoint(clientX, clientY) {
     clientY <= rect.bottom;
   if (!insideCanvas) {
     tooltip.style.display = 'none';
+    if (rulerCursorWorldXByMode[mode] !== null) {
+      rulerCursorWorldXByMode[mode] = null;
+      requestPlot({ rebuildTable: false });
+    }
     return;
   }
   const padding = 20;
   const titleOffset = 30;
-  const logicalX = clientX - rect.left;
-  const logicalY = clientY - rect.top;
   const logicalW = canvas.width / RESOLUTION_SCALE;
   const logicalH = canvas.height / RESOLUTION_SCALE;
+  const sx = logicalW / Math.max(1, rect.width);
+  const sy = logicalH / Math.max(1, rect.height);
+  const logicalX = (clientX - rect.left) * sx;
+  const logicalY = (clientY - rect.top) * sy;
   const insidePlotFrame =
     logicalX >= padding &&
     logicalX <= (logicalW - padding) &&
@@ -1470,17 +1618,38 @@ function updateTooltipAtClientPoint(clientX, clientY) {
     logicalY <= (logicalH - padding);
   if (!insidePlotFrame) {
     tooltip.style.display = 'none';
+    if (rulerCursorWorldXByMode[mode] !== null) {
+      rulerCursorWorldXByMode[mode] = null;
+      requestPlot({ rebuildTable: false });
+    }
     return;
   }
-  const sx = clientX - rect.left - padding;
-  const sy = clientY - rect.top - (padding + titleOffset);
-  const wx = (sx - view.panX) / view.scale;
-  const wy = (sy - view.panY) / view.scale;
+  const px = logicalX - padding;
+  const py = logicalY - (padding + titleOffset);
+  const wx = (px - view.panX) / view.scale;
+  const wy = (py - view.panY) / view.scale;
+  if (rulerCursorWorldXByMode[mode] === null || Math.abs(rulerCursorWorldXByMode[mode] - wx) > 1e-4) {
+    rulerCursorWorldXByMode[mode] = wx;
+    cursorChanged = true;
+  }
 
   let hit = null;
-  if (viewMode === 'radial') {
-    for (let i = circleHitboxes.length - 1; i >= 0; i--) {
-      const h = circleHitboxes[i];
+  let annotationHit = null;
+  let hoverChanged = false;
+  if (mode === 'radial') {
+    for (let i = annotationHitboxesRadial.length - 1; i >= 0; i--) {
+      const h = annotationHitboxesRadial[i];
+      const dx = wx - h.cx;
+      const dy = wy - h.cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const tolerance = Math.max(3 / view.scale, (h.lineWidth || 1) * 1.5);
+      if (Math.abs(dist - h.r) <= tolerance) {
+        annotationHit = h;
+        break;
+      }
+    }
+    for (let i = circleHitboxesRadial.length - 1; i >= 0; i--) {
+      const h = circleHitboxesRadial[i];
       const dx = wx - h.cx;
       const dy = wy - h.cy;
       if (Math.sqrt(dx * dx + dy * dy) <= h.r) {
@@ -1489,16 +1658,33 @@ function updateTooltipAtClientPoint(clientX, clientY) {
       }
     }
   } else {
-    for (let i = rectHitboxes.length - 1; i >= 0; i--) {
-      const h = rectHitboxes[i];
+    for (let i = annotationHitboxesLongitudinal.length - 1; i >= 0; i--) {
+      const h = annotationHitboxesLongitudinal[i];
+      if (wx < h.minX || wx > h.maxX || wy < h.minY || wy > h.maxY) continue;
+      const cosA = Math.cos(h.angle);
+      const sinA = Math.sin(h.angle);
+      const dx = wx - h.cx;
+      const dy = wy - h.cy;
+      const lx = (dx * cosA) + (dy * sinA);
+      const ly = (-dx * sinA) + (dy * cosA);
+      const tol = Math.max(3 / view.scale, (h.lineWidth || 1) * 1.5);
+      const onTop = Math.abs(ly - h.localY0) <= tol && lx >= h.localX0 && lx <= h.localX1;
+      const onBottom = Math.abs(ly - h.localY1) <= tol && lx >= h.localX0 && lx <= h.localX1;
+      const onLeft = Math.abs(lx - h.localX0) <= tol && ly >= h.localY0 && ly <= h.localY1;
+      const onRight = Math.abs(lx - h.localX1) <= tol && ly >= h.localY0 && ly <= h.localY1;
+      if (onTop || onBottom || onLeft || onRight) {
+        annotationHit = h;
+        break;
+      }
+    }
+    for (let i = rectHitboxesLongitudinal.length - 1; i >= 0; i--) {
+      const h = rectHitboxesLongitudinal[i];
       if (h && typeof h.angle === 'number' && typeof h.cx === 'number' && typeof h.cy === 'number') {
-        // Quick reject in global AABB before oriented-rect test
         if (wx < h.minX || wx > h.maxX || wy < h.minY || wy > h.maxY) continue;
         const cosA = Math.cos(h.angle);
         const sinA = Math.sin(h.angle);
         const dx = wx - h.cx;
         const dy = wy - h.cy;
-        // Inverse-rotate world point into the layer's local frame.
         const lx = (dx * cosA) + (dy * sinA);
         const ly = (-dx * sinA) + (dy * cosA);
         if (lx >= h.localX0 && lx <= h.localX1 && ly >= h.localY0 && ly <= h.localY1) {
@@ -1512,21 +1698,62 @@ function updateTooltipAtClientPoint(clientX, clientY) {
     }
   }
 
-  if (hit) {
+  if (annotationHit) {
+    tooltip.style.display = 'block';
+    tooltip.innerHTML = `<div><strong>${annotationHit.data.materialLabel}</strong></div>
+    <div>OD: ${annotationHit.data.diameter.toFixed(2)} mm (${(annotationHit.data.diameter / 25.4).toFixed(3)} in)</div>`;
+    tooltip.style.left = (clientX + 15) + 'px';
+    tooltip.style.top = (clientY + 15) + 'px';
+    const nextAnno = { mode, annotationIndex: annotationHit.annotationIndex };
+    if (!hoveredAnnotationHit || hoveredAnnotationHit.mode !== nextAnno.mode || hoveredAnnotationHit.annotationIndex !== nextAnno.annotationIndex) {
+      hoveredAnnotationHit = nextAnno;
+      hoverChanged = true;
+    }
+    if (hoveredFillHit !== null) {
+      hoveredFillHit = null;
+      hoverChanged = true;
+    }
+  } else if (hit) {
     const deltaR = hit.data.deltaRText ?? 'N/A';
     const area = hit.data.areaText ?? '0.00';
     const lpm = hit.data.litersPerMeterText ?? '0.00';
+    const idLine = Number.isFinite(hit.data.innerDiameter)
+      ? `<div>ID: ${hit.data.innerDiameter.toFixed(2)} mm (${(hit.data.innerDiameter / 25.4).toFixed(3)} in)</div>`
+      : '';
     tooltip.style.display = 'block';
     tooltip.innerHTML = `<div><strong>${hit.data.materialLabel}</strong></div>
     <div>OD: ${hit.data.diameter.toFixed(2)} mm (${(hit.data.diameter / 25.4).toFixed(3)} in)</div>
+    ${idLine}
     <div>Delta R: ${deltaR} mm</div>
     <div>Area: ${area} cm<sup>2</sup></div>
     <div>L/m: ${lpm}</div>`;
     tooltip.style.left = (clientX + 15) + 'px';
     tooltip.style.top = (clientY + 15) + 'px';
+    const nextHover = { mode, originalIndex: hit.data.originalIndex };
+    if (!hoveredFillHit || hoveredFillHit.mode !== nextHover.mode || hoveredFillHit.originalIndex !== nextHover.originalIndex) {
+      hoveredFillHit = nextHover;
+      hoverChanged = true;
+    }
+    if (hoveredAnnotationHit !== null) {
+      hoveredAnnotationHit = null;
+      hoverChanged = true;
+    }
   } else {
     tooltip.style.display = 'none';
+    if (hoveredFillHit !== null) {
+      hoveredFillHit = null;
+      hoverChanged = true;
+    }
+    if (hoveredAnnotationHit !== null) {
+      hoveredAnnotationHit = null;
+      hoverChanged = true;
+    }
   }
+  if (hoverChanged || cursorChanged) requestPlot({ rebuildTable: false });
+}
+
+function updateTooltipAtClientPoint(clientX, clientY) {
+  updateTooltipAtClientPointFor(document.getElementById('circleCanvas'), 'radial', clientX, clientY);
 }
 
 function getTouchDistance(t1, t2) {
@@ -1650,12 +1877,19 @@ window.onload = function () {
   // 4. Watch for Real-time Updates
   document.querySelector('.controls-panel').addEventListener('input', function(e) {
     if(e.target.matches('input') || e.target.matches('select')) {
+      if (e.target.closest('#annotation-layer-list')) {
+        renderAnnotationResultTable(collectAnnotationLayerData());
+      }
+      if (e.target.closest('#layer-list') && e.target.classList.contains('materialLabel')) {
+        refreshAnnotationReferenceDropdowns();
+      }
       requestPlot();
     }
   });
   document.querySelector('.controls-panel').addEventListener('change', function(e) {
     if (e.target.matches('.circleDiameter, .unit')) {
       sortLayerRowsByDiameter();
+      sortAnnotationRowsByDiameter();
       requestPlot();
     }
   });
@@ -1664,6 +1898,7 @@ window.onload = function () {
       e.preventDefault();
       e.target.blur();
       sortLayerRowsByDiameter();
+      sortAnnotationRowsByDiameter();
       requestPlot();
     }
   });
@@ -1758,9 +1993,9 @@ function wireButtons() {
     const fallbackFileInput = document.getElementById('fallbackFileInput');
 
     if (importMenuButton) {
-        importMenuButton.addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            toggleMenu(importMenu, importMenuButton);
+        importMenuButton.addEventListener('click', function () {
+            openConfig();
+            closeMenus();
         });
     }
     if (exportMenuButton) {
@@ -1985,6 +2220,7 @@ function sortLayerRowsByDiameter() {
         return b.dmm - a.dmm;
     });
     rows.forEach(item => list.appendChild(item.row));
+    refreshAnnotationReferenceDropdowns();
 }
 
 
@@ -2168,6 +2404,79 @@ function traceWavyCirclePath(ctx, cx, cy, baseRadius, data, pxPerMm, segments = 
     ctx.closePath();
 }
 
+function getWavyOffsetPx(t01, data, pxPerMm, baseRadius, seedOffset = 0) {
+    const maxAmpPx = getWavyMaxAmplitudePx(data, pxPerMm, baseRadius);
+    if (maxAmpPx <= 0) return 0;
+    const freq = Math.max(1, Math.floor(parseFloat(data.wavinessFreq) || 8));
+    const seed = 1 + seedOffset;
+    const p1 = seededUnit(seed + 11) * Math.PI * 2;
+    const p2 = seededUnit(seed + 23) * Math.PI * 2;
+    const p3 = seededUnit(seed + 47) * Math.PI * 2;
+    const theta = t01 * Math.PI * 2;
+    const signal =
+        0.62 * Math.sin(freq * theta + p1) +
+        0.26 * Math.sin((freq * 2 + 1) * theta + p2) +
+        0.12 * Math.sin((freq * 3 + 2) * theta + p3);
+    return maxAmpPx * signal;
+}
+
+function getWavyOffsetPxFromMm(mmPos, data, pxPerMm, baseRadius, seedOffset = 0) {
+    const maxAmpPx = getWavyMaxAmplitudePx(data, pxPerMm, baseRadius);
+    if (maxAmpPx <= 0) return 0;
+    const freq = Math.max(1, Math.floor(parseFloat(data.wavinessFreq) || 8));
+    // Physical wavelength lock for longitudinal view:
+    // freq interpreted as cycles per 1000 mm.
+    const wavelengthMm = 1000 / freq;
+    const theta = (mmPos / Math.max(1e-9, wavelengthMm)) * Math.PI * 2;
+    const seed = 1 + seedOffset;
+    const p1 = seededUnit(seed + 11) * Math.PI * 2;
+    const p2 = seededUnit(seed + 23) * Math.PI * 2;
+    const p3 = seededUnit(seed + 47) * Math.PI * 2;
+    const signal =
+        0.62 * Math.sin(theta + p1) +
+        0.26 * Math.sin((2 * theta) + p2) +
+        0.12 * Math.sin((3 * theta) + p3);
+    return maxAmpPx * signal;
+}
+
+function traceWavyVerticalEdge(ctx, xBase, yTop, yBottom, data, pxPerMm, baseRadius, seedOffset = 0, segments = 80) {
+    if (!segments || segments < 16) segments = 16;
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const y = yTop + (yBottom - yTop) * t;
+        const x = xBase + getWavyOffsetPx(t, data, pxPerMm, baseRadius, seedOffset);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+}
+
+function traceWavyLongitudinalRectPath(ctx, x0, x1, yTop, yBottom, data, pxPerMm, baseRadius, segments = 80) {
+    if (!segments || segments < 16) segments = 16;
+    ctx.beginPath();
+    // Top side wavy (along X)
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const x = x0 + (x1 - x0) * t;
+        const mmPos = (x - x0) / Math.max(1e-9, pxPerMm);
+        const y = yTop + getWavyOffsetPxFromMm(mmPos, data, pxPerMm, baseRadius, 0);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    // Right end cap straight
+    ctx.lineTo(x1, yBottom);
+    // Bottom side wavy (along X, reverse direction)
+    for (let i = segments; i >= 0; i--) {
+        const t = i / segments;
+        const x = x0 + (x1 - x0) * t;
+        const mmPos = (x - x0) / Math.max(1e-9, pxPerMm);
+        const y = yBottom + getWavyOffsetPxFromMm(mmPos, data, pxPerMm, baseRadius, 137);
+        ctx.lineTo(x, y);
+    }
+    // Left end cap straight
+    ctx.lineTo(x0, yTop);
+    ctx.closePath();
+}
+
 function buildWavyCirclePathD(cx, cy, baseRadius, data, pxPerMm, segments = 240) {
     if (!segments || segments < 24) segments = 24;
     let d = '';
@@ -2178,6 +2487,28 @@ function buildWavyCirclePathD(cx, cy, baseRadius, data, pxPerMm, segments = 240)
         const y = cy + r * Math.sin(t);
         d += (i === 0 ? `M ${x.toFixed(3)} ${y.toFixed(3)}` : ` L ${x.toFixed(3)} ${y.toFixed(3)}`);
     }
+    return d + ' Z';
+}
+
+function buildWavyLongitudinalRectPathD(x0, x1, yTop, yBottom, data, pxPerMm, baseRadius, segments = 80) {
+    if (!segments || segments < 16) segments = 16;
+    let d = '';
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const x = x0 + (x1 - x0) * t;
+        const mmPos = (x - x0) / Math.max(1e-9, pxPerMm);
+        const y = yTop + getWavyOffsetPxFromMm(mmPos, data, pxPerMm, baseRadius, 0);
+        d += (i === 0 ? `M ${x.toFixed(3)} ${y.toFixed(3)}` : ` L ${x.toFixed(3)} ${y.toFixed(3)}`);
+    }
+    d += ` L ${x1.toFixed(3)} ${yBottom.toFixed(3)}`;
+    for (let i = segments; i >= 0; i--) {
+        const t = i / segments;
+        const x = x0 + (x1 - x0) * t;
+        const mmPos = (x - x0) / Math.max(1e-9, pxPerMm);
+        const y = yBottom + getWavyOffsetPxFromMm(mmPos, data, pxPerMm, baseRadius, 137);
+        d += ` L ${x.toFixed(3)} ${y.toFixed(3)}`;
+    }
+    d += ` L ${x0.toFixed(3)} ${yTop.toFixed(3)}`;
     return d + ' Z';
 }
 
@@ -2237,7 +2568,7 @@ function getLayerComputedValues(circleData, index) {
 function plotCircles(options = {}) {
     const rebuildTable = options.rebuildTable !== false;
     const mode = options.mode || viewMode;
-    const rows = document.querySelectorAll('.layer-row');
+    const rows = document.querySelectorAll('#layer-list .layer-row');
     const canvas = options.canvas || document.getElementById('circleCanvas');
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
@@ -2323,7 +2654,7 @@ function plotCircles(options = {}) {
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
-        ctx.font = '11px Arial';
+        ctx.font = '14px Arial';
         ctx.fillStyle = '#000000';
 
         const minMajorPxGap = 62;
@@ -2339,7 +2670,7 @@ function plotCircles(options = {}) {
 
         function formatTick(v) {
             const rounded = Math.abs(v) < 1e-9 ? 0 : v;
-            return String(parseFloat(rounded.toFixed(4)));
+            return String(parseFloat(rounded.toFixed(3)));
         }
 
         let majorMm = 10;
@@ -2374,14 +2705,14 @@ function plotCircles(options = {}) {
 
         const rulerInnerLeft = xStart;
         const rulerInnerRight = xEnd;
-        ctx.font = 'bold 11px Arial';
+        ctx.font = 'bold 14px Arial';
         const unitText = displayUnit;
         const unitPadX = 6;
         const unitBoxWidth = Math.max(24, Math.ceil(ctx.measureText(unitText).width + unitPadX * 2));
         const unitBoxX = Math.max(rulerInnerLeft, rulerInnerRight - unitBoxWidth);
         const labelLeftBound = rulerInnerLeft + 1;
         const labelRightBound = unitBoxX - 1;
-        ctx.font = '11px Arial';
+        ctx.font = '14px Arial';
         const tickTop = yTop;
         const tickBottomPad = 2;
 
@@ -2440,9 +2771,66 @@ function plotCircles(options = {}) {
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 11px Arial';
+        ctx.font = 'bold 14px Arial';
         ctx.fillStyle = '#000000';
         ctx.fillText(unitText, unitBoxX + (unitBoxW / 2), yTop + (rulerHeight / 2));
+
+        // Measurement mode: shade selected ruler segment while right-drag measuring.
+        const measure = measurementStateByMode[mode];
+        if (measure && measure.active && Number.isFinite(measure.startWorldX) && Number.isFinite(measure.currentWorldX)) {
+            const xA = padding + (measure.startWorldX * view.scale + view.panX);
+            const xB = padding + (measure.currentWorldX * view.scale + view.panX);
+            const segL = Math.max(rulerInnerLeft, Math.min(xA, xB));
+            const segR = Math.min(rulerInnerRight, Math.max(xA, xB));
+            if (segR > segL) {
+                ctx.fillStyle = 'rgba(120,120,120,0.45)';
+                ctx.fillRect(segL, yTop, segR - segL, rulerHeight);
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(segL, yTop, segR - segL, rulerHeight);
+            }
+        }
+
+        // Cursor marker on ruler: tracks x-position and shows radius from plot center in matching units.
+        const cursorWorldX = rulerCursorWorldXByMode[mode];
+        if (Number.isFinite(cursorWorldX)) {
+            const markerX = padding + (cursorWorldX * view.scale + view.panX);
+            if (markerX >= rulerInnerLeft && markerX <= rulerInnerRight) {
+                // Vertical marker
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(markerX, yTop);
+                ctx.lineTo(markerX, yBottom);
+                ctx.stroke();
+
+                // Radius value from plot middle (zero at center), in same units as ruler.
+                const radiusMm = Math.abs((cursorWorldX - (plotW / 2)) / Math.max(1e-9, scalingFactor));
+                const value = toDisplayValue(radiusMm);
+                let valueText = `${formatTick(value)} ${displayUnit}`;
+                if (measure && measure.active && Number.isFinite(measure.startWorldX)) {
+                    const distMm = Math.abs((cursorWorldX - measure.startWorldX) / Math.max(1e-9, scalingFactor));
+                    const distValue = toDisplayValue(distMm);
+                    valueText += ` (${formatTick(distValue)} ${displayUnit})`;
+                }
+                const textPad = 4;
+                const textW = Math.ceil(ctx.measureText(valueText).width) + textPad * 2;
+                const textH = 18;
+                let textX = markerX - textW / 2;
+                if (textX < rulerInnerLeft) textX = rulerInnerLeft;
+                if (textX + textW > unitBoxX - 1) textX = Math.max(rulerInnerLeft, unitBoxX - 1 - textW);
+                const textY = yTop + (rulerHeight - textH) / 2;
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(textX, textY, textW, textH);
+                ctx.strokeStyle = '#000000';
+                ctx.strokeRect(textX, textY, textW, textH);
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 13px Arial';
+                ctx.fillText(valueText, textX + textW / 2, textY + textH / 2);
+            }
+        }
 
         ctx.restore();
     }
@@ -2470,6 +2858,31 @@ function plotCircles(options = {}) {
         ctx.arc(x, y, 2, 0, Math.PI * 2);
         ctx.fillStyle = '#000000';
         ctx.fill();
+        ctx.restore();
+    }
+
+    function drawMeasurementPlotOverlay() {
+        const measure = measurementStateByMode[mode];
+        if (!measure || !measure.active || !Number.isFinite(measure.startWorldX) || !Number.isFinite(measure.currentWorldX)) return;
+        const xA = padding + (measure.startWorldX * view.scale + view.panX);
+        const xB = padding + (measure.currentWorldX * view.scale + view.panX);
+        const segL = Math.max(padding, Math.min(xA, xB));
+        const segR = Math.min(padding + plotW, Math.max(xA, xB));
+        if (segR <= segL) return;
+        const yTop = padding + titleHeight;
+        const yBottom = yTop + drawPlotH + (showRuler ? (rulerGap + rulerHeight) : 0);
+        ctx.save();
+        ctx.scale(RESOLUTION_SCALE, RESOLUTION_SCALE);
+        ctx.fillStyle = 'rgba(120,120,120,0.60)';
+        ctx.fillRect(segL, yTop, segR - segL, yBottom - yTop);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(segL, yTop);
+        ctx.lineTo(segL, yBottom);
+        ctx.moveTo(segR, yTop);
+        ctx.lineTo(segR, yBottom);
+        ctx.stroke();
         ctx.restore();
     }
 
@@ -2513,7 +2926,10 @@ function plotCircles(options = {}) {
         data.deltaRText = m.deltaRText;
         data.areaText = m.areaText;
         data.litersPerMeterText = m.litersPerMeterText;
+        data.innerDiameter = (circleData[i + 1] && Number.isFinite(circleData[i + 1].diameter)) ? circleData[i + 1].diameter : null;
     });
+    const annotationData = collectAnnotationLayerData();
+    if (rebuildTable) renderAnnotationResultTable(annotationData);
 
     // Render Setup (shared transforms)
     ctx.translate(padding, padding + titleHeight); // Push down for title
@@ -2528,8 +2944,9 @@ function plotCircles(options = {}) {
     const scaleSpanPx = getViewScaleSpanPx(plotW);
     const scalingFactor = scaleSpanPx / referenceDiam;
 
-    circleHitboxes = [];
-    rectHitboxes = [];
+    const localCircleHitboxes = [];
+    const localRectHitboxes = [];
+    const localAnnotationHitboxes = [];
 
     const tableBody = document.querySelector('#areaTable tbody');
     if (rebuildTable && tableBody) tableBody.innerHTML = '';
@@ -2545,6 +2962,7 @@ function plotCircles(options = {}) {
         let lastCenter = { x: plotW/2, y: drawPlotH/2 };
         let smallestCenter = { x: plotW/2, y: drawPlotH/2 };
         referenceOverlayWorldPoint = { x: plotW / 2, y: drawPlotH / 2 };
+        const normalLayouts = [];
 
         let lastRadius = (circleData[0]?.diameter || 10) / 2 * scalingFactor;
         if(circleData.length > 0) {
@@ -2562,12 +2980,19 @@ function plotCircles(options = {}) {
 
             // Store for hit detection (inflate by waviness amplitude)
             const hitR = radius + getWavyMaxAmplitudePx(data, scalingFactor, radius);
-            circleHitboxes.push({ cx:x, cy:y, r:hitR, data });
+            localCircleHitboxes.push({ cx:x, cy:y, r:hitR, data });
 
             // Draw
             traceWavyCirclePath(ctx, x, y, radius, data, scalingFactor);
             ctx.fillStyle = data.fillColor;
             ctx.fill();
+            if (hoveredFillHit && hoveredFillHit.mode === 'radial' && hoveredFillHit.originalIndex === data.originalIndex) {
+              ctx.save();
+              traceWavyCirclePath(ctx, x, y, radius, data, scalingFactor);
+              ctx.fillStyle = 'rgba(0,0,0,0.08)';
+              ctx.fill();
+              ctx.restore();
+            }
             ctx.strokeStyle = data.lineColor;
             applyCanvasLineStyle(ctx, data);
 
@@ -2580,9 +3005,69 @@ function plotCircles(options = {}) {
             lastCenter = {x, y};
             smallestCenter = {x, y};
             lastRadius = radius;
+            normalLayouts.push({ cx: x, cy: y, radius, data });
 
             // TABLE (same calculations)
             if (rebuildTable && tableBody) appendTableRow(circleData, data, i, tableBody);
+        });
+
+        if (hoveredFillHit && hoveredFillHit.mode === 'radial') {
+            const hoverIdx = normalLayouts.findIndex(l => l.data.originalIndex === hoveredFillHit.originalIndex);
+            if (hoverIdx >= 0) {
+                const outer = normalLayouts[hoverIdx];
+                const inner = (hoverIdx < normalLayouts.length - 1) ? normalLayouts[hoverIdx + 1] : null;
+                const drawEmphasisEdge = (layout, edgeData) => {
+                    ctx.save();
+                    traceWavyCirclePath(ctx, layout.cx, layout.cy, layout.radius, edgeData, scalingFactor);
+                    ctx.strokeStyle = edgeData.lineColor;
+                    applyCanvasLineStyle(ctx, edgeData);
+                    ctx.lineWidth = Math.max(0.1, ((edgeData.lineThickness || 0.25) * 2) / view.scale);
+                    ctx.stroke();
+                    resetCanvasLineStyle(ctx);
+                    ctx.restore();
+                };
+                // OD emphasis
+                drawEmphasisEdge(outer, outer.data);
+                // ID emphasis only when layer has an inner boundary.
+                if (inner) drawEmphasisEdge(inner, inner.data);
+
+            }
+        }
+
+        annotationData.forEach((a, idx) => {
+            const diam = parseFloat(a.diameterMm) || 0;
+            if (diam <= 0) return;
+            const radius = (diam / 2) * scalingFactor;
+            let base = normalLayouts.find(l => l.data.originalIndex === a.concentricToIndex);
+            if (!base) base = normalLayouts.find(l => l.radius >= radius);
+            if (!base) base = normalLayouts[normalLayouts.length - 1] || { cx: plotW/2, cy: drawPlotH/2, radius };
+            const x = base.cx;
+            const y = base.cy;
+            const annoData = {
+              diameter: diam,
+              lineColor: a.lineColor || '#cc0000',
+              lineThickness: parseFloat(a.lineThickness) || config.defaultLineThickness,
+              lineType: a.lineType || config.defaultLineType,
+              wavinessAmp: parseFloat(a.wavinessAmp) || 0,
+              wavinessFreq: parseFloat(a.wavinessFreq) || 8,
+              materialLabel: a.description || `Annotation ${idx + 1}`
+            };
+            traceWavyCirclePath(ctx, x, y, radius, annoData, scalingFactor);
+            ctx.strokeStyle = annoData.lineColor;
+            applyCanvasLineStyle(ctx, annoData);
+            const isAnnoHovered = hoveredAnnotationHit && hoveredAnnotationHit.mode === 'radial' && hoveredAnnotationHit.annotationIndex === idx;
+            const baseAnnoW = Math.max(0.1, annoData.lineThickness / view.scale);
+            ctx.lineWidth = isAnnoHovered ? Math.max(0.1, (annoData.lineThickness * 2) / view.scale) : baseAnnoW;
+            ctx.stroke();
+            resetCanvasLineStyle(ctx);
+            localAnnotationHitboxes.push({
+              cx: x,
+              cy: y,
+              r: radius,
+              lineWidth: baseAnnoW,
+              annotationIndex: idx,
+              data: annoData
+            });
         });
 
         rulerOverlayZeroWorldX = smallestCenter.x;
@@ -2628,6 +3113,7 @@ function plotCircles(options = {}) {
         // Therefore, eccentricity should be applied as a pure local-Y shift (no along-axis/X shift).
         let centerOffsetY_local = 0;
         let lastRadius = (circleData[0]?.diameter || 10) / 2 * scalingFactor;
+        const normalLayoutsLong = [];
         if(circleData.length > 0) {
             lastRadius = (circleData[0].diameter/2) * scalingFactor;
         }
@@ -2654,49 +3140,38 @@ function plotCircles(options = {}) {
             // Base center is 0 in local Y; apply perpendicular (local Y) eccentricity.
             const layerCenterY = centerOffsetY_local;
 
-            // Fill: draw outer-to-inner rectangles (like radial: later draws overwrite inner)
+            // Fill: outer-to-inner with wavy vertical sides and straight top/bottom.
+            const yTop = layerCenterY - radius;
+            const yBottom = layerCenterY + radius;
+            traceWavyLongitudinalRectPath(ctx, x0, x1, yTop, yBottom, data, scalingFactor, radius, 80);
             ctx.fillStyle = data.fillColor;
-            ctx.fillRect(x0, layerCenterY - radius, lengthPx, 2*radius);
+            ctx.fill();
+            if (hoveredFillHit && hoveredFillHit.mode === 'longitudinal' && hoveredFillHit.originalIndex === data.originalIndex) {
+              ctx.save();
+              ctx.fillStyle = 'rgba(0,0,0,0.08)';
+              traceWavyLongitudinalRectPath(ctx, x0, x1, yTop, yBottom, data, scalingFactor, radius, 80);
+              ctx.fill();
+              ctx.restore();
+            }
 
-            // Stroke boundaries (top & bottom) to preserve layer edges
+            // Stroke boundaries: path has straight top/bottom and wavy left/right
             ctx.strokeStyle = data.lineColor;
             ctx.lineWidth = data.lineThickness / view.scale;
             if(ctx.lineWidth < 0.1) ctx.lineWidth = 0.1;
             applyCanvasLineStyle(ctx, data);
-
-            // Top edge
-            ctx.beginPath();
-            ctx.moveTo(x0, layerCenterY - radius);
-            ctx.lineTo(x1, layerCenterY - radius);
-            ctx.stroke();
-
-            // Bottom edge
-            ctx.beginPath();
-            ctx.moveTo(x0, layerCenterY + radius);
-            ctx.lineTo(x1, layerCenterY + radius);
-            ctx.stroke();
-
-            // End caps (thin verticals in local frame)
-            ctx.beginPath();
-            ctx.moveTo(x0, layerCenterY - radius);
-            ctx.lineTo(x0, layerCenterY + radius);
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.moveTo(x1, layerCenterY - radius);
-            ctx.lineTo(x1, layerCenterY + radius);
+            traceWavyLongitudinalRectPath(ctx, x0, x1, yTop, yBottom, data, scalingFactor, radius, 80);
             ctx.stroke();
             resetCanvasLineStyle(ctx);
 
             ctx.restore();
 
             // Store for hit detection (axis-aligned bbox in global frame)
-            // Compute bbox of the rotated rectangle in global coords.
+            // Compute bbox from straight extents (conservative for hover).
             const rect = {
               x0: x0,
               x1: x1,
-              y0: layerCenterY - radius,
-              y1: layerCenterY + radius
+              y0: yTop,
+              y1: yBottom
             };
             const corners = [
               {x: rect.x0, y: rect.y0},
@@ -2714,7 +3189,7 @@ function plotCircles(options = {}) {
             const maxX = Math.max(...corners.map(p => p.x));
             const minY = Math.min(...corners.map(p => p.y));
             const maxY = Math.max(...corners.map(p => p.y));
-            rectHitboxes.push({
+            localRectHitboxes.push({
               x0:minX, x1:maxX, y0:minY, y1:maxY,
               minX, maxX, minY, maxY,
               cx, cy,
@@ -2728,9 +3203,109 @@ function plotCircles(options = {}) {
             smallestCenterGlobalX = cx - layerCenterY * Math.sin(axisAngle);
 
             lastRadius = radius;
+            normalLayoutsLong.push({ centerOffsetYLocal: centerOffsetY_local, radius, data });
 
             // TABLE (same calculations)
             if (rebuildTable && tableBody) appendTableRow(circleData, data, i, tableBody);
+        });
+
+        if (hoveredFillHit && hoveredFillHit.mode === 'longitudinal') {
+            const hoverIdx = normalLayoutsLong.findIndex(l => l.data.originalIndex === hoveredFillHit.originalIndex);
+            if (hoverIdx >= 0) {
+                const outer = normalLayoutsLong[hoverIdx];
+                const inner = (hoverIdx < normalLayoutsLong.length - 1) ? normalLayoutsLong[hoverIdx + 1] : null;
+                const drawEmphasisRectEdge = (centerOffsetYLocal, radius, edgeData) => {
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(axisAngle);
+                    ctx.strokeStyle = edgeData.lineColor;
+                    applyCanvasLineStyle(ctx, edgeData);
+                    ctx.lineWidth = Math.max(0.1, ((edgeData.lineThickness || 0.25) * 2) / view.scale);
+                    // Top and bottom straight
+                    ctx.beginPath();
+                    ctx.moveTo(x0, centerOffsetYLocal - radius);
+                    ctx.lineTo(x1, centerOffsetYLocal - radius);
+                    ctx.moveTo(x0, centerOffsetYLocal + radius);
+                    ctx.lineTo(x1, centerOffsetYLocal + radius);
+                    ctx.stroke();
+                    // Left and right wavy
+                    ctx.beginPath();
+                    traceWavyVerticalEdge(ctx, x0, centerOffsetYLocal - radius, centerOffsetYLocal + radius, edgeData, scalingFactor, radius, 0);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    traceWavyVerticalEdge(ctx, x1, centerOffsetYLocal - radius, centerOffsetYLocal + radius, edgeData, scalingFactor, radius, 137);
+                    ctx.stroke();
+                    resetCanvasLineStyle(ctx);
+                    ctx.restore();
+                };
+                // OD emphasis
+                drawEmphasisRectEdge(outer.centerOffsetYLocal, outer.radius, outer.data);
+                // ID emphasis for pipe layers
+                if (inner) drawEmphasisRectEdge(inner.centerOffsetYLocal, inner.radius, inner.data);
+
+            }
+        }
+
+        annotationData.forEach((a, idx) => {
+            const diam = parseFloat(a.diameterMm) || 0;
+            if (diam <= 0) return;
+            const radius = (diam / 2) * scalingFactor;
+            let base = normalLayoutsLong.find(l => l.data.originalIndex === a.concentricToIndex);
+            if (!base) base = normalLayoutsLong.find(l => l.radius >= radius);
+            if (!base) base = normalLayoutsLong[normalLayoutsLong.length - 1] || { centerOffsetYLocal: 0, radius };
+            const layerCenterY = base.centerOffsetYLocal;
+            const annoData = {
+              diameter: diam,
+              lineColor: a.lineColor || '#cc0000',
+              lineThickness: parseFloat(a.lineThickness) || config.defaultLineThickness,
+              lineType: a.lineType || config.defaultLineType,
+              materialLabel: a.description || `Annotation ${idx + 1}`
+            };
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(axisAngle);
+            ctx.strokeStyle = annoData.lineColor;
+            applyCanvasLineStyle(ctx, annoData);
+            const isAnnoHovered = hoveredAnnotationHit && hoveredAnnotationHit.mode === 'longitudinal' && hoveredAnnotationHit.annotationIndex === idx;
+            const baseAnnoW = Math.max(0.1, annoData.lineThickness / view.scale);
+            ctx.lineWidth = isAnnoHovered ? Math.max(0.1, (annoData.lineThickness * 2) / view.scale) : baseAnnoW;
+            const yTop = layerCenterY - radius;
+            const yBottom = layerCenterY + radius;
+            traceWavyLongitudinalRectPath(ctx, x0, x1, yTop, yBottom, annoData, scalingFactor, radius, 80);
+            ctx.stroke();
+            resetCanvasLineStyle(ctx);
+            ctx.restore();
+            const rect = {
+              localX0: x0,
+              localX1: x1,
+              localY0: yTop,
+              localY1: yBottom
+            };
+            const corners = [
+              {x: rect.localX0, y: rect.localY0},
+              {x: rect.localX1, y: rect.localY0},
+              {x: rect.localX1, y: rect.localY1},
+              {x: rect.localX0, y: rect.localY1}
+            ].map(p => ({
+              x: cx + p.x * Math.cos(axisAngle) - p.y * Math.sin(axisAngle),
+              y: cy + p.x * Math.sin(axisAngle) + p.y * Math.cos(axisAngle)
+            }));
+            localAnnotationHitboxes.push({
+              minX: Math.min(...corners.map(p => p.x)),
+              maxX: Math.max(...corners.map(p => p.x)),
+              minY: Math.min(...corners.map(p => p.y)),
+              maxY: Math.max(...corners.map(p => p.y)),
+              cx,
+              cy,
+              angle: axisAngle,
+              localX0: rect.localX0,
+              localX1: rect.localX1,
+              localY0: rect.localY0,
+              localY1: rect.localY1,
+              lineWidth: baseAnnoW,
+              annotationIndex: idx,
+              data: annoData
+            });
         });
 
         rulerOverlayZeroWorldX = smallestCenterGlobalX;
@@ -2739,12 +3314,20 @@ function plotCircles(options = {}) {
 
     ctx.restore();
     if (rulerOverlayZeroWorldX !== null && rulerOverlayPxPerMm !== null) {
+        drawMeasurementPlotOverlay();
         drawBottomRulerOverlay(rulerOverlayZeroWorldX, rulerOverlayPxPerMm, rulerUnits);
     }
     if (referenceOverlayWorldPoint) {
         drawReferenceCrosshairOverlay(referenceOverlayWorldPoint.x, referenceOverlayWorldPoint.y);
     }
     drawPlotTitleOverlay();
+    if (mode === 'radial') {
+        circleHitboxesRadial = localCircleHitboxes;
+        annotationHitboxesRadial = localAnnotationHitboxes;
+    } else {
+        rectHitboxesLongitudinal = localRectHitboxes;
+        annotationHitboxesLongitudinal = localAnnotationHitboxes;
+    }
 }
 
 function appendTableRow(circleData, data, i, tableBody) {
@@ -2753,7 +3336,7 @@ function appendTableRow(circleData, data, i, tableBody) {
 
     const rowHTML = `
       <tr data-original-index="${data.originalIndex}">
-        <td class="color-cell" style="background-color: ${data.fillColor}; color: ${data.tableTextColor};" contenteditable="true" data-field="material">
+        <td class="color-cell" style="background-color: ${data.fillColor}; color: ${data.tableTextColor};" contenteditable="true" data-field="description">
           ${data.materialLabel}
         </td>
         <td class="od-column" contenteditable="true" data-field="odmm">${data.diameter.toFixed(2)}</td>
@@ -2827,51 +3410,166 @@ function renderAllPlots(options = {}) {
 
 function wireCanvasInteractions() {
   const canvas = document.getElementById('circleCanvas');
+  const longCanvas = document.getElementById('longitudinalCanvas');
   const tooltip = document.getElementById('tooltip');
   let isPanning = false, lastX = 0, lastY = 0;
+  let activePanCanvas = null;
+  let activeMeasureCanvas = null;
+  let activeMeasureMode = null;
 
   const resetView = () => {
     resetViewTransform();
     requestPlot({ rebuildTable: false });
   };
 
-  canvas.addEventListener('dblclick', resetView);
-  canvas.addEventListener('touchend', (e) => {
-    if (e.touches.length === 0 && e.changedTouches.length === 1 && e.detail === 2) {
-      resetView();
-    }
-  });
+  const bindCanvasInteractions = (canvasEl, mode) => {
+    if (!canvasEl) return;
+    canvasEl.addEventListener('contextmenu', (e) => e.preventDefault());
+    canvasEl.addEventListener('dblclick', resetView);
+    canvasEl.addEventListener('touchend', (e) => {
+      if (e.touches.length === 0 && e.changedTouches.length === 1 && e.detail === 2) {
+        resetView();
+      }
+    });
 
-  canvas.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    if (isViewInteractionLocked()) return;
-    const point = getCanvasInteractionPoint(e);
-    const prev = view.scale;
-    const z = e.deltaY < 0 ? 1.1 : 0.9;
-    const next = Math.max(0.2, Math.min(10, prev * z));
-    const wx = (point.x - view.panX) / prev;
-    const wy = (point.y - view.panY) / prev;
-    view.panX = point.x - wx * next;
-    view.panY = point.y - wy * next;
-    view.scale = next;
-    requestPlot({ rebuildTable: false });
-  }, { passive: false });
+    canvasEl.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (isViewInteractionLocked()) return;
+      const point = getCanvasInteractionPoint(e, canvasEl);
+      const prev = view.scale;
+      const z = e.deltaY < 0 ? 1.1 : 0.9;
+      const next = Math.max(0.2, Math.min(10, prev * z));
+      const wx = (point.x - view.panX) / prev;
+      const wy = (point.y - view.panY) / prev;
+      view.panX = point.x - wx * next;
+      view.panY = point.y - wy * next;
+      view.scale = next;
+      requestPlot({ rebuildTable: false });
+    }, { passive: false });
 
-  canvas.addEventListener('mousedown', (e) => {
-    if (isViewInteractionLocked()) return;
-    isPanning = true;
-    lastX = e.clientX;
-    lastY = e.clientY;
-  });
+    canvasEl.addEventListener('mousedown', (e) => {
+      if (isViewInteractionLocked()) return;
+      if (e.button === 2) {
+        const point = getCanvasInteractionPoint(e, canvasEl);
+        const wx = (point.x - view.panX) / view.scale;
+        measurementStateByMode[mode] = { active: true, startWorldX: wx, currentWorldX: wx };
+        activeMeasureCanvas = canvasEl;
+        activeMeasureMode = mode;
+        requestPlot({ rebuildTable: false });
+        return;
+      }
+      if (e.button !== 0) return;
+      isPanning = true;
+      activePanCanvas = canvasEl;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    canvasEl.addEventListener('mousemove', (e) => {
+      updateTooltipAtClientPointFor(canvasEl, mode, e.clientX, e.clientY);
+    });
+
+    canvasEl.addEventListener('touchstart', (e) => {
+      if (isViewInteractionLocked()) {
+        activeTouches.clear();
+        touchState = null;
+        return;
+      }
+      for (const touch of e.changedTouches) {
+        activeTouches.set(touch.identifier, { clientX: touch.clientX, clientY: touch.clientY });
+      }
+      if (activeTouches.size === 1) {
+        const touch = [...activeTouches.values()][0];
+        touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
+        updateTooltipAtClientPointFor(canvasEl, mode, touch.clientX, touch.clientY);
+      } else if (activeTouches.size >= 2) {
+        const touches = [...activeTouches.values()].slice(0, 2);
+        const midpoint = getTouchMidpoint(touches[0], touches[1]);
+        const point = getCanvasInteractionPoint(midpoint, canvasEl);
+        touchState = {
+          mode: 'pinch',
+          startDistance: getTouchDistance(touches[0], touches[1]),
+          startScale: view.scale,
+          worldX: (point.x - view.panX) / view.scale,
+          worldY: (point.y - view.panY) / view.scale,
+          midpoint
+        };
+        tooltip.style.display = 'none';
+      }
+    }, { passive: false });
+
+    canvasEl.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (isViewInteractionLocked()) {
+        activeTouches.clear();
+        touchState = null;
+        tooltip.style.display = 'none';
+        return;
+      }
+      for (const touch of e.changedTouches) {
+        activeTouches.set(touch.identifier, { clientX: touch.clientX, clientY: touch.clientY });
+      }
+      if (activeTouches.size === 1) {
+        const touch = [...activeTouches.values()][0];
+        if (!touchState || touchState.mode !== 'pan') {
+          touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
+        }
+        const dx = touch.clientX - touchState.lastX;
+        const dy = touch.clientY - touchState.lastY;
+        touchState.lastX = touch.clientX;
+        touchState.lastY = touch.clientY;
+        view.panX += dx;
+        view.panY += dy;
+        requestPlot({ rebuildTable: false });
+        updateTooltipAtClientPointFor(canvasEl, mode, touch.clientX, touch.clientY);
+      } else if (activeTouches.size >= 2) {
+        const touches = [...activeTouches.values()].slice(0, 2);
+        const midpoint = getTouchMidpoint(touches[0], touches[1]);
+        const point = getCanvasInteractionPoint(midpoint, canvasEl);
+        const distance = Math.max(1, getTouchDistance(touches[0], touches[1]));
+        if (!touchState || touchState.mode !== 'pinch') {
+          touchState = {
+            mode: 'pinch',
+            startDistance: distance,
+            startScale: view.scale,
+            worldX: (point.x - view.panX) / view.scale,
+            worldY: (point.y - view.panY) / view.scale,
+            midpoint
+          };
+        }
+        const next = Math.max(0.2, Math.min(10, touchState.startScale * (distance / touchState.startDistance)));
+        view.scale = next;
+        view.panX = point.x - touchState.worldX * next;
+        view.panY = point.y - touchState.worldY * next;
+        requestPlot({ rebuildTable: false });
+        tooltip.style.display = 'none';
+      }
+    }, { passive: false });
+  };
+
+  bindCanvasInteractions(canvas, 'radial');
+  bindCanvasInteractions(longCanvas, 'longitudinal');
 
   window.addEventListener('mouseup', () => {
     isPanning = false;
+    activePanCanvas = null;
+    if (activeMeasureMode) {
+      measurementStateByMode[activeMeasureMode].active = false;
+      measurementStateByMode[activeMeasureMode].startWorldX = null;
+      measurementStateByMode[activeMeasureMode].currentWorldX = null;
+      activeMeasureCanvas = null;
+      activeMeasureMode = null;
+      requestPlot({ rebuildTable: false });
+    }
   });
 
   window.addEventListener('mousemove', (e) => {
     if (isViewInteractionLocked()) {
       isPanning = false;
-    } else if (isPanning) {
+      activePanCanvas = null;
+      activeMeasureCanvas = null;
+      activeMeasureMode = null;
+    } else if (isPanning && activePanCanvas) {
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       lastX = e.clientX;
@@ -2880,95 +3578,39 @@ function wireCanvasInteractions() {
       view.panY += dy;
       requestPlot({ rebuildTable: false });
       tooltip.style.display = 'none';
+    } else if (activeMeasureCanvas && activeMeasureMode && measurementStateByMode[activeMeasureMode].active) {
+      const point = getCanvasInteractionPoint(e, activeMeasureCanvas);
+      const wx = (point.x - view.panX) / view.scale;
+      measurementStateByMode[activeMeasureMode].currentWorldX = wx;
+      requestPlot({ rebuildTable: false });
     }
-  });
-  canvas.addEventListener('mousemove', (e) => {
-    updateTooltipAtClientPoint(e.clientX, e.clientY);
   });
   canvas.addEventListener('mouseleave', () => {
     tooltip.style.display = 'none';
+    if (rulerCursorWorldXByMode.radial !== null) {
+      rulerCursorWorldXByMode.radial = null;
+    }
+    if (hoveredFillHit !== null) {
+      hoveredFillHit = null;
+      requestPlot({ rebuildTable: false });
+    } else {
+      requestPlot({ rebuildTable: false });
+    }
   });
-
-  canvas.addEventListener('touchstart', (e) => {
-    if (isViewInteractionLocked()) {
-      activeTouches.clear();
-      touchState = null;
-      return;
-    }
-    for (const touch of e.changedTouches) {
-      activeTouches.set(touch.identifier, { clientX: touch.clientX, clientY: touch.clientY });
-    }
-
-    if (activeTouches.size === 1) {
-      const touch = [...activeTouches.values()][0];
-      touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
-      updateTooltipAtClientPoint(touch.clientX, touch.clientY);
-    } else if (activeTouches.size >= 2) {
-      const touches = [...activeTouches.values()].slice(0, 2);
-      const midpoint = getTouchMidpoint(touches[0], touches[1]);
-      const point = getCanvasInteractionPoint(midpoint);
-      touchState = {
-        mode: 'pinch',
-        startDistance: getTouchDistance(touches[0], touches[1]),
-        startScale: view.scale,
-        worldX: (point.x - view.panX) / view.scale,
-        worldY: (point.y - view.panY) / view.scale,
-        midpoint
-      };
+  if (longCanvas) {
+    longCanvas.addEventListener('mouseleave', () => {
       tooltip.style.display = 'none';
-    }
-  }, { passive: false });
-
-  canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    if (isViewInteractionLocked()) {
-      activeTouches.clear();
-      touchState = null;
-      tooltip.style.display = 'none';
-      return;
-    }
-    for (const touch of e.changedTouches) {
-      activeTouches.set(touch.identifier, { clientX: touch.clientX, clientY: touch.clientY });
-    }
-
-    if (activeTouches.size === 1) {
-      const touch = [...activeTouches.values()][0];
-      if (!touchState || touchState.mode !== 'pan') {
-        touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
+      if (rulerCursorWorldXByMode.longitudinal !== null) {
+        rulerCursorWorldXByMode.longitudinal = null;
       }
-      const dx = touch.clientX - touchState.lastX;
-      const dy = touch.clientY - touchState.lastY;
-      touchState.lastX = touch.clientX;
-      touchState.lastY = touch.clientY;
-      view.panX += dx;
-      view.panY += dy;
-      requestPlot({ rebuildTable: false });
-      updateTooltipAtClientPoint(touch.clientX, touch.clientY);
-    } else if (activeTouches.size >= 2) {
-      const touches = [...activeTouches.values()].slice(0, 2);
-      const midpoint = getTouchMidpoint(touches[0], touches[1]);
-      const point = getCanvasInteractionPoint(midpoint);
-      const distance = Math.max(1, getTouchDistance(touches[0], touches[1]));
-
-      if (!touchState || touchState.mode !== 'pinch') {
-        touchState = {
-          mode: 'pinch',
-          startDistance: distance,
-          startScale: view.scale,
-          worldX: (point.x - view.panX) / view.scale,
-          worldY: (point.y - view.panY) / view.scale,
-          midpoint
-        };
+      if (hoveredFillHit !== null) {
+        hoveredFillHit = null;
+        requestPlot({ rebuildTable: false });
+      } else {
+        requestPlot({ rebuildTable: false });
       }
-
-      const next = Math.max(0.2, Math.min(10, touchState.startScale * (distance / touchState.startDistance)));
-      view.scale = next;
-      view.panX = point.x - touchState.worldX * next;
-      view.panY = point.y - touchState.worldY * next;
-      requestPlot({ rebuildTable: false });
-      tooltip.style.display = 'none';
-    }
-  }, { passive: false });
+    });
+  }
 
   const clearEndedTouches = (e) => {
     for (const touch of e.changedTouches) {
@@ -2978,6 +3620,13 @@ function wireCanvasInteractions() {
     if (activeTouches.size === 0) {
       touchState = null;
       tooltip.style.display = 'none';
+      if (activeMeasureMode) {
+        measurementStateByMode[activeMeasureMode].active = false;
+        measurementStateByMode[activeMeasureMode].startWorldX = null;
+        measurementStateByMode[activeMeasureMode].currentWorldX = null;
+        activeMeasureCanvas = null;
+        activeMeasureMode = null;
+      }
     } else if (activeTouches.size === 1) {
       const touch = [...activeTouches.values()][0];
       touchState = { mode: 'pan', lastX: touch.clientX, lastY: touch.clientY };
@@ -2986,6 +3635,10 @@ function wireCanvasInteractions() {
 
   canvas.addEventListener('touchend', clearEndedTouches);
   canvas.addEventListener('touchcancel', clearEndedTouches);
+  if (longCanvas) {
+    longCanvas.addEventListener('touchend', clearEndedTouches);
+    longCanvas.addEventListener('touchcancel', clearEndedTouches);
+  }
 
   const lockEl = document.getElementById('lockViewCheckbox');
   if (lockEl) {
@@ -2999,6 +3652,93 @@ function wireCanvasInteractions() {
   }
 }
 
+function buildAnnotationEntry(diameterValue, descriptionValue, options = {}) {
+    const rowId = 'annotation-row-' + Date.now() + Math.random().toString(16).slice(2);
+    const div = document.createElement('div');
+    div.className = 'layer-row';
+    div.id = rowId;
+    const dVal = (diameterValue === undefined || diameterValue === null || diameterValue === '') ? '100' : String(diameterValue);
+    const desc = (descriptionValue === undefined || descriptionValue === null || descriptionValue === '') ? 'Annotation' : String(descriptionValue);
+    const lineColor = options.lineColor || '#cc0000';
+    const lineThickness = options.lineThickness ?? config.defaultLineThickness;
+    const lineType = options.lineType || config.defaultLineType;
+    const concentricToIndex = Number.isFinite(parseInt(options.concentricToIndex, 10)) ? parseInt(options.concentricToIndex, 10) : 0;
+    const wavinessAmp = options.wavinessAmp ?? 0;
+    const wavinessFreq = options.wavinessFreq ?? 8;
+    const unit = options.unit === 'inches' ? 'inches' : 'mm';
+    div.innerHTML = `
+      <div class="layer-primary">
+        <input type="text" class="circleDiameter" placeholder="Diam" value="${dVal}">
+        <select class="unit">
+          <option value="inches" ${unit === 'inches' ? 'selected' : ''}>in</option>
+          <option value="mm" ${unit === 'mm' ? 'selected' : ''}>mm</option>
+        </select>
+        <input type="text" class="materialLabel" placeholder="Description" value="${desc}">
+        <input type="color" class="lineColor" value="${lineColor}" style="width:100%; height:30px;">
+        <button type="button" class="icon-btn layer-action-btn layer-icon-btn toggle-advanced-btn" aria-label="Toggle advanced settings" title="Advanced settings" onclick="toggleAdvanced('${rowId}')">+</button>
+        <button type="button" class="icon-btn layer-action-btn layer-icon-btn" aria-label="Delete annotation layer" title="Delete annotation layer" onclick="deleteAnnotationEntry(this)">×</button>
+      </div>
+      <div class="layer-advanced">
+        <div>
+           <label>Line Thk</label>
+           <input type="number" class="lineThickness" value="${lineThickness}" min="0" step="0.1">
+        </div>
+        <div>
+           <label>Line Type</label>
+           <select class="lineType">
+             <option value="solid" ${lineType === 'solid' ? 'selected' : ''}>Solid</option>
+             <option value="dashed" ${lineType === 'dashed' ? 'selected' : ''}>Dashed</option>
+             <option value="dotted" ${lineType === 'dotted' ? 'selected' : ''}>Dotted</option>
+           </select>
+        </div>
+        <div>
+           <label>Concentric To</label>
+           <select class="concentricLayerRef" data-default-ref="${concentricToIndex}"></select>
+        </div>
+        <div>
+           <label>Wavy Amp (mm)</label>
+           <input type="number" class="wavinessAmp" value="${wavinessAmp}" min="0" step="0.1">
+        </div>
+        <div>
+           <label>Wavy Freq</label>
+           <input type="number" class="wavinessFreq" value="${wavinessFreq}" min="1" step="1">
+        </div>
+      </div>
+    `;
+    const sel = div.querySelector('.concentricLayerRef');
+    if (sel) sel.value = String(concentricToIndex);
+    return div;
+}
+
+function addAnnotationInput(diam, desc, options = {}) {
+    const list = document.getElementById('annotation-layer-list');
+    if (!list) return;
+    const row = buildAnnotationEntry(diam, desc, options);
+    list.appendChild(row);
+    refreshAnnotationReferenceDropdowns();
+    sortAnnotationRowsByDiameter();
+    renderAnnotationResultTable(collectAnnotationLayerData());
+    if (!options.deferRedraw) requestPlot();
+}
+
+function deleteAnnotationEntry(btn) {
+    const row = btn.closest('.layer-row');
+    if (!row) return;
+    row.remove();
+    sortAnnotationRowsByDiameter();
+    renderAnnotationResultTable(collectAnnotationLayerData());
+    requestPlot();
+}
+
+function sortAnnotationRowsByDiameter() {
+    const list = document.getElementById('annotation-layer-list');
+    if (!list) return;
+    const rows = Array.from(list.querySelectorAll('.layer-row')).map((row, idx) => ({ row, idx, d: getRowDiameterMm(row) }));
+    rows.sort((a, b) => (b.d - a.d) || (a.idx - b.idx));
+    rows.forEach(item => list.appendChild(item.row));
+    renderAnnotationResultTable(collectAnnotationLayerData());
+}
+
 function wireTableEditing() {
   const tbody = document.querySelector('#areaTable tbody');
   tbody.addEventListener('blur', (e) => {
@@ -3006,11 +3746,11 @@ function wireTableEditing() {
     const tr = cell.closest('tr'); 
     
     const idx = parseInt(tr.getAttribute('data-original-index'), 10);
-    const rows = document.querySelectorAll('.layer-row');
+    const rows = document.querySelectorAll('#layer-list .layer-row');
     const inputRow = rows[idx]; 
     if (!inputRow) return;
 
-    if (cell.dataset.field === 'material') { 
+    if (cell.dataset.field === 'description') { 
         inputRow.querySelector('.materialLabel').value = cell.innerText.trim(); 
     }
     if (cell.dataset.field === 'odmm') {
@@ -3145,7 +3885,7 @@ function getPlotState(mode = 'radial') {
     const bgPick = document.getElementById('bgColorOther');
     const bgColor = (bgSel.value === 'other') ? bgPick.value : bgSel.value;
 
-    const rows = document.querySelectorAll('.layer-row');
+    const rows = document.querySelectorAll('#layer-list .layer-row');
     let circleData = [];
     rows.forEach((row, idx) => {
         const dInput = row.querySelector('.circleDiameter');
@@ -3223,7 +3963,7 @@ function fitColumnWidthsToTarget(colWidths, targetWidth) {
 
 function getTableMetrics(options = {}) {
     const targetWidth = options.targetWidth;
-    const table = document.getElementById('areaTable');
+    const table = document.getElementById(options.tableId || 'areaTable');
     const rows = [...table.querySelectorAll('tr')];
     const colCount = rows[0] ? rows[0].children.length : 0;
     let colWidths = [];
@@ -3249,6 +3989,20 @@ function getTableMetrics(options = {}) {
         rowHeights,
         width,
         height: rowHeights.reduce((a, b) => a + b, 0)
+    };
+}
+
+function getCombinedTableMetrics(options = {}) {
+    const targetWidth = options.targetWidth;
+    const main = getTableMetrics({ tableId: 'areaTable', targetWidth });
+    const annotation = getTableMetrics({ tableId: 'annotationTable' });
+    const gap = (annotation.height > 0) ? 8 : 0;
+    return {
+        main,
+        annotation,
+        gap,
+        width: Math.max(main.width, annotation.width),
+        height: main.height + gap + annotation.height
     };
 }
 
@@ -3304,9 +4058,12 @@ function buildPlotSvg(includeExportOutline = false, mode = 'radial') {
             const angleRad = ((data.eccentricityAngle - 90) * Math.PI) / 180;
             centerOffsetY += offset * Math.sin(angleRad);
             const strokeWidth = Math.max(0.1, data.lineThickness / view.scale);
+            const yTop = centerOffsetY - radius;
+            const yBottom = centerOffsetY + radius;
+            const d = buildWavyLongitudinalRectPathD(x0, x1, yTop, yBottom, data, s.scalingFactor, radius, 80);
 
             parts.push(`<g transform="translate(${cx} ${cy}) rotate(${axisAngle * 180 / Math.PI})">`);
-            parts.push(`<rect x="${x0}" y="${centerOffsetY - radius}" width="${lengthPx}" height="${2 * radius}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"${getSvgLineStyleAttrs(data.lineType)}/>`);
+            parts.push(`<path d="${d}" fill="${escapeXml(data.fillColor)}" stroke="${escapeXml(data.lineColor)}" stroke-width="${strokeWidth}"${getSvgLineStyleAttrs(data.lineType)}/>`);
             parts.push(`</g>`);
             lastRadius = radius;
         });
@@ -3321,45 +4078,48 @@ function buildPlotSvg(includeExportOutline = false, mode = 'radial') {
 }
 
 function buildTableSvg(xOffset = 0, yOffset = 0, options = {}) {
-    const m = getTableMetrics(options);
+    const m = getCombinedTableMetrics(options);
     let parts = [];
     parts.push(`<g transform="translate(${xOffset} ${yOffset})">`);
     parts.push(`<rect x="0" y="0" width="${m.width}" height="${m.height}" fill="#ffffff"/>`);
+    const drawMetric = (metric, xOffsetInner, yOffsetInner) => {
+        let y = yOffsetInner;
+        metric.rows.forEach((row, ri) => {
+            let x = xOffsetInner;
+            for (let ci = 0; ci < metric.colCount; ci++) {
+                const cell = row.children[ci];
+                const w = metric.colWidths[ci];
+                const h = metric.rowHeights[ri];
+                const isColorCell = !!(cell && cell.classList.contains('color-cell'));
+                let fill = '#ffffff';
+                let textColor = '#000000';
+                let fontSize = 14;
+                let fontWeight = '400';
+                let fontFamily = 'Arial, sans-serif';
+                let text = '';
 
-    let y = 0;
-    m.rows.forEach((row, ri) => {
-        let x = 0;
-        for (let ci = 0; ci < m.colCount; ci++) {
-            const cell = row.children[ci];
-            const w = m.colWidths[ci];
-            const h = m.rowHeights[ri];
-            const isColorCell = !!(cell && cell.classList.contains('color-cell'));
-            let fill = '#ffffff';
-            let textColor = '#000000';
-            let fontSize = 14;
-            let fontWeight = '400';
-            let fontFamily = 'Arial, sans-serif';
-            let text = '';
+                if (cell) {
+                    const cs = getComputedStyle(cell);
+                    fill = isColorCell ? cs.backgroundColor : '#ffffff';
+                    textColor = cs.color || '#000000';
+                    fontSize = parseFloat(cs.fontSize) || 14;
+                    fontWeight = (cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD' || parseInt(cs.fontWeight, 10) >= 600 || cs.fontWeight === 'bold') ? '700' : '400';
+                    fontFamily = cs.fontFamily || 'Arial, sans-serif';
+                    text = cell.innerText;
+                }
 
-            if (cell) {
-                const cs = getComputedStyle(cell);
-                fill = isColorCell ? cs.backgroundColor : '#ffffff';
-                textColor = cs.color || '#000000';
-                fontSize = parseFloat(cs.fontSize) || 14;
-                fontWeight = (cell.tagName === 'TH' || row.parentElement.tagName === 'THEAD' || parseInt(cs.fontWeight, 10) >= 600 || cs.fontWeight === 'bold') ? '700' : '400';
-                fontFamily = cs.fontFamily || 'Arial, sans-serif';
-                text = cell.innerText;
+                parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${escapeXml(fill)}" stroke="#000000" stroke-width="1"/>`);
+                if (text) {
+                    const textY = y + h / 2 + fontSize * 0.35;
+                    parts.push(`<text x="${x + 6}" y="${textY}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${escapeXml(textColor)}">${escapeXml(text)}</text>`);
+                }
+                x += w;
             }
-
-            parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${escapeXml(fill)}" stroke="#000000" stroke-width="1"/>`);
-            if (text) {
-                const textY = y + h / 2 + fontSize * 0.35;
-                parts.push(`<text x="${x + 6}" y="${textY}" font-family="${escapeXml(fontFamily)}" font-size="${fontSize}" font-weight="${fontWeight}" fill="${escapeXml(textColor)}">${escapeXml(text)}</text>`);
-            }
-            x += w;
-        }
-        y += m.rowHeights[ri];
-    });
+            y += metric.rowHeights[ri];
+        });
+    };
+    drawMetric(m.main, 0, 0);
+    if (m.annotation.height > 0) drawMetric(m.annotation, 0, m.main.height + m.gap);
 
     parts.push(`</g>`);
     return { svg: parts.join(''), width: m.width, height: m.height };
@@ -3405,6 +4165,7 @@ function exportAllSvg() {
             `<svg xmlns="http://www.w3.org/2000/svg" width="${finalW}" height="${finalH}" viewBox="0 0 ${finalW} ${finalH}">` +
             `<rect x="0" y="0" width="${finalW}" height="${finalH}" fill="#ffffff"/>` +
             `<g transform="translate(${plotX} 20)">${buildPlotSvg(false, 'radial').replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '')}</g>` +
+            `<rect x="${plotX}" y="20" width="${s.logicalWidth}" height="${s.logicalHeight}" fill="none" stroke="#000000" stroke-width="2" vector-effect="non-scaling-stroke"/>` +
             buildTableSvg(tableX, tableY, { targetWidth: targetTableWidth }).svg +
             (isExportOutlineEnabled() ? `<rect x="0" y="0" width="${finalW}" height="${finalH}" fill="none" stroke="#000000" stroke-width="2" vector-effect="non-scaling-stroke"/>` : ``) +
             `</svg>`;
@@ -3448,17 +4209,8 @@ function exportLongitudinalPlotPng() {
 // Export Table as PNG (Custom Rasterizer)
 function exportTableAsImage() {
   renderAllPlots();
-  const table = document.getElementById('areaTable'); if (!table) return;
-  const rows = [...table.querySelectorAll('tr')];
-  const colCount = rows[0] ? rows[0].children.length : 0;
-  const colWidths = [];
-  for (let c = 0; c < colCount; c++) {
-    let w = 0;
-    rows.forEach(r => { const cell = r.children[c]; if (!cell) return; w = Math.max(w, cell.getBoundingClientRect().width); });
-    colWidths.push(Math.ceil(w));
-  }
-  const rowHeights = rows.map(r => Math.ceil(r.getBoundingClientRect().height));
-  const W = colWidths.reduce((a,b)=>a+b,0), H = rowHeights.reduce((a,b)=>a+b,0);
+  const m = getCombinedTableMetrics();
+  const W = m.width, H = m.height;
   
   // *** UPDATED: Use RESOLUTION_SCALE ***
   const dpr = RESOLUTION_SCALE;
@@ -3469,31 +4221,35 @@ function exportTableAsImage() {
   const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W + 10, H + 10); ctx.translate(5, 5);
 
-  let y = 0;
-  rows.forEach((r, ri) => {
-    let x = 0;
-    for (let ci = 0; ci < colCount; ci++) {
-      const cell = r.children[ci]; const w = colWidths[ci]; const h = rowHeights[ri];
-      if (cell && cell.classList.contains('color-cell')) {
-        const bg = getComputedStyle(cell).backgroundColor; ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
-      } else {
-        ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
+  const drawMetric = (metric, x0, y0) => {
+    let y = y0;
+    metric.rows.forEach((r, ri) => {
+      let x = x0;
+      for (let ci = 0; ci < metric.colCount; ci++) {
+        const cell = r.children[ci]; const w = metric.colWidths[ci]; const h = metric.rowHeights[ri];
+        if (cell && cell.classList.contains('color-cell')) {
+          const bg = getComputedStyle(cell).backgroundColor; ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+        } else {
+          ctx.fillStyle = '#fff'; ctx.fillRect(x, y, w, h);
+        }
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
+        if (cell) {
+          const cs = getComputedStyle(cell);
+          const fam = cs.fontFamily || 'Arial, sans-serif'; const size = cs.fontSize || '14px';
+          const weightVal = cs.fontWeight || '400';
+          const isHeader = cell.tagName === 'TH' || r.parentElement.tagName === 'THEAD';
+          const bold = isHeader || parseInt(weightVal, 10) >= 600 || weightVal === 'bold';
+          ctx.font = `${bold ? 'bold ' : ''}${size} ${fam}`;
+          ctx.fillStyle = cs.color || '#000'; ctx.textBaseline = 'middle';
+          ctx.fillText(cell.innerText, x + 6, y + h / 2);
+        }
+        x += w;
       }
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
-      if (cell) {
-        const cs = getComputedStyle(cell);
-        const fam = cs.fontFamily || 'Arial, sans-serif'; const size = cs.fontSize || '14px';
-        const weightVal = cs.fontWeight || '400';
-        const isHeader = cell.tagName === 'TH' || r.parentElement.tagName === 'THEAD';
-        const bold = isHeader || parseInt(weightVal, 10) >= 600 || weightVal === 'bold';
-        ctx.font = `${bold ? 'bold ' : ''}${size} ${fam}`;
-        ctx.fillStyle = cs.color || '#000'; ctx.textBaseline = 'middle';
-        ctx.fillText(cell.innerText, x + 6, y + h / 2);
-      }
-      x += w;
-    }
-    y += rowHeights[ri];
-  });
+      y += metric.rowHeights[ri];
+    });
+  };
+  drawMetric(m.main, 0, 0);
+  if (m.annotation.height > 0) drawMetric(m.annotation, 0, m.main.height + m.gap);
   const filename = getSafeFilename('_table.png');
   canvas.toBlob(b => {
     if (!b) return;
@@ -3509,35 +4265,34 @@ function exportAllAsImage() {
         const plotC = document.getElementById('circleCanvas');
         const dpr = RESOLUTION_SCALE;
         const targetTableW = plotC.width / dpr;
-        // 2. Draw Table (Logic duplicated for memory safety)
-        const table = document.getElementById('areaTable');
-        const rows = [...table.querySelectorAll('tr')];
-        const colCount = rows[0] ? rows[0].children.length : 0;
-        const colWidths = []; for (let c = 0; c < colCount; c++) { let w = 0; rows.forEach(r => { const cell = r.children[c]; if (!cell) return; w = Math.max(w, cell.getBoundingClientRect().width); }); colWidths.push(Math.ceil(w)); }
-        const fittedColWidths = fitColumnWidthsToTarget(colWidths, targetTableW);
-        const rowHeights = rows.map(r => Math.ceil(r.getBoundingClientRect().height));
-        const W = fittedColWidths.reduce((a,b)=>a+b,0), H = rowHeights.reduce((a,b)=>a+b,0);
+        // 2. Draw Tables (main + annotation) in on-screen stacked arrangement
+        const m = getCombinedTableMetrics({ targetWidth: targetTableW });
+        const W = m.width, H = m.height;
         
         const tableC = document.createElement('canvas');
         tableC.width  = Math.max(1, Math.floor(W * dpr)); tableC.height = Math.max(1, Math.floor(H * dpr));
         const tctx = tableC.getContext('2d'); tctx.scale(dpr, dpr);
         tctx.fillStyle = '#fff'; tctx.fillRect(0, 0, W, H);
-        let y = 0;
-        rows.forEach((r, ri) => {
-            let x = 0;
-            for (let ci = 0; ci < colCount; ci++) {
-            const cell = r.children[ci]; const w = fittedColWidths[ci]; const h = rowHeights[ri];
-            if (cell && cell.classList.contains('color-cell')) { const bg = getComputedStyle(cell).backgroundColor; tctx.fillStyle = bg; tctx.fillRect(x, y, w, h); } else { tctx.fillStyle = '#fff'; tctx.fillRect(x, y, w, h); }
-            tctx.strokeStyle = '#000'; tctx.lineWidth = 1; tctx.strokeRect(x, y, w, h);
-            if (cell) {
+        const drawMetric = (metric, x0, y0) => {
+          let y = y0;
+          metric.rows.forEach((r, ri) => {
+            let x = x0;
+            for (let ci = 0; ci < metric.colCount; ci++) {
+              const cell = r.children[ci]; const w = metric.colWidths[ci]; const h = metric.rowHeights[ri];
+              if (cell && cell.classList.contains('color-cell')) { const bg = getComputedStyle(cell).backgroundColor; tctx.fillStyle = bg; tctx.fillRect(x, y, w, h); } else { tctx.fillStyle = '#fff'; tctx.fillRect(x, y, w, h); }
+              tctx.strokeStyle = '#000'; tctx.lineWidth = 1; tctx.strokeRect(x, y, w, h);
+              if (cell) {
                 const cs = getComputedStyle(cell); const bold = (cell.tagName === 'TH' || r.parentElement.tagName === 'THEAD') ? 'bold ' : '';
                 tctx.font = `${bold}${cs.fontSize} ${cs.fontFamily}`; tctx.fillStyle = cs.color || '#000'; tctx.textBaseline = 'middle';
                 tctx.fillText(cell.innerText, x + 6, y + h / 2);
+              }
+              x += w;
             }
-            x += w;
-            }
-            y += rowHeights[ri];
-        });
+            y += metric.rowHeights[ri];
+          });
+        };
+        drawMetric(m.main, 0, 0);
+        if (m.annotation.height > 0) drawMetric(m.annotation, 0, m.main.height + m.gap);
 
         // 3. Compose
         // Let's rely on pixel dims
@@ -3556,6 +4311,12 @@ function exportAllAsImage() {
         const pX = (finalW - (pW/dpr))/2;
         // Draw Image draws logical pixels onto context
         ctx.drawImage(plotC, 0, 0, plotC.width, plotC.height, pX, 20, pW/dpr, pH/dpr);
+        // Always outline the plot area in combined exports.
+        ctx.save();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(pX + 1, 21, Math.max(0, (pW/dpr) - 2), Math.max(0, (pH/dpr) - 2));
+        ctx.restore();
         
         const tX = (finalW - tW)/2;
         ctx.drawImage(tableC, 0, 0, tableC.width, tableC.height, tX, (pH/dpr) + 40, tW, tH);
@@ -3573,7 +4334,7 @@ function exportAllAsImage() {
  * SETTINGS IMPORT/EXPORT (Updated for File Access API)
  ***************************************************************/
 function getSettingsObj() {
-    const rows = document.querySelectorAll('.layer-row');
+    const rows = document.querySelectorAll('#layer-list .layer-row');
     const data = Array.from(rows).map((row, idx) => ({
         diameter: row.querySelector('.circleDiameter').value,
         unit: row.querySelector('.unit').value,
@@ -3602,10 +4363,24 @@ function getSettingsObj() {
     const configName = document.getElementById('configNameInput').value;
     const longitudinalNotes = document.getElementById('longitudinalNotes')?.value || '';
     
+    const annotationRows = document.querySelectorAll('#annotation-layer-list .layer-row');
+    const annotationData = Array.from(annotationRows).map((row, idx) => ({
+        diameterMm: (row.querySelector('.unit').value === 'inches')
+          ? ((parseFloat(row.querySelector('.circleDiameter').value) || 0) * 25.4)
+          : (parseFloat(row.querySelector('.circleDiameter').value) || 0),
+        unit: row.querySelector('.unit').value,
+        description: row.querySelector('.materialLabel').value || `Annotation ${idx + 1}`,
+        concentricToIndex: parseInt(row.querySelector('.concentricLayerRef')?.value ?? '-1', 10),
+        lineColor: row.querySelector('.lineColor').value,
+        lineThickness: row.querySelector('.lineThickness').value,
+        lineType: row.querySelector('.lineType')?.value || config.defaultLineType,
+        wavinessAmp: row.querySelector('.wavinessAmp').value,
+        wavinessFreq: row.querySelector('.wavinessFreq').value
+    }));
+
     return { 
         configName: configName,
         longitudinalNotes: longitudinalNotes,
-        nightMode: (document.getElementById('nightMode') ? document.getElementById('nightMode').checked : false),
         viewMode: "dual",
         sectionLengthMm: (document.getElementById("sectionLengthInput") ? document.getElementById("sectionLengthInput").value : 1000),
         inclinationFromVerticalDeg: (document.getElementById("inclinationInput") ? document.getElementById("inclinationInput").value : 0),
@@ -3619,7 +4394,8 @@ function getSettingsObj() {
         rulerPadding: rulerPadding,
         showReferenceCrosshair: showReferenceCrosshair,
         exportOutlineEnabled: exportOutlineEnabled,
-        circles: data 
+        circles: data,
+        annotationCircles: annotationData
     };
 }
 
@@ -3709,10 +4485,6 @@ function applySettingsData(data, preserveTitle) {
         document.getElementById('configNameInput').value = data.configName;
     }
 
-    if (data.nightMode !== undefined) {
-        setNightMode(Boolean(data.nightMode));
-    }
-
     // Apply BG
     const bgSel = document.getElementById('bgColorSelect');
     const knownColors = config.fillColorOptions.map(c => c.value);
@@ -3770,6 +4542,7 @@ function applySettingsData(data, preserveTitle) {
     }
     // Clear Lists
     document.getElementById('layer-list').innerHTML = '';
+    document.getElementById('annotation-layer-list').innerHTML = '';
     
     // Build rows
     if(data.circles) {
@@ -3786,6 +4559,23 @@ function applySettingsData(data, preserveTitle) {
            document.getElementById('layer-list').appendChild(div);
         });
     }
+    if (Array.isArray(data.annotationCircles) && data.annotationCircles.length > 0) {
+      data.annotationCircles.forEach((a, i) => {
+        const diamMm = parseFloat(a.diameterMm);
+        const useIn = (a.unit === 'inches');
+        const diamForRow = useIn ? ((Number.isFinite(diamMm) ? diamMm : 0) / 25.4) : (Number.isFinite(diamMm) ? diamMm : 0);
+        addAnnotationInput(diamForRow, a.description || `Annotation ${i + 1}`, {
+          unit: useIn ? 'inches' : 'mm',
+          lineColor: a.lineColor || '#cc0000',
+          lineThickness: parseFloat(a.lineThickness) || config.defaultLineThickness,
+          lineType: a.lineType || config.defaultLineType,
+          concentricToIndex: parseInt(a.concentricToIndex ?? '-1', 10),
+          wavinessAmp: Math.max(0, parseFloat(a.wavinessAmp) || 0),
+          wavinessFreq: Math.max(1, parseFloat(a.wavinessFreq) || 8),
+          deferRedraw: true
+        });
+      });
+    }
     sortLayerRowsByDiameter();
     resetViewTransform();
     requestPlot();
@@ -3793,4 +4583,5 @@ function applySettingsData(data, preserveTitle) {
 </script>
 </body>
 </html>
+
 
