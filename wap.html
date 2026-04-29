@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interwell Well Architecture Plotter v6.6 (High Res)</title>
+  <title>Interwell Well Architecture Plotter </title>
   <style>
     :root {
       --bg: #f3f6f9;
@@ -1020,6 +1020,10 @@
           <select id="pipeSelect" style="flex:1"></select>
           <button type="button" class="primary" onclick="addStandardPipe()">+ Add Pipe</button>
         </div>
+        <div class="flex-row">
+          <select id="rsToolPresetSelect" style="flex:1"></select>
+          <button type="button" class="primary" onclick="addRocksolidToolPreset()">+ Add RS Tool</button>
+        </div>
         <div class="flex-row" style="margin-top:8px; font-size:0.85rem;">
           <label>Pipe Material:</label>
           <select id="pipeMaterialSelect" style="width:100px"></select>
@@ -1091,6 +1095,13 @@
              <span>Show radial center crosshair</span>
            </label>
         </div>
+        <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
+           <label style="width:100px;">Annotations:</label>
+           <label class="checkbox-row" for="showAnnotationsCheckbox">
+             <input type="checkbox" id="showAnnotationsCheckbox" checked>
+             <span>Show on plots</span>
+           </label>
+        </div>
 
         <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
            <label style="width:100px;">Export:</label>
@@ -1122,7 +1133,8 @@
         <div class="section-title" style="margin-bottom:0; border:none;">Annotation Layers</div>
         <button type="button" onclick="addAnnotationInput()">+ Annotation Layer</button>
       </div>
-      <div class="layer-header-row">
+      <div class="layer-header-row" style="grid-template-columns: 24px 84px 56px minmax(0, 1fr) 108px 24px 24px;">
+        <div>On</div>
         <div>Diameter</div>
         <div>Unit</div>
         <div>Description</div>
@@ -1232,17 +1244,7 @@ const config = {
         { desc: '3 7/8"',   od_in: 3.875 }
   ],
   pipeList: [
-        { desc: "--- RS Thermite ---",  od_mm:1, id_mm:0 },
-        { desc: "Ø63 / 12.5",  od_mm:63, id_mm:12.5 },
-        { desc: "Ø111.3 / 20",  od_mm:111.3, id_mm:20 },
-        { desc: "Ø111.3 / 36.5",  od_mm:111.3, id_mm:36.5 },
-        { desc: "--- RS Tools ---",  od_mm:1, id_mm:0 },
-        { desc: "Ø70 x 1.5",  od_mm:70, id_mm:67 },
-        { desc: "Ø70 x 3.0",  od_mm:70, id_mm:64 },
-	{ desc: "Ø80 x 5.0",  od_mm:80, id_mm:70 },
-        { desc: "RS700",  od_mm:127, id_mm:115 },
-        { desc: "RS110",  od_mm:110, id_mm:100 },
-	{ desc: "--- WSPR Setup Components ---",  od_mm:1, id_mm:0 },
+        { desc: "--- WSPR Setup Components ---",  od_mm:1, id_mm:0 },
 	{ desc: "Pipe Ø254 mm x 2mm",  od_mm:254, id_mm:250 },
 	{ desc: "Pipe Ø160 x Ø141 mm Polyeth",  od_mm:160, id_mm:141 },
         { desc: "--- Casings ---",  od_mm:1, id_mm:0 },
@@ -1380,6 +1382,35 @@ const config = {
   ]
 };
 
+const rsToolPresets = [
+  {
+    name: 'RS550_A00',
+    circles: [
+      { diameterMm: 100.2, fill: '#C7B2EA', materialLabel: 'RS550 Tool Body', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 88.2, fill: '#FFFFFF', materialLabel: 'Empty', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 87.6, fill: '#CBE811', materialLabel: 'Thermite', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 20.0, fill: '#FFFFFF', materialLabel: 'Empty', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 }
+    ],
+    annotationCircles: [
+      { diameterMm: 114.3, description: 'Max tool OD (on nose)', visible: true, unit: 'mm', concentricToIndex: 0, lineColor: '#cc0000', lineThickness: 0.5, lineType: 'dashed', wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 103.2, description: 'Wearbands', visible: true, unit: 'mm', concentricToIndex: 0, lineColor: '#7a7a7a', lineThickness: 0.5, lineType: 'dashed', wavinessAmp: 0, wavinessFreq: 8 }
+    ]
+  },
+  {
+    name: 'RS700_??',
+    circles: [
+      { diameterMm: 127.0, fill: '#C7B2EA', materialLabel: 'RS700', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 115.0, fill: '#FFFFFF', materialLabel: 'Empty', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 114.5, fill: '#CBE811', materialLabel: 'Thermite', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 20.0, fill: '#FFFFFF', materialLabel: 'Empty', lineColor: '#000000', lineThickness: 0.25, lineType: 'solid', eccentricityFactor: 0, eccentricityAngle: 180, wavinessAmp: 0, wavinessFreq: 8 }
+    ],
+    annotationCircles: [
+      { diameterMm: 142.9, description: 'RS700 Max OD (nose)', visible: true, unit: 'mm', concentricToIndex: 0, lineColor: '#ff0000', lineThickness: 0.5, lineType: 'dashed', wavinessAmp: 0, wavinessFreq: 8 },
+      { diameterMm: 137.0, description: 'Wearbands', visible: true, unit: 'mm', concentricToIndex: 0, lineColor: '#808080', lineThickness: 0.5, lineType: 'dashed', wavinessAmp: 0, wavinessFreq: 8 }
+    ]
+  }
+];
+
 // =========================================================================================
 // Render scale for crisp on-screen graphics and exports.
 // Uses device pixel ratio (with a sensible floor/ceiling) to reduce fuzzy text/lines.
@@ -1417,6 +1448,7 @@ function collectAnnotationLayerData() {
     if (unit === 'inches') diam *= 25.4;
     return {
       diameterMm: diam,
+      visible: row.querySelector('.annotationVisible')?.checked !== false,
       description: row.querySelector('.materialLabel')?.value || `Annotation ${idx + 1}`,
       concentricToIndex: parseInt(row.querySelector('.concentricLayerRef')?.value ?? '-1', 10),
       lineColor: row.querySelector('.lineColor')?.value || '#cc0000',
@@ -1834,12 +1866,15 @@ window.onload = function () {
   if (rulerPaddingInput && !rulerPaddingInput.value) rulerPaddingInput.value = '0';
   const crosshairToggle = document.getElementById('showReferenceCrosshairCheckbox');
   if (crosshairToggle) crosshairToggle.checked = true;
+  const annotationsToggle = document.getElementById('showAnnotationsCheckbox');
+  if (annotationsToggle) annotationsToggle.checked = true;
   const exportOutlineToggle = document.getElementById('exportOutlineCheckbox');
   if (exportOutlineToggle) exportOutlineToggle.checked = true;
 
   // 2. Populate Pipe List
   populateBoreholeList(document.getElementById('boreholeSelect'));
   populatePipeList(document.getElementById('pipeSelect'));
+  populateRsToolPresetList(document.getElementById('rsToolPresetSelect'));
 
   // 3. Wire events
   wireCanvasInteractions();
@@ -2929,6 +2964,7 @@ function plotCircles(options = {}) {
         data.innerDiameter = (circleData[i + 1] && Number.isFinite(circleData[i + 1].diameter)) ? circleData[i + 1].diameter : null;
     });
     const annotationData = collectAnnotationLayerData();
+    const showAnnotationsInPlots = (document.getElementById('showAnnotationsCheckbox') ? document.getElementById('showAnnotationsCheckbox').checked : true);
     if (rebuildTable) renderAnnotationResultTable(annotationData);
 
     // Render Setup (shared transforms)
@@ -3034,7 +3070,8 @@ function plotCircles(options = {}) {
             }
         }
 
-        annotationData.forEach((a, idx) => {
+        if (showAnnotationsInPlots) annotationData.forEach((a, idx) => {
+            if (a.visible === false) return;
             const diam = parseFloat(a.diameterMm) || 0;
             if (diam <= 0) return;
             const radius = (diam / 2) * scalingFactor;
@@ -3246,7 +3283,8 @@ function plotCircles(options = {}) {
             }
         }
 
-        annotationData.forEach((a, idx) => {
+        if (showAnnotationsInPlots) annotationData.forEach((a, idx) => {
+            if (a.visible === false) return;
             const diam = parseFloat(a.diameterMm) || 0;
             if (diam <= 0) return;
             const radius = (diam / 2) * scalingFactor;
@@ -3259,6 +3297,8 @@ function plotCircles(options = {}) {
               lineColor: a.lineColor || '#cc0000',
               lineThickness: parseFloat(a.lineThickness) || config.defaultLineThickness,
               lineType: a.lineType || config.defaultLineType,
+              wavinessAmp: parseFloat(a.wavinessAmp) || 0,
+              wavinessFreq: parseFloat(a.wavinessFreq) || 8,
               materialLabel: a.description || `Annotation ${idx + 1}`
             };
             ctx.save();
@@ -3448,7 +3488,6 @@ function wireCanvasInteractions() {
     }, { passive: false });
 
     canvasEl.addEventListener('mousedown', (e) => {
-      if (isViewInteractionLocked()) return;
       if (e.button === 2) {
         const point = getCanvasInteractionPoint(e, canvasEl);
         const wx = (point.x - view.panX) / view.scale;
@@ -3458,6 +3497,7 @@ function wireCanvasInteractions() {
         requestPlot({ rebuildTable: false });
         return;
       }
+      if (isViewInteractionLocked()) return;
       if (e.button !== 0) return;
       isPanning = true;
       activePanCanvas = canvasEl;
@@ -3564,7 +3604,12 @@ function wireCanvasInteractions() {
   });
 
   window.addEventListener('mousemove', (e) => {
-    if (isViewInteractionLocked()) {
+    if (activeMeasureCanvas && activeMeasureMode && measurementStateByMode[activeMeasureMode].active) {
+      const point = getCanvasInteractionPoint(e, activeMeasureCanvas);
+      const wx = (point.x - view.panX) / view.scale;
+      measurementStateByMode[activeMeasureMode].currentWorldX = wx;
+      requestPlot({ rebuildTable: false });
+    } else if (isViewInteractionLocked()) {
       isPanning = false;
       activePanCanvas = null;
       activeMeasureCanvas = null;
@@ -3578,11 +3623,6 @@ function wireCanvasInteractions() {
       view.panY += dy;
       requestPlot({ rebuildTable: false });
       tooltip.style.display = 'none';
-    } else if (activeMeasureCanvas && activeMeasureMode && measurementStateByMode[activeMeasureMode].active) {
-      const point = getCanvasInteractionPoint(e, activeMeasureCanvas);
-      const wx = (point.x - view.panX) / view.scale;
-      measurementStateByMode[activeMeasureMode].currentWorldX = wx;
-      requestPlot({ rebuildTable: false });
     }
   });
   canvas.addEventListener('mouseleave', () => {
@@ -3665,9 +3705,13 @@ function buildAnnotationEntry(diameterValue, descriptionValue, options = {}) {
     const concentricToIndex = Number.isFinite(parseInt(options.concentricToIndex, 10)) ? parseInt(options.concentricToIndex, 10) : 0;
     const wavinessAmp = options.wavinessAmp ?? 0;
     const wavinessFreq = options.wavinessFreq ?? 8;
+    const visible = options.visible !== false;
     const unit = options.unit === 'inches' ? 'inches' : 'mm';
     div.innerHTML = `
-      <div class="layer-primary">
+      <div class="layer-primary" style="grid-template-columns: 24px 84px 56px minmax(0, 1fr) 108px 24px 24px;">
+        <label class="checkbox-row" style="justify-content:center; gap:0;" title="Show annotation on plots">
+          <input type="checkbox" class="annotationVisible" ${visible ? 'checked' : ''}>
+        </label>
         <input type="text" class="circleDiameter" placeholder="Diam" value="${dVal}">
         <select class="unit">
           <option value="inches" ${unit === 'inches' ? 'selected' : ''}>in</option>
@@ -3727,6 +3771,63 @@ function deleteAnnotationEntry(btn) {
     row.remove();
     sortAnnotationRowsByDiameter();
     renderAnnotationResultTable(collectAnnotationLayerData());
+    requestPlot();
+}
+
+function populateRsToolPresetList(selectEl) {
+    if (!selectEl) return;
+    selectEl.innerHTML = '';
+    rsToolPresets.forEach((preset) => {
+        const opt = document.createElement('option');
+        opt.value = preset.name;
+        opt.textContent = preset.name;
+        selectEl.appendChild(opt);
+    });
+    if (selectEl.options.length > 0) selectEl.selectedIndex = 0;
+}
+
+function resolveFillColor(fillValue) {
+    if (!fillValue) return config.fillColorOptions[0]?.value || '#E3B0A2';
+    if (typeof fillValue === 'string' && fillValue.startsWith('#')) return fillValue;
+    const byName = config.fillColorOptions.find(c => c.name.toLowerCase() === String(fillValue).toLowerCase());
+    return byName ? byName.value : (config.fillColorOptions[0]?.value || '#E3B0A2');
+}
+
+function addRocksolidToolPreset() {
+    const selectEl = document.getElementById('rsToolPresetSelect');
+    if (!selectEl) return;
+    const preset = rsToolPresets.find(p => p.name === selectEl.value);
+    if (!preset) return alert('Select an RS tool preset');
+
+    (preset.circles || []).forEach((circle) => {
+        addCircleInput(circle.diameterMm, resolveFillColor(circle.fill), circle.materialLabel || '', { deferRedraw: true });
+        const rows = document.querySelectorAll('#layer-list .layer-row');
+        const row = rows[rows.length - 1];
+        if (!row) return;
+        if (circle.unit === 'inches' || circle.unit === 'mm') row.querySelector('.unit').value = circle.unit;
+        if (circle.lineColor) row.querySelector('.lineColor').value = circle.lineColor;
+        if (circle.lineThickness !== undefined) row.querySelector('.lineThickness').value = String(circle.lineThickness);
+        if (circle.lineType) row.querySelector('.lineType').value = circle.lineType;
+        if (circle.eccentricityFactor !== undefined) row.querySelector('.eccentricityFactor').value = String(circle.eccentricityFactor);
+        if (circle.eccentricityAngle !== undefined) row.querySelector('.eccentricityAngle').value = String(circle.eccentricityAngle);
+        if (circle.wavinessAmp !== undefined) row.querySelector('.wavinessAmp').value = String(circle.wavinessAmp);
+        if (circle.wavinessFreq !== undefined) row.querySelector('.wavinessFreq').value = String(circle.wavinessFreq);
+    });
+
+    (preset.annotationCircles || []).forEach((annotation) => {
+        addAnnotationInput(annotation.diameterMm, annotation.description || '', {
+            deferRedraw: true,
+            unit: annotation.unit,
+            visible: annotation.visible,
+            lineColor: annotation.lineColor,
+            lineThickness: annotation.lineThickness,
+            lineType: annotation.lineType,
+            concentricToIndex: annotation.concentricToIndex,
+            wavinessAmp: annotation.wavinessAmp,
+            wavinessFreq: annotation.wavinessFreq
+        });
+    });
+
     requestPlot();
 }
 
@@ -4359,6 +4460,7 @@ function getSettingsObj() {
     const rulerUnits = document.getElementById('rulerUnitsSelect').value;
     const rulerPadding = document.getElementById('rulerPaddingInput').value;
     const showReferenceCrosshair = document.getElementById('showReferenceCrosshairCheckbox').checked;
+    const showAnnotations = document.getElementById('showAnnotationsCheckbox').checked;
     const exportOutlineEnabled = document.getElementById('exportOutlineCheckbox').checked;
     const configName = document.getElementById('configNameInput').value;
     const longitudinalNotes = document.getElementById('longitudinalNotes')?.value || '';
@@ -4368,6 +4470,7 @@ function getSettingsObj() {
         diameterMm: (row.querySelector('.unit').value === 'inches')
           ? ((parseFloat(row.querySelector('.circleDiameter').value) || 0) * 25.4)
           : (parseFloat(row.querySelector('.circleDiameter').value) || 0),
+        visible: row.querySelector('.annotationVisible')?.checked !== false,
         unit: row.querySelector('.unit').value,
         description: row.querySelector('.materialLabel').value || `Annotation ${idx + 1}`,
         concentricToIndex: parseInt(row.querySelector('.concentricLayerRef')?.value ?? '-1', 10),
@@ -4393,6 +4496,7 @@ function getSettingsObj() {
         rulerUnits: rulerUnits,
         rulerPadding: rulerPadding,
         showReferenceCrosshair: showReferenceCrosshair,
+        showAnnotations: showAnnotations,
         exportOutlineEnabled: exportOutlineEnabled,
         circles: data,
         annotationCircles: annotationData
@@ -4528,6 +4632,11 @@ function applySettingsData(data, preserveTitle) {
     } else {
         document.getElementById('showReferenceCrosshairCheckbox').checked = true;
     }
+    if (data.showAnnotations !== undefined) {
+        document.getElementById('showAnnotationsCheckbox').checked = Boolean(data.showAnnotations);
+    } else {
+        document.getElementById('showAnnotationsCheckbox').checked = true;
+    }
     if (data.exportOutlineEnabled !== undefined) {
         document.getElementById('exportOutlineCheckbox').checked = Boolean(data.exportOutlineEnabled);
     } else {
@@ -4566,6 +4675,7 @@ function applySettingsData(data, preserveTitle) {
         const diamForRow = useIn ? ((Number.isFinite(diamMm) ? diamMm : 0) / 25.4) : (Number.isFinite(diamMm) ? diamMm : 0);
         addAnnotationInput(diamForRow, a.description || `Annotation ${i + 1}`, {
           unit: useIn ? 'inches' : 'mm',
+          visible: a.visible !== false,
           lineColor: a.lineColor || '#cc0000',
           lineThickness: parseFloat(a.lineThickness) || config.defaultLineThickness,
           lineType: a.lineType || config.defaultLineType,

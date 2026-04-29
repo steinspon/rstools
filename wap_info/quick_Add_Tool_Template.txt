@@ -1,0 +1,39 @@
+I want to be able to quick-add Rocksolid tools, in addition to quickadd boreholes and pipes.
+
+Quick add RS tools will be a bit different. Tools consist of several nested pipes and circles, as well as potentially one or more annotation layers.
+
+Lets start with the following tool (settings revert to default if not specified):
+
+
+
+Preset Name: RS550_A00
+
+Pipe1
+Outer diameter: 100.2 mm
+Fill: Tool body
+Material name: RS550 Tool Body
+
+Pipe 2:
+Outer diameter: 88.2 mm
+Fill: N/A
+Material name: "Empty"
+
+Pipe 3:
+Outer Diameter: 87.6mm
+Fill: Thermite
+Material name: "Thermite"
+
+Pipe 4
+OD: 20 mm
+fill: N/A
+Material Name: "Empty"
+
+
+
+Annotation Layer 1:
+Description: Max tool OD (on nose)
+OD: 114.3
+
+Annotation Layer 2:
+Description: Wearbands
+OD: 103.2 mm
