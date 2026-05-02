@@ -377,7 +377,7 @@ svg {
   --warning:#b7791f;
   --danger:#c53030;
   --accent-warm:#d3ef54;
-  --shadow:0 2px 10px rgba(15,23,42,.05);
+  --shadow:0 10px 24px rgba(33,13,42,.08);
   --radius:4px;
   --panel-radius:6px;
   --app-pad:6px;
@@ -391,14 +391,14 @@ svg {
   --control-px:6px;
   --control-py:2px;
   --panel:var(--surface);
-  --field-bg:#ffffff;
+  --field-bg:rgba(255,255,255,.95);
   --field-text:var(--text);
   --field-border:#cbd5e1;
-  --shell-bg:#f8fafc;
+  --shell-bg:#f4f0f7;
   --plot-bg:#ffffff;
-  --plot-line:#111827;
-  --table-head:#f1f5f9;
-  --table-border:#e2e8f0;
+  --plot-line:#2b1934;
+  --table-head:#f3edf7;
+  --table-border:#dbcfe3;
   --font-ui:"formular-interwell", "Segoe UI", sans-serif;
   --font-plot:Arial, sans-serif;
 }
@@ -416,14 +416,14 @@ body.night-mode {
   --danger:#f85149;
   --shadow:0 4px 12px rgba(0,0,0,.25);
   --panel:var(--surface);
-  --field-bg:#0f141b;
+  --field-bg:#171022;
   --field-text:var(--text);
   --field-border:#30363d;
-  --shell-bg:#0f141b;
-  --plot-bg:#111821;
-  --plot-line:#e6edf3;
-  --table-head:#1f2937;
-  --table-border:#30363d;
+  --shell-bg:#110b16;
+  --plot-bg:#171022;
+  --plot-line:#f2eaf8;
+  --table-head:#2a1f35;
+  --table-border:#493955;
 }
 * { box-sizing:border-box; }
 html { background: radial-gradient(1200px 420px at 15% -5%, rgba(119, 74, 160, 0.2), transparent 55%), radial-gradient(900px 360px at 88% -10%, rgba(33, 13, 42, 0.16), transparent 60%), linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%); }
@@ -531,6 +531,37 @@ body.night-mode .app-header {
   flex-direction:column;
   gap:var(--space-md);
 }
+.sidebar-tabs {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:4px;
+  margin-bottom:6px;
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:var(--panel);
+  padding-bottom:4px;
+}
+.sidebar-tab-btn {
+  min-height:24px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:0.03em;
+  text-transform:uppercase;
+}
+.sidebar-tab-btn.is-active {
+  background:var(--primary);
+  color:#fff;
+  border-color:var(--primary);
+  box-shadow:0 8px 18px rgba(33,13,42,.2);
+}
+body.night-mode .sidebar-tab-btn.is-active {
+  background:var(--accent-warm);
+  color:#210d2a;
+  border-color:color-mix(in srgb,var(--accent-warm) 84%,#95ab2f 16%);
+}
+.sidebar-tab-panel { display:none; }
+.sidebar-tab-panel.is-active { display:block; }
 .main {
   min-width:0;
   display:grid;
@@ -679,7 +710,7 @@ input,select {
 input[type="number"] { text-align:right; font-variant-numeric:tabular-nums; }
 input:focus,select:focus,button:focus-visible,summary:focus-visible {
   border-color:var(--primary);
-  box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 24%, transparent);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
   outline:none;
 }
 select:disabled {
@@ -748,6 +779,46 @@ select:disabled {
 }
 
 /* 5. Buttons */
+button {
+  width:auto;
+  background:color-mix(in srgb, var(--surface) 80%, #ffffff 20%);
+  border:1px solid var(--border);
+  min-height:var(--control-height);
+  padding:var(--control-py) 8px;
+  border-radius:var(--radius);
+  cursor:pointer;
+  font-size:var(--control-font);
+  font-weight:500;
+  color:var(--text);
+  transition:transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+}
+button:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(33,13,42,.12); }
+button:active { transform:translateY(0); }
+button.primary,
+.btn-primary {
+  background:var(--primary);
+  color:#fff;
+  border-color:var(--primary);
+  box-shadow:0 8px 18px rgba(33,13,42,.28);
+}
+button.primary:hover,
+.btn-primary:hover {
+  background:var(--primary-strong);
+  border-color:var(--primary-strong);
+}
+body.night-mode button.primary,
+body.night-mode .btn-primary {
+  background:var(--accent-warm);
+  color:#210d2a;
+  border-color:color-mix(in srgb, var(--accent-warm) 84%, #95ab2f 16%);
+  box-shadow:0 10px 20px rgba(0,0,0,.34);
+}
+body.night-mode button.primary:hover,
+body.night-mode .btn-primary:hover {
+  background:color-mix(in srgb, var(--accent-warm) 90%, #ffffff 10%);
+  border-color:color-mix(in srgb, var(--accent-warm) 80%, #8fa32d 20%);
+  color:#210d2a;
+}
 .btn {
   width:auto;
   min-width:0;
@@ -755,36 +826,16 @@ select:disabled {
   padding:var(--control-py) var(--control-px);
   border:1px solid var(--border);
   border-radius:var(--radius);
-  background:var(--surface);
+  background:color-mix(in srgb, var(--surface) 80%, #ffffff 20%);
   color:var(--text);
   font-size:var(--control-font);
   font-weight:500;
   box-shadow:none;
   cursor:pointer;
-  transition:transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease;
+  transition:transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
 }
-.btn:hover { transform:translateY(-1px); filter:none; }
+.btn:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(33,13,42,.12); }
 .btn:active { transform:translateY(0); }
-.btn-primary {
-  border-color:var(--primary);
-  background:var(--primary);
-  color:#fff;
-}
-.btn-primary:hover {
-  background:var(--primary-strong);
-  border-color:var(--primary-strong);
-}
-body.night-mode .btn-primary {
-  background:var(--accent-warm);
-  color:#210d2a;
-  border-color:color-mix(in srgb, var(--accent-warm) 84%, #95ab2f 16%);
-  box-shadow:0 10px 20px rgba(0,0,0,.34);
-}
-body.night-mode .btn-primary:hover {
-  background:color-mix(in srgb, var(--accent-warm) 90%, #ffffff 10%);
-  border-color:color-mix(in srgb, var(--accent-warm) 80%, #8fa32d 20%);
-  color:#210d2a;
-}
 .btn-secondary {
   background:var(--surface-alt);
   color:var(--text);
@@ -1092,7 +1143,7 @@ svg {
 .kpi-card {
   border-radius:var(--radius);
   border-color:var(--border);
-  box-shadow:0 4px 14px rgba(15,23,42,.05);
+  box-shadow:var(--shadow);
 }
 .btn,
 input,
@@ -1177,6 +1228,13 @@ button {
    <div class="grid">
     <aside class="sidebar">
      <section class="card">
+     <div class="sidebar-tabs" role="tablist" aria-label="Input Sections">
+      <button type="button" id="sidebarTabGeometryBtn" class="sidebar-tab-btn is-active" role="tab" aria-selected="true" aria-controls="sidebarPanelGeometry" onclick="setSidebarTab('geometry')">Geometry</button>
+      <button type="button" id="sidebarTabBasisBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelBasis" onclick="setSidebarTab('basis')">Basis</button>
+      <button type="button" id="sidebarTabThermiteBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelThermite" onclick="setSidebarTab('thermite')">Thermite</button>
+      <button type="button" id="sidebarTabSetupBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelSetup" onclick="setSidebarTab('setup')">Setup</button>
+     </div>
+     <div id="sidebarPanelGeometry" class="sidebar-tab-panel is-active" role="tabpanel" aria-labelledby="sidebarTabGeometryBtn">
       <div class="card-head">
        <h2>Core Geometry</h2>
       </div>
@@ -1201,22 +1259,19 @@ button {
        <div class="small">0&deg; = vertical well</div>
        <div class="field-error" id="inclinationError"></div>
       </div>
-      <details class="accordion">
-       <summary>Well Interval</summary>
-       <div class="field">
-        <label for="interval">Wellbore Interval</label>
-        <div class="inline unit-field">
-         <input id="interval" min="0" placeholder="Auto" step="any" type="number"/>
-         <select id="intervalUnit">
-          <option value="m">m</option>
-          <option value="ft">ft</option>
-         </select>
-        </div>
-        <div class="small">Blank uses 1.5 x total low-side filled extent.</div>
+      <div class="field">
+       <label for="interval">Wellbore Interval</label>
+       <div class="inline unit-field">
+        <input id="interval" min="0" placeholder="Auto" step="any" type="number"/>
+        <select id="intervalUnit">
+         <option value="m">m</option>
+         <option value="ft">ft</option>
+        </select>
        </div>
-      </details>
-     </section>
-     <section class="card">
+       <div class="small">Blank uses 1.5 x total low-side filled extent.</div>
+      </div>
+     </div>
+     <div id="sidebarPanelBasis" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabBasisBtn">
       <div class="card-head">
        <h2>Calculation Basis</h2>
       </div>
@@ -1279,10 +1334,11 @@ button {
         <div class="field-error" id="trueVerticalThicknessError"></div>
        </div>
       </div>
-     </section>
-     <section class="card">
-      <details class="accordion">
-       <summary>Advanced Thermite Settings</summary>
+     </div>
+     <div id="sidebarPanelThermite" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabThermiteBtn">
+      <div class="card-head">
+       <h2>Advanced Thermite Settings</h2>
+      </div>
        <div class="field">
         <label for="thermiteType">Thermite Type</label>
         <select id="thermiteType">
@@ -1324,11 +1380,11 @@ button {
          <select disabled><option>mm</option></select>
         </div>
        </div>
-      </details>
-     </section>
-     <section class="card">
-      <details class="accordion">
-       <summary>General Settings</summary>
+     </div>
+     <div id="sidebarPanelSetup" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabSetupBtn">
+      <div class="card-head">
+       <h2>General Settings</h2>
+      </div>
        <div class="field">
         <label for="plotAspectRatio">Plot Aspect Ratio (H:W)</label>
         <div class="inline">
@@ -1339,7 +1395,7 @@ button {
        </div>
        <div class="field color-field">
         <label for="bismuthColor">Bismuth Fill Color</label>
-        <input id="bismuthColor" type="color" value="#5B6C7C"/>
+        <input id="bismuthColor" type="color" value="#210D2A"/>
        </div>
        <label class="checkbox-row" for="exportOutline">
         <input id="exportOutline" type="checkbox"/>
@@ -1349,7 +1405,7 @@ button {
         <input id="criticalVolumeOutline" type="checkbox"/>
         <span>Outline minimum full-radial-coverage wedge (inclined wells)</span>
        </label>
-      </details>
+     </div>
      </section>
     </aside>
     <main class="main">
@@ -1512,7 +1568,7 @@ button {
     // --- Key aesthetic parameters for plots and charts ---
     // NOTE: SVG text color is controlled by the CSS variable --text in the :root selector above.
     const AESTHETICS = {
-      fillColor: '#5B6C7C',     // Day-mode color for bismuth fill in SVG plots (RGB 91, 108, 124)
+      fillColor: '#210D2A',     // Day-mode brand dark purple for bismuth fill
       nightFillColor: '#000114', // Night-mode default bismuth fill color (RGB 0, 1, 20)
       outlineColor: '#000',     // Color for borehole outline and axes
       backgroundColor: '#fff',  // Background color for SVG plots
@@ -2897,7 +2953,27 @@ function updateBismuthColorUI(newColor) {
   draw();
 }
 
+function setSidebarTab(tabName) {
+  const map = {
+    geometry: { btn: 'sidebarTabGeometryBtn', panel: 'sidebarPanelGeometry' },
+    basis: { btn: 'sidebarTabBasisBtn', panel: 'sidebarPanelBasis' },
+    thermite: { btn: 'sidebarTabThermiteBtn', panel: 'sidebarPanelThermite' },
+    setup: { btn: 'sidebarTabSetupBtn', panel: 'sidebarPanelSetup' }
+  };
+  Object.keys(map).forEach((key) => {
+    const isActive = key === tabName;
+    const btn = document.getElementById(map[key].btn);
+    const panel = document.getElementById(map[key].panel);
+    if (btn) {
+      btn.classList.toggle('is-active', isActive);
+      btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    }
+    if (panel) panel.classList.toggle('is-active', isActive);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+  setSidebarTab('geometry');
   var colorInput = document.getElementById('bismuthColor');
   if (colorInput) {
     syncBismuthColorUi();
