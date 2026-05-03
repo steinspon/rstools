@@ -76,9 +76,37 @@
       font-family: "formular-interwell", "Segoe UI", sans-serif;
       margin: 0;
       font-size: 11px;
-      background: radial-gradient(1200px 420px at 15% -5%, rgba(119, 74, 160, 0.2), transparent 55%), radial-gradient(900px 360px at 88% -10%, rgba(33, 13, 42, 0.16), transparent 60%), linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%);
+      background: linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%);
       color: var(--text);
       -webkit-text-size-adjust: 100%;
+    }
+    .dynamic-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .dynamic-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(1.05) contrast(1.04);
+      transform: scale(1.03);
+    }
+    .dynamic-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(1200px 420px at 15% -5%, rgba(119, 74, 160, 0.24), transparent 55%),
+        radial-gradient(900px 360px at 88% -10%, rgba(33, 13, 42, 0.2), transparent 60%),
+        linear-gradient(180deg, rgba(248, 244, 251, 0.62) 0%, rgba(17, 9, 24, 0.26) 100%);
+    }
+    body.night-mode .dynamic-bg::after {
+      background:
+        radial-gradient(1100px 420px at 12% -8%, rgba(176, 146, 208, 0.12), transparent 58%),
+        radial-gradient(900px 360px at 88% -6%, rgba(8, 5, 13, 0.26), transparent 60%);
     }
     body.lock-active {
       overflow: hidden;
@@ -285,6 +313,21 @@
       font-weight: 500;
       cursor: pointer;
     }
+    .logout-button {
+      min-height: var(--control-height);
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-family: inherit;
+      font-size: var(--control-font);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .logout-button:hover {
+      border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+    }
     .theme-switch input[type="checkbox"] {
       width: 14px;
       min-height: 14px;
@@ -409,11 +452,16 @@
   </style>
 </head>
 <body>
+  <div class="dynamic-bg" aria-hidden="true">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Transition_Animation_16x9.mp4" type="video/mp4">
+    </video>
+  </div>
+
   <div class="access-gate" id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
     <div class="access-card">
       <p class="access-kicker">Restricted Access</p>
       <h2 class="access-title" id="accessTitle">Enter Password To Continue</h2>
-      <p class="access-copy">This suite is protected. Enter the access passphrase to unlock the tools.</p>
       <form class="access-form" id="accessForm" autocomplete="off">
         <input class="access-input" id="accessPassword" name="password" type="password" placeholder="Password" required>
         <button class="access-submit" type="submit">Enter</button>
@@ -438,6 +486,7 @@
         </div>
       </div>
       <div class="header-actions">
+        <button class="logout-button" id="logoutButton" type="button">Logout</button>
         <label class="theme-switch" for="nightMode">
           <input id="nightMode" type="checkbox">
           <span>Night Mode</span>
@@ -447,13 +496,6 @@
 
     <main class="suite-main">
       <section class="suite-panel" aria-labelledby="suiteTitle">
-        <div class="suite-intro">
-          <div>
-            <h2 id="suiteTitle">Available Tools</h2>
-            <p>Engineering calculators and visualisation utilities for RockSolid workflows.</p>
-          </div>
-        </div>
-
         <div class="tool-grid">
           <a class="tool-link" href="wap.html">
             <svg class="tool-icon" viewBox="0 0 96 96" aria-hidden="true">
@@ -513,6 +555,7 @@
       const accessForm = document.getElementById('accessForm');
       const accessPassword = document.getElementById('accessPassword');
       const accessError = document.getElementById('accessError');
+      const logoutButton = document.getElementById('logoutButton');
       const ACCESS_PASSWORD = 'thefuturewellsecured';
       const ACCESS_STORAGE_KEY = 'rstools-index-unlocked';
       const ACCESS_COOKIE_KEY = 'rstoolsIndexUnlocked';
@@ -525,6 +568,10 @@
 
       function setUnlockCookie() {
         document.cookie = ACCESS_COOKIE_KEY + '=true; Max-Age=31536000; Path=/; SameSite=Lax';
+      }
+
+      function clearUnlockCookie() {
+        document.cookie = ACCESS_COOKIE_KEY + '=; Max-Age=0; Path=/; SameSite=Lax';
       }
 
       function isUnlockedPersisted() {
@@ -543,6 +590,25 @@
           // Ignore storage access issues and rely on cookie.
         }
         setUnlockCookie();
+      }
+
+      function clearUnlockedState() {
+        try {
+          localStorage.removeItem(ACCESS_STORAGE_KEY);
+        } catch (err) {
+          // Ignore storage access issues.
+        }
+        clearUnlockCookie();
+      }
+
+      function showLockGate() {
+        document.body.classList.add('lock-active');
+        if (accessGate) accessGate.classList.remove('hidden');
+        if (accessError) accessError.classList.remove('visible');
+        if (accessPassword) {
+          accessPassword.value = '';
+          accessPassword.focus();
+        }
       }
 
       const alreadyUnlocked = isUnlockedPersisted();
@@ -581,6 +647,13 @@
               accessPassword.focus();
             }
           }
+        });
+      }
+
+      if (logoutButton) {
+        logoutButton.addEventListener('click', function() {
+          clearUnlockedState();
+          showLockGate();
         });
       }
     })();
