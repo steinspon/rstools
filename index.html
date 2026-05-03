@@ -80,9 +80,122 @@
       color: var(--text);
       -webkit-text-size-adjust: 100%;
     }
+    body.lock-active {
+      overflow: hidden;
+    }
     :focus-visible {
       outline: 2px solid var(--primary);
       outline-offset: 2px;
+    }
+    .app-shell {
+      transition: filter 0.45s ease, opacity 0.45s ease;
+    }
+    body.lock-active .app-shell {
+      filter: blur(7px) saturate(0.9);
+      opacity: 0.72;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .access-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background:
+        radial-gradient(600px 240px at 20% 12%, rgba(100, 63, 138, 0.24), transparent 60%),
+        radial-gradient(650px 280px at 86% 84%, rgba(26, 12, 36, 0.18), transparent 64%),
+        rgba(244, 240, 247, 0.6);
+      backdrop-filter: blur(5px);
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    body.night-mode .access-gate {
+      background:
+        radial-gradient(620px 260px at 17% 10%, rgba(164, 133, 192, 0.18), transparent 60%),
+        radial-gradient(680px 300px at 84% 88%, rgba(7, 4, 12, 0.42), transparent 65%),
+        rgba(14, 8, 20, 0.64);
+    }
+    .access-gate.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .access-card {
+      width: min(520px, 100%);
+      border-radius: 10px;
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border));
+      background: color-mix(in srgb, var(--surface) 90%, #ffffff 10%);
+      box-shadow: 0 20px 42px rgba(16, 7, 24, 0.24);
+      padding: 18px 18px 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .access-kicker {
+      margin: 0;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .access-title {
+      margin: 0;
+      font-size: 1.02rem;
+      line-height: 1.2;
+      color: var(--primary);
+    }
+    .access-copy {
+      margin: 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .access-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .access-input {
+      width: 100%;
+      min-height: 30px;
+      border: 1px solid color-mix(in srgb, var(--field-border) 86%, var(--border));
+      border-radius: 7px;
+      background: color-mix(in srgb, var(--surface-alt) 80%, #ffffff 20%);
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      padding: 0 10px;
+    }
+    .access-submit {
+      min-height: 30px;
+      border: 1px solid color-mix(in srgb, var(--primary) 72%, #000000 28%);
+      border-radius: 7px;
+      background: var(--primary);
+      color: var(--bg);
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+    .access-submit:hover {
+      background: var(--primary-strong);
+    }
+    .access-error {
+      margin: 0;
+      font-size: 10px;
+      min-height: 12px;
+      color: #b3213b;
+      visibility: hidden;
+    }
+    .access-error.visible {
+      visibility: visible;
     }
 
     .wrap.app-shell {
@@ -296,6 +409,19 @@
   </style>
 </head>
 <body>
+  <div class="access-gate" id="accessGate" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+    <div class="access-card">
+      <p class="access-kicker">Restricted Access</p>
+      <h2 class="access-title" id="accessTitle">Enter Password To Continue</h2>
+      <p class="access-copy">This suite is protected. Enter the access passphrase to unlock the tools.</p>
+      <form class="access-form" id="accessForm" autocomplete="off">
+        <input class="access-input" id="accessPassword" name="password" type="password" placeholder="Password" required>
+        <button class="access-submit" type="submit">Enter</button>
+      </form>
+      <p class="access-error" id="accessError">Incorrect password. Please try again.</p>
+    </div>
+  </div>
+
   <div class="wrap app-shell">
     <header class="app-header">
       <div class="app-header-top">
@@ -373,15 +499,29 @@
 
   <script>
     (function() {
-function updateAppLogoForTheme() {
-  const isNight = document.body.classList.contains('night-mode');
-  document.querySelectorAll('.app-logo').forEach(img => {
-    const day = img.dataset.dayLogo || img.getAttribute('src');
-    if (!img.dataset.dayLogo) img.dataset.dayLogo = day;
-    const night = img.dataset.nightLogo;
-    if (night) img.src = isNight ? night : img.dataset.dayLogo;
-  });
-}
+      function updateAppLogoForTheme() {
+        const isNight = document.body.classList.contains('night-mode');
+        document.querySelectorAll('.app-logo').forEach(img => {
+          const day = img.dataset.dayLogo || img.getAttribute('src');
+          if (!img.dataset.dayLogo) img.dataset.dayLogo = day;
+          const night = img.dataset.nightLogo;
+          if (night) img.src = isNight ? night : img.dataset.dayLogo;
+        });
+      }
+
+      const accessGate = document.getElementById('accessGate');
+      const accessForm = document.getElementById('accessForm');
+      const accessPassword = document.getElementById('accessPassword');
+      const accessError = document.getElementById('accessError');
+      const ACCESS_PASSWORD = 'thefuturewellsecured';
+      const ACCESS_STORAGE_KEY = 'rstools-index-unlocked';
+
+      const alreadyUnlocked = localStorage.getItem(ACCESS_STORAGE_KEY) === 'true';
+      if (!alreadyUnlocked) {
+        document.body.classList.add('lock-active');
+      } else if (accessGate) {
+        accessGate.classList.add('hidden');
+      }
       const nightMode = document.getElementById('nightMode');
       if (!nightMode) return;
       const h = new Date().getHours();
@@ -393,6 +533,27 @@ function updateAppLogoForTheme() {
         document.body.classList.toggle('night-mode', e.target.checked);
         updateAppLogoForTheme();
       });
+
+      if (!alreadyUnlocked && accessPassword) accessPassword.focus();
+      if (accessForm) {
+        accessForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          const value = accessPassword ? accessPassword.value : '';
+          if (value === ACCESS_PASSWORD) {
+            localStorage.setItem(ACCESS_STORAGE_KEY, 'true');
+            document.body.classList.remove('lock-active');
+            if (accessGate) {
+              accessGate.classList.add('hidden');
+            }
+          } else {
+            if (accessError) accessError.classList.add('visible');
+            if (accessPassword) {
+              accessPassword.value = '';
+              accessPassword.focus();
+            }
+          }
+        });
+      }
     })();
   </script>
 </body>
