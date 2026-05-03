@@ -323,7 +323,7 @@
     }
     .sidebar-tabs {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 4px;
       margin-bottom: 6px;
       position: sticky;
@@ -740,6 +740,7 @@
       resize: none;
       overflow: hidden;
       line-height: 1.35;
+      min-height: calc(2.7em + 12px);
       font-family: "formular-interwell", "Segoe UI", sans-serif;
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -1178,6 +1179,7 @@
         <button type="button" id="sidebarTabLayersBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelLayers" onclick="setSidebarTab('layers')">Layers</button>
         <button type="button" id="sidebarTabAnimateBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelAnimate" onclick="setSidebarTab('animate')">Animate</button>
         <button type="button" id="sidebarTabSetupBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelSetup" onclick="setSidebarTab('setup')">Setup</button>
+        <button type="button" id="sidebarTabCaseNotesBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelCaseNotes" onclick="setSidebarTab('casenotes')">Case Notes</button>
       </div>
 
       <div id="sidebarPanelQuickAdd" class="sidebar-tab-panel is-active" role="tabpanel" aria-labelledby="sidebarTabQuickAddBtn">
@@ -1398,6 +1400,15 @@
         </div>
       </div>
 
+      <div id="sidebarPanelCaseNotes" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabCaseNotesBtn">
+        <div class="section-card">
+          <div class="section-title">Case Notes</div>
+          <div class="longitudinal-notes-wrap">
+            <textarea id="longitudinalNotes" class="longitudinal-notes" rows="2" placeholder="Notes..." spellcheck="false"></textarea>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="viz-panel">
@@ -1444,9 +1455,6 @@
             <div class="plot-title">Longitudinal View</div>
             <div id="canvasWrapLongitudinal" class="canvas-wrap">
               <canvas id="longitudinalCanvas" class="plot-canvas" width="700" height="700"></canvas>
-            </div>
-            <div class="longitudinal-notes-wrap">
-              <textarea id="longitudinalNotes" class="longitudinal-notes" rows="2" placeholder="Notes..." spellcheck="false"></textarea>
             </div>
           </div>
         </div>
@@ -2204,14 +2212,17 @@ function setSidebarTab(tabName) {
   const setupBtn = document.getElementById('sidebarTabSetupBtn');
   const layersBtn = document.getElementById('sidebarTabLayersBtn');
   const animateBtn = document.getElementById('sidebarTabAnimateBtn');
+  const caseNotesBtn = document.getElementById('sidebarTabCaseNotesBtn');
   const quickAddPanel = document.getElementById('sidebarPanelQuickAdd');
   const setupPanel = document.getElementById('sidebarPanelSetup');
   const layersPanel = document.getElementById('sidebarPanelLayers');
   const animatePanel = document.getElementById('sidebarPanelAnimate');
+  const caseNotesPanel = document.getElementById('sidebarPanelCaseNotes');
   const showQuickAdd = tabName === 'quickadd';
   const showLayers = tabName === 'layers';
   const showAnimate = tabName === 'animate';
   const showSetup = tabName === 'setup';
+  const showCaseNotes = tabName === 'casenotes';
 
   if (quickAddBtn) {
     quickAddBtn.classList.toggle('is-active', showQuickAdd);
@@ -2229,10 +2240,15 @@ function setSidebarTab(tabName) {
     setupBtn.classList.toggle('is-active', showSetup);
     setupBtn.setAttribute('aria-selected', showSetup ? 'true' : 'false');
   }
+  if (caseNotesBtn) {
+    caseNotesBtn.classList.toggle('is-active', showCaseNotes);
+    caseNotesBtn.setAttribute('aria-selected', showCaseNotes ? 'true' : 'false');
+  }
   if (quickAddPanel) quickAddPanel.classList.toggle('is-active', showQuickAdd);
   if (layersPanel) layersPanel.classList.toggle('is-active', showLayers);
   if (animatePanel) animatePanel.classList.toggle('is-active', showAnimate);
   if (setupPanel) setupPanel.classList.toggle('is-active', showSetup);
+  if (caseNotesPanel) caseNotesPanel.classList.toggle('is-active', showCaseNotes);
   if (showAnimate) drawAnimateSpeedProfile();
 }
 
