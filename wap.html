@@ -1174,13 +1174,13 @@
     
     <div class="controls-panel">
       <div class="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
-        <button type="button" id="sidebarTabQuickAddBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelQuickAdd" onclick="setSidebarTab('quickadd')">Quick Add</button>
-        <button type="button" id="sidebarTabLayersBtn" class="sidebar-tab-btn is-active" role="tab" aria-selected="true" aria-controls="sidebarPanelLayers" onclick="setSidebarTab('layers')">Layers</button>
+        <button type="button" id="sidebarTabQuickAddBtn" class="sidebar-tab-btn is-active" role="tab" aria-selected="true" aria-controls="sidebarPanelQuickAdd" onclick="setSidebarTab('quickadd')">Quick Add</button>
+        <button type="button" id="sidebarTabLayersBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelLayers" onclick="setSidebarTab('layers')">Layers</button>
         <button type="button" id="sidebarTabAnimateBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelAnimate" onclick="setSidebarTab('animate')">Animate</button>
         <button type="button" id="sidebarTabSetupBtn" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelSetup" onclick="setSidebarTab('setup')">Setup</button>
       </div>
 
-      <div id="sidebarPanelQuickAdd" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabQuickAddBtn">
+      <div id="sidebarPanelQuickAdd" class="sidebar-tab-panel is-active" role="tabpanel" aria-labelledby="sidebarTabQuickAddBtn">
         <div class="section-card">
         <div class="section-title">Quick Add</div>
         <div class="flex-row">
@@ -1294,7 +1294,7 @@
         </div>
       </div>
 
-      <div id="sidebarPanelLayers" class="sidebar-tab-panel is-active" role="tabpanel" aria-labelledby="sidebarTabLayersBtn">
+      <div id="sidebarPanelLayers" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabLayersBtn">
       <div class="flex-row" style="justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
         <div class="section-title" style="margin-bottom:0; border:none;">Wellbore Layers</div>
         <button type="button" onclick="addCircleInput()">+ Empty Layer</button>
@@ -3358,7 +3358,7 @@ async function getGifWorkerScriptUrl() {
  * INITIALIZATION
  ***************************************************************/
 window.onload = function () {
-  setSidebarTab('layers');
+  setSidebarTab('quickadd');
 
   // 0. Setup High-Res Canvas
   const canvas = document.getElementById('circleCanvas');
@@ -3903,7 +3903,8 @@ function populatePipeList(selectEl) {
         opt.textContent = pipe.desc;
         selectEl.appendChild(opt);
     });
-    selectEl.selectedIndex = 0;
+    const defaultPipeIndex = config.pipeList.findIndex(pipe => pipe.desc === `7'' 23#`);
+    selectEl.selectedIndex = defaultPipeIndex >= 0 ? defaultPipeIndex : 0;
 }
 
 function populateBoreholeList(selectEl) {
@@ -3915,7 +3916,8 @@ function populateBoreholeList(selectEl) {
         opt.textContent = `${size.desc} (${(size.od_in * 25.4).toFixed(2)} mm)`;
         selectEl.appendChild(opt);
     });
-    selectEl.selectedIndex = 0;
+    const defaultBoreholeIndex = config.boreholeBitSizes.findIndex(size => size.od_in === 8.5);
+    selectEl.selectedIndex = defaultBoreholeIndex >= 0 ? defaultBoreholeIndex : 0;
 }
 
 function addStandardBorehole() {
@@ -5468,7 +5470,8 @@ function populateRsToolPresetList(selectEl) {
         opt.textContent = preset.name;
         selectEl.appendChild(opt);
     });
-    if (selectEl.options.length > 0) selectEl.selectedIndex = 0;
+    const defaultPresetIndex = rsToolPresets.findIndex((preset) => preset.name === 'RS700_??');
+    if (selectEl.options.length > 0) selectEl.selectedIndex = defaultPresetIndex >= 0 ? defaultPresetIndex : 0;
 }
 
 function resolveFillColor(fillValue) {
