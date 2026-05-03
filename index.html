@@ -515,8 +515,37 @@
       const accessError = document.getElementById('accessError');
       const ACCESS_PASSWORD = 'thefuturewellsecured';
       const ACCESS_STORAGE_KEY = 'rstools-index-unlocked';
+      const ACCESS_COOKIE_KEY = 'rstoolsIndexUnlocked';
 
-      const alreadyUnlocked = localStorage.getItem(ACCESS_STORAGE_KEY) === 'true';
+      function hasUnlockCookie() {
+        return document.cookie.split(';').some(function(cookiePart) {
+          return cookiePart.trim() === ACCESS_COOKIE_KEY + '=true';
+        });
+      }
+
+      function setUnlockCookie() {
+        document.cookie = ACCESS_COOKIE_KEY + '=true; Max-Age=31536000; Path=/; SameSite=Lax';
+      }
+
+      function isUnlockedPersisted() {
+        try {
+          if (localStorage.getItem(ACCESS_STORAGE_KEY) === 'true') return true;
+        } catch (err) {
+          // Ignore storage access issues and fall back to cookie only.
+        }
+        return hasUnlockCookie();
+      }
+
+      function persistUnlockedState() {
+        try {
+          localStorage.setItem(ACCESS_STORAGE_KEY, 'true');
+        } catch (err) {
+          // Ignore storage access issues and rely on cookie.
+        }
+        setUnlockCookie();
+      }
+
+      const alreadyUnlocked = isUnlockedPersisted();
       if (!alreadyUnlocked) {
         document.body.classList.add('lock-active');
       } else if (accessGate) {
@@ -540,7 +569,7 @@
           e.preventDefault();
           const value = accessPassword ? accessPassword.value : '';
           if (value === ACCESS_PASSWORD) {
-            localStorage.setItem(ACCESS_STORAGE_KEY, 'true');
+            persistUnlockedState();
             document.body.classList.remove('lock-active');
             if (accessGate) {
               accessGate.classList.add('hidden');
