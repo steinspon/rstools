@@ -1,0 +1,41 @@
+﻿{
+    "title":  "RSTools Wiki Content Manifest",
+    "generatedAt":  "2026-05-12T18:17:59.5614955Z",
+    "pages":  [
+                  {
+                      "file":  "index.md",
+                      "title":  "RSTools Wiki",
+                      "folder":  ""
+                  },
+                  {
+                      "file":  "Tools/bslc.md",
+                      "title":  "Barrier Sealing Length Calculator (BSLC)",
+                      "folder":  "Tools"
+                  },
+                  {
+                      "file":  "Tools/iat.md",
+                      "title":  "Image Annotating Tool (IAT)",
+                      "folder":  "Tools"
+                  },
+                  {
+                      "file":  "Tools/wap.md",
+                      "title":  "Well Architecture Plotter (WAP)",
+                      "folder":  "Tools"
+                  },
+                  {
+                      "file":  "Workflows/adding-wiki-entries.md",
+                      "title":  "Adding New Wiki Entries",
+                      "folder":  "Workflows"
+                  },
+                  {
+                      "file":  "Workflows/github-pages.md",
+                      "title":  "GitHub Pages Publishing",
+                      "folder":  "Workflows"
+                  },
+                  {
+                      "file":  "Workflows/local-development.md",
+                      "title":  "Local Wiki Development",
+                      "folder":  "Workflows"
+                  }
+              ]
+}

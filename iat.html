@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Image Annotating Tool</title>
+  <link rel="stylesheet" href="brand/brand-tokens.css" />
   <style>
     @font-face {
       font-family: "formular-interwell";
@@ -827,21 +828,21 @@
               <div class="field inline-3">
                 <div>
                   <label for="lineColorInput">Line</label>
-                  <input id="lineColorInput" type="color" value="#FFFF00">
+                  <input id="lineColorInput" type="color" value="#210D2A">
                 </div>
                 <div>
                   <label for="shapeFillColorInput">Shape Fill</label>
-                  <input id="shapeFillColorInput" type="color" value="#111827">
+                  <input id="shapeFillColorInput" type="color" value="#E3DFEB">
                 </div>
                 <div>
                   <label for="textColorInput">Text</label>
-                  <input id="textColorInput" type="color" value="#FFFF00">
+                  <input id="textColorInput" type="color" value="#210D2A">
                 </div>
               </div>
               <div class="field inline">
                 <div>
                   <label for="calloutFillColorInput">Callout Fill</label>
-                  <input id="calloutFillColorInput" type="color" value="#000000">
+                  <input id="calloutFillColorInput" type="color" value="#210D2A">
                 </div>
                 <div>
                   <label for="shapeFillOpacityInput">Shape Fill Opacity (%)</label>
@@ -917,12 +918,12 @@
                 </div>
                 <div>
                   <label for="imageTitleTextColorInput">Font Color</label>
-                  <input id="imageTitleTextColorInput" type="color" value="#FFFFFF">
+                  <input id="imageTitleTextColorInput" type="color" value="#E3DFEB">
                 </div>
               </div>
               <div class="field">
                 <label for="imageTitleFillColorInput">Rectangle Fill</label>
-                <input id="imageTitleFillColorInput" type="color" value="#000000">
+                <input id="imageTitleFillColorInput" type="color" value="#210D2A">
               </div>
             </div>
           </details>
@@ -1039,20 +1040,20 @@
       settings: {
         aspectRatio: 2.00,
         monochrome: false,
-        lineColor: '#FFFF00',
-        shapeFillColor: '#111827',
+        lineColor: '#210D2A',
+        shapeFillColor: '#E3DFEB',
         shapeFillOpacity: 0.4,
-        calloutFillColor: '#000000',
+        calloutFillColor: '#210D2A',
         shapeFillEnabled: false,
-        textColor: '#FFFF00',
+        textColor: '#210D2A',
         lineWidth: 5,
         fontSize: 28,
         calloutTextAlign: 'center',
         imagePadding: 0,
         imageTitleText: '',
         imageTitleFontSize: 44,
-        imageTitleTextColor: '#FFFFFF',
-        imageTitleFillColor: '#000000',
+        imageTitleTextColor: '#E3DFEB',
+        imageTitleFillColor: '#210D2A',
         scaleBarEnabled: true,
         scaleBarDistance: 10,
         scaleBarDistanceUnit: 'cm',
@@ -1711,8 +1712,8 @@
       const minorScreen = minorUnits * pxPerUnitScreen;
       const majorScreen = majorUnits * pxPerUnitScreen;
 
-      const unitBoxW = Math.max(60 * exportScale, measureFn(unitText, unitFontSize, 'Arial, sans-serif', true) + 24 * exportScale);
-      const leftPad = Math.max(24 * exportScale, (measureFn('0', fontSize, 'Arial, sans-serif', false) * 0.5) + 8 * exportScale);
+      const unitBoxW = Math.max(60 * exportScale, measureFn(unitText, unitFontSize, 'formular-interwell, Arial, sans-serif', true) + 24 * exportScale);
+      const leftPad = Math.max(24 * exportScale, (measureFn('0', fontSize, 'formular-interwell, Arial, sans-serif', false) * 0.5) + 8 * exportScale);
       const rightGap = leftPad;
       const rulerW = leftPad + markedW + rightGap + unitBoxW;
 
@@ -1746,7 +1747,7 @@
         if (isMajor) {
           const val = px / Math.max(pxPerUnitScreen, 1e-9);
           const txt = formatRulerValue(val);
-          const w = measureFn(txt, fontSize, 'Arial, sans-serif', false);
+          const w = measureFn(txt, fontSize, 'formular-interwell, Arial, sans-serif', false);
           if (x - w * 0.5 >= labelLeftBound && x + w * 0.5 <= labelRightBound) {
             label = txt;
             labelW = w;
@@ -1760,14 +1761,14 @@
           x: scaleEnd,
           tick: 33 * exportScale,
           label: endLabel,
-          labelW: measureFn(endLabel, fontSize, 'Arial, sans-serif', false)
+          labelW: measureFn(endLabel, fontSize, 'formular-interwell, Arial, sans-serif', false)
         });
       } else {
         ticks.forEach(t => {
           if (Math.abs(t.x - scaleEnd) <= 0.5 * exportScale) {
             t.tick = 33 * exportScale;
             t.label = formatRulerValue(distanceValue);
-            t.labelW = measureFn(t.label, fontSize, 'Arial, sans-serif', false);
+            t.labelW = measureFn(t.label, fontSize, 'formular-interwell, Arial, sans-serif', false);
           }
         });
       }
@@ -1846,7 +1847,7 @@
       targetCtx.strokeStyle = '#000000';
       targetCtx.lineWidth = 1 * exportScale;
       targetCtx.strokeRect(g.xStart + 0.5 * exportScale, g.yTop + 0.5 * exportScale, Math.max(0, g.rulerW - 1 * exportScale), Math.max(0, g.rulerH - 1 * exportScale));
-      targetCtx.font = `${g.fontSize}px Arial, sans-serif`;
+      targetCtx.font = `${g.fontSize}px formular-interwell, Arial, sans-serif`;
       targetCtx.fillStyle = '#000000';
       targetCtx.textAlign = 'center';
       targetCtx.textBaseline = 'alphabetic';
@@ -1867,7 +1868,7 @@
       targetCtx.strokeStyle = '#000';
       targetCtx.strokeRect(boxX + 0.5 * exportScale, g.yTop + 0.5 * exportScale, Math.max(0, g.unitBoxW - 1 * exportScale), Math.max(0, g.rulerH - 1 * exportScale));
       targetCtx.fillStyle = '#000';
-      targetCtx.font = `bold ${g.unitFontSize}px Arial, sans-serif`;
+      targetCtx.font = `bold ${g.unitFontSize}px formular-interwell, Arial, sans-serif`;
       targetCtx.textAlign = 'center';
       targetCtx.textBaseline = 'middle';
       targetCtx.fillText(g.unitText, boxX + g.unitBoxW / 2, g.yTop + g.rulerH / 2);
@@ -1891,8 +1892,8 @@
         boxH,
         fontSize,
         padX,
-        textColor: state.settings.imageTitleTextColor || '#FFFFFF',
-        fillColor: state.settings.imageTitleFillColor || '#000000'
+        textColor: state.settings.imageTitleTextColor || '#E3DFEB',
+        fillColor: state.settings.imageTitleFillColor || '#210D2A'
       };
     }
     function drawImageTitleToContext(targetCtx, exportScale = 1, pixelRatio = 1) {
@@ -2126,12 +2127,12 @@
         g.ticks.forEach(t => {
           push(`<line x1="${t.x}" y1="${g.tickTop}" x2="${t.x}" y2="${g.tickTop + t.tick}" stroke="#000000" stroke-width="1" />`);
           if (t.label) {
-            push(`<text x="${t.x}" y="${g.labelY}" text-anchor="middle" font-size="${g.fontSize}" font-family="Arial, sans-serif" fill="#000000">${escapeXml(t.label)}</text>`);
+            push(`<text x="${t.x}" y="${g.labelY}" text-anchor="middle" font-size="${g.fontSize}" font-family="formular-interwell, Arial, sans-serif" fill="#000000">${escapeXml(t.label)}</text>`);
           }
         });
         const boxX = g.xEnd - g.unitBoxW;
         push(`<rect id="scalebar-unit-box" x="${boxX}" y="${g.yTop}" width="${g.unitBoxW}" height="${g.rulerH}" fill="#FFFFFF" stroke="#000000" stroke-width="1" />`);
-        push(`<text id="scalebar-unit-label" x="${boxX + g.unitBoxW / 2}" y="${g.yTop + g.rulerH / 2}" text-anchor="middle" dominant-baseline="middle" font-size="${g.unitFontSize}" font-family="Arial, sans-serif" font-weight="700" fill="#000000">${escapeXml(g.unitText)}</text>`);
+        push(`<text id="scalebar-unit-label" x="${boxX + g.unitBoxW / 2}" y="${g.yTop + g.rulerH / 2}" text-anchor="middle" dominant-baseline="middle" font-size="${g.unitFontSize}" font-family="formular-interwell, Arial, sans-serif" font-weight="700" fill="#000000">${escapeXml(g.unitText)}</text>`);
         push('</g>');
       }
       push('<g id="layer-annotations" data-layer="annotations">');
@@ -2908,8 +2909,8 @@
       els.monoCheckbox.checked = !!state.settings.monochrome;
       els.imageTitleInput.value = state.settings.imageTitleText ?? '';
       els.imageTitleFontSizeInput.value = state.settings.imageTitleFontSize ?? 44;
-      els.imageTitleTextColorInput.value = state.settings.imageTitleTextColor ?? '#FFFFFF';
-      els.imageTitleFillColorInput.value = state.settings.imageTitleFillColor ?? '#000000';
+      els.imageTitleTextColorInput.value = state.settings.imageTitleTextColor ?? '#E3DFEB';
+      els.imageTitleFillColorInput.value = state.settings.imageTitleFillColor ?? '#210D2A';
       els.lineColorInput.value = state.settings.lineColor;
       els.shapeFillColorInput.value = state.settings.shapeFillColor;
       els.calloutFillColorInput.value = state.settings.calloutFillColor;
@@ -3077,8 +3078,8 @@
           state.settings.monochrome = !!els.monoCheckbox.checked;
           state.settings.imageTitleText = els.imageTitleInput.value || '';
           state.settings.imageTitleFontSize = Math.max(8, parseFloat(els.imageTitleFontSizeInput.value) || 44);
-          state.settings.imageTitleTextColor = els.imageTitleTextColorInput.value || '#FFFFFF';
-          state.settings.imageTitleFillColor = els.imageTitleFillColorInput.value || '#000000';
+          state.settings.imageTitleTextColor = els.imageTitleTextColorInput.value || '#E3DFEB';
+          state.settings.imageTitleFillColor = els.imageTitleFillColorInput.value || '#210D2A';
           state.settings.scaleBarEnabled = !!els.showScaleBarCheckbox.checked;
           state.settings.scaleBarDistance = Math.max(0, parseFloat(els.rulerDistanceInput.value) || 0);
           state.settings.scaleBarJustify = els.rulerJustifySelect.value || 'left';
@@ -3203,16 +3204,83 @@
       });
 
       els.nightMode.addEventListener('change', e => {
-        document.body.classList.toggle('night-mode', e.target.checked);
-        updateAppLogoForTheme();
+        const enabled = Boolean(e.target.checked);
+        setNightModeOverride(enabled);
+        setNightMode(enabled);
       });
-      const hour = new Date().getHours();
-      const isNight = (hour >= 19 || hour < 6);
-      els.nightMode.checked = isNight;
-      document.body.classList.toggle('night-mode', isNight);
-      updateAppLogoForTheme();
+      setNightMode(resolveNightModePreference());
+      scheduleThemeBoundarySync();
 
       window.addEventListener('resize', applyCanvasSizeFromAspect);
+    }
+
+    const THEME_OVERRIDE_KEY = 'rstools-theme-override-v1';
+    let themeBoundaryTimerId = null;
+
+    function isNightByTime() {
+      const h = new Date().getHours();
+      return h >= 19 || h < 6;
+    }
+
+    function getNextThemeBoundary(fromDate) {
+      const now = fromDate || new Date();
+      const six = new Date(now);
+      six.setHours(6, 0, 0, 0);
+      const nineteen = new Date(now);
+      nineteen.setHours(19, 0, 0, 0);
+      if (now < six) return six.getTime();
+      if (now < nineteen) return nineteen.getTime();
+      six.setDate(six.getDate() + 1);
+      return six.getTime();
+    }
+
+    function readThemeOverride() {
+      try {
+        const raw = localStorage.getItem(THEME_OVERRIDE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed.enabled !== 'boolean' || !Number.isFinite(parsed.expiresAt)) return null;
+        return parsed;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function clearThemeOverride() {
+      try {
+        localStorage.removeItem(THEME_OVERRIDE_KEY);
+      } catch (err) {
+        // Ignore storage failures.
+      }
+    }
+
+    function resolveNightModePreference() {
+      const override = readThemeOverride();
+      const nowMs = Date.now();
+      if (override && override.expiresAt > nowMs) return override.enabled;
+      if (override) clearThemeOverride();
+      return isNightByTime();
+    }
+
+    function setNightModeOverride(enabled) {
+      try {
+        localStorage.setItem(THEME_OVERRIDE_KEY, JSON.stringify({
+          enabled: Boolean(enabled),
+          expiresAt: getNextThemeBoundary(new Date())
+        }));
+      } catch (err) {
+        // Ignore storage failures.
+      }
+    }
+
+    function scheduleThemeBoundarySync() {
+      if (themeBoundaryTimerId) clearTimeout(themeBoundaryTimerId);
+      const delay = Math.max(500, getNextThemeBoundary(new Date()) - Date.now() + 50);
+      themeBoundaryTimerId = setTimeout(() => {
+        clearThemeOverride();
+        setNightMode(resolveNightModePreference());
+        scheduleThemeBoundarySync();
+      }, delay);
     }
 
     function updateAppLogoForTheme() {
@@ -3223,6 +3291,12 @@
         const night = img.dataset.nightLogo;
         if (night) img.src = isNight ? night : img.dataset.dayLogo;
       });
+    }
+
+    function setNightMode(enabled) {
+      if (els.nightMode) els.nightMode.checked = Boolean(enabled);
+      document.body.classList.toggle('night-mode', Boolean(enabled));
+      updateAppLogoForTheme();
     }
 
     function init() {

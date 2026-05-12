@@ -1,0 +1,40 @@
+@font-face {
+  font-family: "formular-interwell";
+  src: url("https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/builds/a19def66-5676-4784-9eec-7904ef2cc995/artifacts/build/assets/Formular_Interwell-regular-eAm2gA_L.otf");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "formular-interwell";
+  src: url("https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/builds/a19def66-5676-4784-9eec-7904ef2cc995/artifacts/build/assets/Formular_Interwell-medium-Ddm9_fCE.otf");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "formular-interwell";
+  src: url("https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/builds/a19def66-5676-4784-9eec-7904ef2cc995/artifacts/build/assets/Formular_Interwell-bold-CntqEvi7.otf");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --brand-dark-purple: #210d2a;
+  --brand-dark-olive: #302711;
+  --brand-light-lavender: #e3dfeb;
+  --brand-mid-lavender: #c7b2ea;
+  --brand-light-green: #e4ebd7;
+  --brand-accent-lime: #def359;
+
+  --link: var(--brand-dark-purple);
+  --link-visited: var(--brand-dark-olive);
+}
+
+body.night-mode {
+  --link: var(--brand-light-lavender);
+  --link-visited: var(--brand-mid-lavender);
+}
