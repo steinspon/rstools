@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Image Annotating Tool</title>
   <link rel="stylesheet" href="brand/brand-tokens.css" />
+  <link rel="stylesheet" href="search-ui.css">
+  <link rel="stylesheet" href="night-toggle.css">
   <style>
     @font-face {
       font-family: "formular-interwell";
@@ -172,8 +174,18 @@
     body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
-    body.night-mode .nav-icon-btn:hover {
-      background: color-mix(in srgb, #ffffff 14%, transparent);
+    
+    .app-brand {
+      gap: 0;
+    }
+    .app-logo {
+      margin-right: 6px;
+    }
+    .app-brand .nav-icon-btn {
+      flex-shrink: 0;
+    }
+    .app-brand .nav-icon-btn + .nav-icon-btn {
+      margin-left: 6px;
     }
 .app-header h1 {
       margin: 0;
@@ -722,10 +734,13 @@
             <button type="button" id="exportSvgBtn">Flattened SVG</button>
           </div>
         </div>
-        <label class="theme-switch" for="nightMode">
-          <input id="nightMode" type="checkbox">
-          <span>Night Mode</span>
-        </label>
+        <div class="toggle-switch" title="Night Mode">
+          <label class="switch-label" for="nightMode">
+            <input id="nightMode" class="checkbox" type="checkbox">
+            <span class="slider"></span>
+            <span class="toggle-text">Night Mode</span>
+          </label>
+        </div>
         <input id="importSettingsFile" type="file" accept=".json,application/json" hidden>
       </div>
     </header>
@@ -734,7 +749,7 @@
       <aside class="controls-panel">
         <div class="controls-stack">
           <details class="section-card" open>
-            <summary><span>Image</span><span class="summary-icon">▶</span></summary>
+            <summary><span>Image</span><span class="summary-icon">&#9662;</span></summary>
             <div class="section-inner">
               <div class="field">
                 <label for="imageFileInput">Upload Photo</label>
@@ -753,7 +768,7 @@
           </details>
 
           <details class="section-card" open>
-            <summary><span>Tools</span><span class="summary-icon">▶</span></summary>
+            <summary><span>Tools</span><span class="summary-icon">&#9662;</span></summary>
             <div class="section-inner">
               <div class="tool-grid" id="toolGrid">
                 <button type="button" data-tool="pan" class="active" aria-pressed="true" title="Pan / Select" aria-label="Pan / Select">
@@ -793,7 +808,7 @@
                 </button>
               </div>
               <details class="hint-block" style="margin-top:10px;">
-                <summary><span>How To Use</span><span class="summary-icon">▶</span></summary>
+                <summary><span>How To Use</span><span class="summary-icon">&#9662;</span></summary>
                 <div class="small-note">
                   Click to place. For line/rect/circle: click start then end. For path/polygon: click to add points, double-click or Enter to finish, Esc to cancel. Polygon closes when clicking near its first point.
                 </div>
@@ -805,7 +820,7 @@
           </details>
 
           <details class="section-card">
-            <summary><span>Calibration</span><span class="summary-icon">▶</span></summary>
+            <summary><span>Calibration</span><span class="summary-icon">&#9662;</span></summary>
             <div class="section-inner">
               <div class="field inline-actions">
                 <button type="button" id="setCalABtn">Set Point A</button>
@@ -869,7 +884,7 @@
           </details>
 
           <details class="section-card" open>
-            <summary><span>Annotation Style</span><span class="summary-icon">▶</span></summary>
+            <summary><span>Annotation Style</span><span class="summary-icon">&#9662;</span></summary>
             <div class="section-inner">
               <div class="field inline-3">
                 <div>
@@ -931,7 +946,7 @@
           </details>
 
           <details class="section-card">
-            <summary><span>View & Canvas</span><span class="summary-icon">▶</span></summary>
+            <summary><span>View & Canvas</span><span class="summary-icon">&#9662;</span></summary>
             <div class="section-inner">
               <div class="field inline">
                 <div>
@@ -951,7 +966,7 @@
           </details>
 
           <details class="section-card">
-            <summary><span>Image Title</span><span class="summary-icon">▶</span></summary>
+            <summary><span>Image Title</span><span class="summary-icon">&#9662;</span></summary>
             <div class="section-inner">
               <div class="field">
                 <label for="imageTitleInput">Title Text</label>
@@ -3357,6 +3372,7 @@
 
     init();
   </script>
+  <script src="search-ui.js" defer></script>
 </body>
 </html>
 

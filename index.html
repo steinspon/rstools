@@ -10,6 +10,8 @@
   <meta name="apple-mobile-web-app-title" content="RSTools">
   <meta name="application-name" content="RSTools">
   <link rel="stylesheet" href="brand/brand-tokens.css">
+  <link rel="stylesheet" href="search-ui.css">
+  <link rel="stylesheet" href="night-toggle.css">
   <style>
     @font-face {
       font-family: "formular-interwell";
@@ -291,8 +293,18 @@
     body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
-    body.night-mode .nav-icon-btn:hover {
-      background: color-mix(in srgb, #ffffff 14%, transparent);
+    
+    .app-brand {
+      gap: 0;
+    }
+    .app-logo {
+      margin-right: 6px;
+    }
+    .app-brand .nav-icon-btn {
+      flex-shrink: 0;
+    }
+    .app-brand .nav-icon-btn + .nav-icon-btn {
+      margin-left: 6px;
     }
 .app-header h1 {
       margin: 0;
@@ -431,14 +443,14 @@
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(155deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+      background: linear-gradient(155deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));
       z-index: 1;
     }
     body:not(.night-mode) .tool-link {
-      background: #ffffff;
+      background: rgba(255, 255, 255, 0.72);
     }
     body.night-mode .tool-link {
-      background: #241530;
+      background: rgba(36, 21, 48, 0.72);
     }
 
     .tool-content {
@@ -550,10 +562,13 @@
       </div>
       <div class="header-actions">
         <button class="logout-button" id="logoutButton" type="button">Logout</button>
-        <label class="theme-switch" for="nightMode">
-          <input id="nightMode" type="checkbox">
-          <span>Night Mode</span>
-        </label>
+        <div class="toggle-switch" title="Night Mode">
+          <label class="switch-label" for="nightMode">
+            <input id="nightMode" class="checkbox" type="checkbox">
+            <span class="slider"></span>
+            <span class="toggle-text">Night Mode</span>
+          </label>
+        </div>
       </div>
     </header>
 
@@ -828,6 +843,7 @@
       }
     })();
   </script>
+  <script src="search-ui.js" defer></script>
 </body>
 </html>
 

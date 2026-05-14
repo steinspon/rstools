@@ -1,0 +1,74 @@
+/* Shared day/night theme toggle (Uiverse-inspired) */
+.toggle-switch {
+  position: relative;
+  width: 48px;
+  height: var(--control-height, 22px);
+  margin-inline: 4px;
+  --toggle-day-track: color-mix(in srgb, var(--surface-alt) 82%, #ffffff 18%);
+  --toggle-night-track: color-mix(in srgb, #1b1224 76%, var(--surface) 24%);
+  --toggle-knob-day: var(--brand-dark-purple, #210d2a);
+  --toggle-knob-night: var(--brand-lime-green, #cfe95f);
+  --toggle-border: color-mix(in srgb, var(--border) 84%, transparent);
+}
+
+.switch-label {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid var(--toggle-border);
+  overflow: hidden;
+}
+
+.checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  transition: background-color 0.25s ease;
+  background: var(--toggle-day-track);
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(var(--control-height, 22px) - 6px);
+  height: calc(var(--control-height, 22px) - 6px);
+  border-radius: 50%;
+  background: var(--toggle-knob-day);
+  box-shadow: inset 8px -3px 0 0 color-mix(in srgb, #ffffff 56%, transparent);
+  transition: transform 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.checkbox:checked ~ .slider {
+  background: var(--toggle-night-track);
+}
+
+.checkbox:checked ~ .slider::before {
+  transform: translateX(calc(48px - (var(--control-height, 22px) - 6px) - 6px));
+  background: var(--toggle-knob-night);
+  box-shadow: 0 0 0 2px color-mix(in srgb, #12210d 40%, transparent) inset;
+}
+
+.toggle-switch:focus-within .switch-label {
+  outline: none;
+}
+
+.toggle-switch .toggle-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

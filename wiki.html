@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interwell RSTools Wiki</title>
   <link rel="stylesheet" href="brand/brand-tokens.css">
+  <link rel="stylesheet" href="search-ui.css">
+  <link rel="stylesheet" href="night-toggle.css">
   <style>
     @font-face {
       font-family: "formular-interwell";
@@ -149,8 +151,18 @@
     body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
-    body.night-mode .nav-icon-btn:hover {
-      background: color-mix(in srgb, #ffffff 14%, transparent);
+    
+    .app-brand {
+      gap: 0;
+    }
+    .app-logo {
+      margin-right: 6px;
+    }
+    .app-brand .nav-icon-btn {
+      flex-shrink: 0;
+    }
+    .app-brand .nav-icon-btn + .nav-icon-btn {
+      margin-left: 6px;
     }
 .app-header h1 {
       margin: 0;
@@ -385,7 +397,7 @@
     }
 
     .wiki-toc > summary::before {
-      content: "▸";
+      content: "\25B8";
       display: inline-block;
       margin-right: 6px;
       transition: transform 140ms ease;
@@ -552,10 +564,13 @@
         </div>
       </div>
       <div class="header-actions">
-        <label class="theme-switch" for="nightMode">
-          <input id="nightMode" type="checkbox">
-          <span>Night Mode</span>
-        </label>
+        <div class="toggle-switch" title="Night Mode">
+          <label class="switch-label" for="nightMode">
+            <input id="nightMode" class="checkbox" type="checkbox">
+            <span class="slider"></span>
+            <span class="toggle-text">Night Mode</span>
+          </label>
+        </div>
       </div>
     </header>
 
@@ -691,6 +706,7 @@
   </script>
   <script src="wiki/data/wiki-fallback.js"></script>
   <script src="wiki/wiki.js"></script>
+  <script src="search-ui.js" defer></script>
 </body>
 </html>
 

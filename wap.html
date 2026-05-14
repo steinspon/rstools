@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Interwell Well Architecture Plotter - WAP New</title>
   <link rel="stylesheet" href="brand/brand-tokens.css">
+  <link rel="stylesheet" href="search-ui.css">
+  <link rel="stylesheet" href="night-toggle.css">
   <style>
     @font-face {
       font-family: "formular-interwell";
@@ -170,8 +172,18 @@
     body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
-    body.night-mode .nav-icon-btn:hover {
-      background: color-mix(in srgb, #ffffff 14%, transparent);
+    
+    .app-brand {
+      gap: 0;
+    }
+    .app-logo {
+      margin-right: 6px;
+    }
+    .app-brand .nav-icon-btn {
+      flex-shrink: 0;
+    }
+    .app-brand .nav-icon-btn + .nav-icon-btn {
+      margin-left: 6px;
     }
 .app-header h1 {
       margin: 0;
@@ -1313,10 +1325,13 @@
       <div class="view-controls-bar">
         <button type="button" id="resetViewBtn">Reset View</button>
       </div>
-      <label class="theme-switch" for="nightMode">
-        <input type="checkbox" id="nightMode">
-        <span>Night Mode</span>
-      </label>
+      <div class="toggle-switch" title="Night Mode">
+          <label class="switch-label" for="nightMode">
+            <input id="nightMode" class="checkbox" type="checkbox">
+            <span class="slider"></span>
+            <span class="toggle-text">Night Mode</span>
+          </label>
+        </div>
       <input type="file" id="fallbackFileInput" accept=".json,application/json" hidden>
       <input type="file" id="flatpackPresetFallbackInput" accept=".json,application/json" hidden>
     </div>
@@ -1413,7 +1428,7 @@
            <label style="width:100px;">Section Line:</label>
            <label for="sectionAzimuthInput">Azimuth (deg)</label>
            <input id="sectionAzimuthInput" type="number" value="0" min="0" max="360" step="0.1" style="width:110px;">
-           <span style="font-size:0.75rem; color:var(--muted); margin-left:8px;">0° = 12 o'clock (High Side)</span>
+           <span style="font-size:0.75rem; color:var(--muted); margin-left:8px;">0ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = 12 o'clock (High Side)</span>
         </div>
 
         <div class="flex-row" style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">
@@ -1750,8 +1765,8 @@ const config = {
   ],
   pipeList: [
         { desc: "--- WSPR Setup Components ---",  od_mm:1, id_mm:0 },
-	{ desc: "Pipe Ø254 mm x 2mm",  od_mm:254, id_mm:250 },
-	{ desc: "Pipe Ø160 x Ø141 mm Polyeth",  od_mm:160, id_mm:141 },
+	{ desc: "Pipe ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ254 mm x 2mm",  od_mm:254, id_mm:250 },
+	{ desc: "Pipe ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ160 x ÃƒÆ’Ã†â€™Ãƒâ€¹Ã…â€œ141 mm Polyeth",  od_mm:160, id_mm:141 },
         { desc: "--- Casings ---",  od_mm:1, id_mm:0 },
 	{ desc: "4'' / 101.6mm x 6.3mm  IFS 1042683",  od_mm:101.6, id_mm:89 },
         { desc: "4.5'' 9.5#",  od_mm:114.30, id_mm:103.89 },
@@ -4855,7 +4870,7 @@ function buildCircleEntry(diameterValue, fillColorValue, materialName) {
         </div>
         
         <button type="button" class="icon-btn layer-action-btn layer-icon-btn toggle-advanced-btn" aria-label="Toggle advanced settings" title="Advanced settings" onclick="toggleAdvanced('${rowId}')">+</button>
-        <button type="button" class="icon-btn layer-action-btn layer-icon-btn" aria-label="Delete layer" title="Delete layer" onclick="deleteEntry(this)">✕</button>
+        <button type="button" class="icon-btn layer-action-btn layer-icon-btn" aria-label="Delete layer" title="Delete layer" onclick="deleteEntry(this)">ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢</button>
       </div>
 
       <div class="layer-advanced">
@@ -4957,7 +4972,7 @@ function toggleAdvanced(rowId) {
     if (toggleBtn) {
       const isOpen = adv.classList.contains('show');
       toggleBtn.classList.toggle('is-active', isOpen);
-      toggleBtn.textContent = isOpen ? '▾' : '+';
+      toggleBtn.textContent = isOpen ? 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¾' : '+';
     }
 }
 
@@ -5387,7 +5402,7 @@ function setSectionAzimuthDeg(nextValue, options = {}) {
 
 function getApparentInclinationDeg(trueInclinationDeg, sectionAzimuthDeg) {
     const trueIncDeg = Math.max(0, Math.min(90, Number(trueInclinationDeg) || 0));
-    const deltaDeg = normalizeAzimuthDeg(sectionAzimuthDeg) - 0; // 0° is high-side (12 o'clock) reference
+    const deltaDeg = normalizeAzimuthDeg(sectionAzimuthDeg) - 0; // 0ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° is high-side (12 o'clock) reference
     const deltaRad = (deltaDeg * Math.PI) / 180;
     if (trueIncDeg >= 89.999) {
       const projected = Math.abs(Math.cos(deltaRad));
@@ -5514,7 +5529,7 @@ function getFlatpackPlacement(flatpack, hostLayout, scalingFactor, fallbackCente
     const azimuthDeg = Number(flatpack.azimuthDeg) || 0;
     const azimuthRad = (azimuthDeg * Math.PI) / 180;
     // Flatpack azimuth convention in UI:
-    // 0° = 12 o'clock, 90° = 3 o'clock, 180° = 6 o'clock, 270° = 9 o'clock.
+    // 0ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = 12 o'clock, 90ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = 3 o'clock, 180ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = 6 o'clock, 270ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = 9 o'clock.
     const radialUnit = { x: Math.sin(azimuthRad), y: -Math.cos(azimuthRad) };
     const tangentialUnit = { x: radialUnit.y, y: -radialUnit.x };
     const radialOffsetMm = Math.max(0, Number(flatpack.radialOffsetMm) || 0);
@@ -6611,7 +6626,7 @@ function plotCircles(options = {}) {
     // - Uses the same diameters and eccentricity, but only the vertical
     //   component of eccentricity is visible in the max-inclination plane.
     // - Eccentricity angle convention is unchanged:
-    //   90° = up (high side), 270° = down (low side).
+    //   90ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = up (high side), 270ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = down (low side).
     // --------------------------------------------------------------------
     if (mode === 'longitudinal') {
         const secLenMm = Math.max(50, parseFloat(document.getElementById('sectionLengthInput').value) || 1000);
@@ -6619,7 +6634,7 @@ function plotCircles(options = {}) {
         const sectionFrame = getSectionLineFrame(getSectionAzimuthDeg());
         const sectionYUnit = sectionFrame.yUnit;
 
-        // Inclination is from vertical: 0° = vertical, 90° = horizontal
+        // Inclination is from vertical: 0ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = vertical, 90ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° = horizontal
         const incDegRaw = parseFloat(document.getElementById('inclinationInput')?.value);
         const incDegTrue = isFinite(incDegRaw) ? Math.max(0, Math.min(90, incDegRaw)) : 0;
         const incDeg = getApparentInclinationDeg(incDegTrue, getSectionAzimuthDeg());
@@ -6660,7 +6675,7 @@ function plotCircles(options = {}) {
             const offset = data.eccentricityFactor * (lastRadius - radius);
             const angleRad = ((data.eccentricityAngle - 90) * Math.PI) / 180;
             // Only the component along high/low-side is visible in this plane.
-            // Angle convention is unchanged from radial view: 90° up, 270° down.
+            // Angle convention is unchanged from radial view: 90ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° up, 270ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° down.
             const ex = offset * Math.cos(angleRad);
             const ey = offset * Math.sin(angleRad);
             const dy_local = (ex * sectionYUnit.x) + (ey * sectionYUnit.y);
@@ -7286,7 +7301,7 @@ function buildAnnotationEntry(diameterValue, descriptionValue, options = {}) {
         <input type="text" class="materialLabel" placeholder="Description" value="${desc}">
         <input type="color" class="lineColor" value="${lineColor}" style="width:100%; height:30px;">
         <button type="button" class="icon-btn layer-action-btn layer-icon-btn toggle-advanced-btn" aria-label="Toggle advanced settings" title="Advanced settings" onclick="toggleAdvanced('${rowId}')">+</button>
-        <button type="button" class="icon-btn layer-action-btn layer-icon-btn" aria-label="Delete annotation layer" title="Delete annotation layer" onclick="deleteAnnotationEntry(this)">×</button>
+        <button type="button" class="icon-btn layer-action-btn layer-icon-btn" aria-label="Delete annotation layer" title="Delete annotation layer" onclick="deleteAnnotationEntry(this)">ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â</button>
       </div>
       <div class="layer-advanced">
         <div>
@@ -8650,6 +8665,7 @@ function applySettingsData(data, preserveTitle) {
     if (!historyManager.isRestoring) scheduleHistoryCapture(0);
 }
 </script>
+  <script src="search-ui.js" defer></script>
 </body>
 </html>
 

@@ -1,0 +1,93 @@
+/* Header Search UI (inspired by Uiverse satyamchaudharydev) */
+.app-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+.search-form {
+  --timing: 0.3s;
+  --width-of-input: clamp(180px, 24vw, 320px);
+  --height-of-input: 32px;
+  --border-height: 2px;
+  --input-bg: color-mix(in srgb, var(--surface) 78%, #ffffff 22%);
+  --border-color: color-mix(in srgb, var(--primary) 72%, #4b2d63 28%);
+  --border-radius: 999px;
+  --after-border-radius: 10px;
+  position: relative;
+  width: var(--width-of-input);
+  height: var(--height-of-input);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 0.5em;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: var(--border-radius);
+  transition: border-radius 0.3s ease;
+  background: var(--input-bg);
+}
+.search-form:focus-within {
+  border-radius: var(--after-border-radius);
+}
+.search-form:before {
+  content: "";
+  position: absolute;
+  background: var(--border-color);
+  transform: scaleX(0);
+  transform-origin: center;
+  width: 100%;
+  height: var(--border-height);
+  left: 0;
+  bottom: 0;
+  border-radius: 1px;
+  transition: transform var(--timing) ease;
+}
+.search-form:focus-within:before {
+  transform: scaleX(1);
+}
+.search-form button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  padding: 0;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-form button svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+  display: block;
+}
+.search-input {
+  font-size: 0.9rem;
+  background-color: transparent;
+  color: var(--text);
+  width: 100%;
+  height: 100%;
+  padding-inline: 0.5em;
+  border: none;
+}
+.search-input:focus {
+  outline: none;
+}
+.search-reset {
+  opacity: 0;
+  visibility: hidden;
+  cursor: pointer;
+}
+.search-input:not(:placeholder-shown) ~ .search-reset {
+  opacity: 1;
+  visibility: visible;
+}
+@media (max-width: 980px) {
+  .app-meta {
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .search-form {
+    --width-of-input: min(100%, 360px);
+  }
+}
