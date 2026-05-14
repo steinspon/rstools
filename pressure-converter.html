@@ -224,7 +224,7 @@
 
     .input-row {
       display: grid;
-      grid-template-columns: 140px 110px auto;
+      grid-template-columns: 140px 110px;
       gap: 6px;
       align-items: end;
     }
@@ -250,10 +250,6 @@
       border-color: color-mix(in srgb, var(--primary) 28%, var(--field-border));
       color: var(--primary);
       min-width: 86px;
-    }
-    #recalcButton {
-      justify-self: start;
-      width: fit-content;
     }
 
     .conversion-table-wrap {
@@ -367,7 +363,6 @@
               <option value="mpa">MPa</option>
             </select>
           </label>
-          <button id="recalcButton" type="button">Convert</button>
         </div>
         <div class="conversion-table-wrap">
           <table class="conversion-table">
@@ -386,7 +381,6 @@
       var THEME_OVERRIDE_KEY = 'rstools-theme-override-v1';
       var pressureInput = document.getElementById('pressureInput');
       var pressureUnit = document.getElementById('pressureUnit');
-      var recalcButton = document.getElementById('recalcButton');
       var pressureTableBody = document.getElementById('pressureTableBody');
 
       var UNIT_FACTORS_TO_PSI = {
@@ -517,7 +511,6 @@
       }
 
       function bindEvents() {
-        recalcButton.addEventListener('click', renderTable);
         pressureInput.addEventListener('input', renderTable);
         pressureUnit.addEventListener('change', renderTable);
 
