@@ -1249,7 +1249,18 @@
     .menu-popover {
       border-radius: 10px;
     }
-  </style>
+  
+/* Prevent iOS Safari input zoom-on-focus */
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none) and (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+</style>
 </head>
 <body>
 
