@@ -1,6 +1,6 @@
 ﻿{
     "title":  "RSTools Wiki Content Manifest",
-    "generatedAt":  "2026-05-12T18:17:59.5614955Z",
+    "generatedAt":  "2026-05-14T10:22:10.6568075Z",
     "pages":  [
                   {
                       "file":  "index.md",
@@ -18,7 +18,12 @@
                       "folder":  "Tools"
                   },
                   {
-                      "file":  "Tools/wap.md",
+                      "file":  "Tools/time-converter.md",
+                      "title":  "Time Converter",
+                      "folder":  "Tools"
+                  },
+                  {
+                      "file":  "Tools/Well Architecture Plotter (WAP).md",
                       "title":  "Well Architecture Plotter (WAP)",
                       "folder":  "Tools"
                   },

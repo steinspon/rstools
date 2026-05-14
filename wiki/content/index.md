@@ -7,6 +7,7 @@ Welcome to the RSTools wiki. This content is sourced from Markdown files in `wik
 - [Tool: Well Architecture Plotter](tools/wap.md)
 - [Tool: Barrier Sealing Length Calculator](tools/bslc.md)
 - [Tool: Image Annotating Tool](tools/iat.md)
+- [Tool: Time Converter](tools/time-converter.md)
 - [Workflow: Local wiki development](workflows/local-development.md)
 - [Workflow: Adding wiki entries](workflows/adding-wiki-entries.md)
 - [Workflow: Publishing on GitHub Pages](workflows/github-pages.md)
