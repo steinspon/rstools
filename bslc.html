@@ -269,7 +269,8 @@ input,select,button {
   min-width:88px;
   padding:8px 12px
 }
-svg {
+#plot,
+#incChart {
   display:block;
   width:100%;
   height:auto;
@@ -484,6 +485,8 @@ button,input,select { font:inherit; }
       height: 34px;
       border-radius: 50%;
       border: 0;
+      -webkit-appearance: none;
+      appearance: none;
       padding: 0;
       display: inline-flex;
       align-items: center;
@@ -498,7 +501,15 @@ button,input,select { font:inherit; }
       transform: translateY(-2px);
       background: color-mix(in srgb, var(--brand-mid-lavender) 18%, transparent);
     }
-    .nav-icon-btn svg { width: 18px; height: 18px; fill: currentColor; display: block; }    body.night-mode .nav-icon-btn {
+    .nav-icon-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      display: block;
+      background: transparent;
+      border-radius: 0;
+    }
+    body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
     
@@ -520,9 +531,17 @@ button,input,select { font:inherit; }
   width: 34px;
   min-width: 34px;
   height: 34px;
+  -webkit-appearance: none;
+  appearance: none;
   padding: 0;
   border: 0;
   border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+body.night-mode #homeNavBtn,
+body.night-mode #backNavBtn,
+body.night-mode #forwardNavBtn {
   background: transparent;
   box-shadow: none;
 }
@@ -643,13 +662,13 @@ body.night-mode .sidebar-tab-btn.is-active {
   grid-template-columns:repeat(2,minmax(0,1fr));
   grid-template-areas:
     "kpi kpi"
-    "alerts alerts"
     "left chart";
   gap:var(--space-lg);
 }
 .main > * { min-width:0; }
 .kpi-grid { grid-area:kpi; }
-.alerts-card { grid-area:alerts; }
+.alerts-card { grid-column:1 / -1; }
+.alerts-card[hidden] { display:none !important; }
 .main-left-col {
   grid-area:left;
   min-width:0;
@@ -945,6 +964,24 @@ body.night-mode .btn-primary:hover {
 .btn-ghost:hover {
   background:var(--surface-alt);
 }
+/* Keep top-left nav icons visually identical to index.html in all themes */
+.app-brand .nav-icon-btn,
+.app-brand button.nav-icon-btn,
+.app-brand #homeNavBtn,
+.app-brand #backNavBtn,
+.app-brand #forwardNavBtn {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.app-brand .nav-icon-btn:hover,
+.app-brand button.nav-icon-btn:hover,
+.app-brand #homeNavBtn:hover,
+.app-brand #backNavBtn:hover,
+.app-brand #forwardNavBtn:hover {
+  background: color-mix(in srgb, var(--brand-mid-lavender) 18%, transparent);
+  box-shadow: none;
+}
 .collapse-btn { min-width:82px; }
 .menu-bar {
   display:flex;
@@ -989,51 +1026,7 @@ body.night-mode .btn-primary:hover {
   box-shadow:var(--shadow);
 }
 .metric-card[data-help] {
-  cursor:help;
-}
-.metric-card[data-help]::before,
-.metric-card[data-help]::after {
-  position:absolute;
-  left:50%;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .16s ease,transform .16s ease;
-  z-index:30;
-}
-.metric-card[data-help]::after {
-  content:attr(data-help);
-  bottom:calc(100% + 12px);
-  transform:translate(-50%,4px);
-  width:min(320px,calc(100vw - 40px));
-  padding:10px 12px;
-  border:1px solid var(--border);
-  border-radius:10px;
-  background:var(--surface);
-  color:var(--text);
-  font-size:12px;
-  line-height:1.45;
-  box-shadow:0 14px 28px rgba(15,23,42,.18);
-  text-transform:none;
-  letter-spacing:0;
-}
-.metric-card[data-help]::before {
-  content:'';
-  bottom:calc(100% + 6px);
-  transform:translateX(-50%);
-  border-left:6px solid transparent;
-  border-right:6px solid transparent;
-  border-top:6px solid var(--surface);
-  filter:drop-shadow(0 -1px 0 var(--border));
-}
-.metric-card[data-help]:hover::before,
-.metric-card[data-help]:hover::after,
-.metric-card[data-help]:focus-visible::before,
-.metric-card[data-help]:focus-visible::after {
-  opacity:1;
-}
-.metric-card[data-help]:hover::after,
-.metric-card[data-help]:focus-visible::after {
-  transform:translate(-50%,0);
+  cursor:default;
 }
 .metric-label {
   display:block;
@@ -1088,7 +1081,8 @@ body.night-mode .btn-primary:hover {
   box-shadow:none;
 }
 .plot-shell { padding:8px; }
-svg {
+#plot,
+#incChart {
   display:block;
   width:100%;
   height:auto;

@@ -240,6 +240,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 0 10px;
       font-size: 10px;
       font-weight: 700;
       letter-spacing: 0.03em;
@@ -306,6 +307,57 @@
       border-color: color-mix(in srgb, var(--primary) 28%, var(--field-border));
       color: var(--primary);
       min-width: 86px;
+    }
+    .value-stepper {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--field-border);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--surface-alt) 84%, #ffffff 16%);
+      overflow: hidden;
+      width: 100%;
+      min-height: var(--control-height);
+    }
+    .value-stepper input[type="number"] {
+      flex: 1 1 auto;
+      min-width: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: var(--control-py) var(--control-px);
+      font: inherit;
+      color: inherit;
+    }
+    .value-stepper input[type="number"]::-webkit-outer-spin-button,
+    .value-stepper input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .value-stepper input[type="number"] {
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .value-stepper-btn {
+      width: 22px;
+      min-width: 22px;
+      height: calc(var(--control-height) - 2px);
+      min-height: calc(var(--control-height) - 2px);
+      border: 0;
+      border-left: 1px solid var(--field-border);
+      border-radius: 0;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1;
+      font-weight: 700;
+      cursor: pointer;
+      min-width: 22px;
+    }
+    .value-stepper-btn:hover {
+      background: color-mix(in srgb, var(--surface-alt) 88%, var(--surface) 12%);
+      color: var(--text);
     }
 
     .conversion-table-wrap {
@@ -435,7 +487,11 @@
           <div class="input-row">
             <label for="pressureInput">
               Pressure Value
-              <input id="pressureInput" type="number" step="any" value="1">
+              <div class="value-stepper">
+                <input id="pressureInput" type="number" step="any" value="1">
+                <button type="button" class="value-stepper-btn" data-step-target="pressureInput" data-step-dir="-1" aria-label="Decrease pressure value">-</button>
+                <button type="button" class="value-stepper-btn" data-step-target="pressureInput" data-step-dir="1" aria-label="Increase pressure value">+</button>
+              </div>
             </label>
             <label for="pressureUnit">
               Input Unit
@@ -458,7 +514,11 @@
           <div class="input-row">
             <label for="distanceInput">
               Distance Value
-              <input id="distanceInput" type="number" step="any" value="1">
+              <div class="value-stepper">
+                <input id="distanceInput" type="number" step="any" value="1">
+                <button type="button" class="value-stepper-btn" data-step-target="distanceInput" data-step-dir="-1" aria-label="Decrease distance value">-</button>
+                <button type="button" class="value-stepper-btn" data-step-target="distanceInput" data-step-dir="1" aria-label="Increase distance value">+</button>
+              </div>
             </label>
             <label for="distanceUnit">
               Input Unit
@@ -483,7 +543,11 @@
           <div class="input-row">
             <label for="temperatureInput">
               Temperature Value
-              <input id="temperatureInput" type="number" step="any" value="20">
+              <div class="value-stepper">
+                <input id="temperatureInput" type="number" step="any" value="20">
+                <button type="button" class="value-stepper-btn" data-step-target="temperatureInput" data-step-dir="-1" aria-label="Decrease temperature value">-</button>
+                <button type="button" class="value-stepper-btn" data-step-target="temperatureInput" data-step-dir="1" aria-label="Increase temperature value">+</button>
+              </div>
             </label>
             <label for="temperatureUnit">
               Input Unit
@@ -506,7 +570,11 @@
           <div class="input-row">
             <label for="casingInput">
               Casing Weight Value
-              <input id="casingInput" type="number" step="any" value="20">
+              <div class="value-stepper">
+                <input id="casingInput" type="number" step="any" value="20">
+                <button type="button" class="value-stepper-btn" data-step-target="casingInput" data-step-dir="-1" aria-label="Decrease casing weight value">-</button>
+                <button type="button" class="value-stepper-btn" data-step-target="casingInput" data-step-dir="1" aria-label="Increase casing weight value">+</button>
+              </div>
             </label>
             <label for="casingUnit">
               Input Unit
@@ -651,7 +719,7 @@
       function formatValue(value) {
         if (!Number.isFinite(value)) return '-';
         return value.toLocaleString('en-GB', {
-          maximumFractionDigits: 6
+          maximumFractionDigits: 2
         });
       }
 
@@ -807,10 +875,29 @@
         }
       }
 
+      function bindValueSteppers() {
+        document.querySelectorAll('.value-stepper-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var targetId = btn.getAttribute('data-step-target');
+            var direction = Number(btn.getAttribute('data-step-dir')) || 0;
+            var input = document.getElementById(targetId);
+            if (!input || !direction) return;
+            var stepAttr = input.getAttribute('step');
+            var step = (stepAttr && stepAttr !== 'any') ? Number(stepAttr) : 1;
+            if (!Number.isFinite(step) || step <= 0) step = 1;
+            var current = Number(input.value);
+            if (!Number.isFinite(current)) current = 0;
+            input.value = String(current + (direction * step));
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+          });
+        });
+      }
+
       function init() {
         setNightMode(resolveNightModePreference());
         scheduleThemeBoundarySync();
         bindEvents();
+        bindValueSteppers();
         renderTable();
         renderDistanceTable();
         renderTemperatureTable();
