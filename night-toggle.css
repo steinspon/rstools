@@ -1,7 +1,8 @@
 /* Shared day/night theme toggle (Uiverse-inspired) */
 .toggle-switch {
   position: relative;
-  width: 48px;
+  --toggle-width: 48px;
+  width: var(--toggle-width);
   height: var(--control-height, 22px);
   margin-inline: 4px;
   --toggle-day-track: color-mix(in srgb, var(--surface-alt) 82%, #ffffff 18%);
@@ -24,6 +25,12 @@
   position: absolute;
   opacity: 0;
   pointer-events: none;
+  width: 0;
+  height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
 }
 
 .slider {
@@ -52,7 +59,7 @@
 }
 
 .checkbox:checked ~ .slider::before {
-  transform: translateX(calc(48px - (var(--control-height, 22px) - 6px) - 6px));
+  transform: translateX(calc(var(--toggle-width) - (var(--control-height, 22px) - 6px) - 6px));
   background: var(--toggle-knob-night);
   box-shadow: 0 0 0 2px color-mix(in srgb, #12210d 40%, transparent) inset;
 }

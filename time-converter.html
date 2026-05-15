@@ -140,13 +140,7 @@
       transform: translateY(-2px);
       background: color-mix(in srgb, var(--brand-mid-lavender) 18%, transparent);
     }
-    .nav-icon-btn svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-      display: block;
-    }
-    body.night-mode .nav-icon-btn {
+    .nav-icon-btn svg { width: 18px; height: 18px; fill: currentColor; display: block; }    body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
     
@@ -231,6 +225,59 @@
       display: grid;
       gap: 8px;
     }
+    .sidebar-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+      margin-bottom: 6px;
+      border: 1px solid color-mix(in srgb, var(--border) 78%, transparent 22%);
+      border-radius: 6px;
+      padding: 3px;
+      box-sizing: border-box;
+      width: fit-content;
+      max-width: 100%;
+      align-self: start;
+    }
+    .sidebar-tab-option {
+      display: flex;
+      align-items: stretch;
+    }
+    .sidebar-tab-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sidebar-tab-btn {
+      min-height: 24px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .sidebar-tab-btn.is-active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 8px 18px rgba(33, 13, 42, 0.2);
+    }
+    body.night-mode .sidebar-tab-btn.is-active {
+      background: #d3ef54;
+      color: #210d2a;
+      border-color: color-mix(in srgb, #d3ef54 84%, #95ab2f 16%);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.is-active { display: block; }
     .panel-title {
       margin: 0;
       font-size: 0.9rem;
@@ -248,6 +295,9 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 6px;
       align-items: end;
+    }
+    .controls-row {
+      margin-bottom: 14px;
     }
     .controls-row label,
     .meeting-row label {
@@ -269,6 +319,11 @@
       background: color-mix(in srgb, var(--surface-alt) 84%, #ffffff 16%);
       font-size: 10px;
     }
+    body.night-mode input[type="date"]::-webkit-calendar-picker-indicator,
+    body.night-mode input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.35) contrast(1.05);
+      opacity: 1;
+    }
     button {
       cursor: pointer;
       font-weight: 600;
@@ -280,13 +335,28 @@
       background: color-mix(in srgb, var(--surface-alt) 68%, #ffffff 32%);
     }
     button.remove-btn {
-      color: #b32244;
-      border-color: color-mix(in srgb, #b32244 30%, var(--field-border));
+      color: currentColor;
+      border-color: color-mix(in srgb, currentColor 30%, var(--field-border));
       background: transparent;
-      min-height: 20px;
-      padding: 0 6px;
-      font-size: 9px;
+      width: 24px;
+      min-width: 24px;
+      min-height: 24px;
+      height: 24px;
+      padding: 0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       justify-self: end;
+    }
+    .remove-btn svg {
+      width: 13px;
+      height: 13px;
+      display: block;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: square;
     }
     #addClockButton {
       justify-self: start;
@@ -419,20 +489,13 @@
     body.night-mode .clock-card.clock-card--day .clock-zone {
       color: color-mix(in srgb, currentColor 74%, #ffffff 26%);
     }
-    .clock-card.clock-card--night .remove-btn,
-    body.night-mode .clock-card.clock-card--day .remove-btn {
-      color: color-mix(in srgb, #ffffff 86%, var(--brand-mid-lavender) 14%);
-      border-color: color-mix(in srgb, currentColor 40%, transparent);
-      background: transparent;
-    }
-    .clock-card.clock-card--night .remove-btn:hover,
-    body.night-mode .clock-card.clock-card--day .remove-btn:hover {
+    .clock-card .remove-btn:hover {
       background: color-mix(in srgb, currentColor 10%, transparent);
       border-color: color-mix(in srgb, currentColor 60%, transparent);
     }
 
     .conversion-summary {
-      margin: 0;
+      margin: 8px 0;
       color: var(--muted);
       font-size: 10px;
     }
@@ -505,6 +568,9 @@
       .meeting-row {
         grid-template-columns: 1fr;
       }
+      .sidebar-tabs {
+        grid-template-columns: repeat(2, auto);
+      }
     }
   
 /* Prevent iOS Safari input zoom-on-focus */
@@ -552,38 +618,46 @@
     </header>
 
     <main class="tool-main">
-      <section class="tool-panel" aria-labelledby="clockTitle">
-        <h2 id="clockTitle" class="panel-title">World Clocks</h2>
-        <p class="panel-subtitle">Local, Calgary, and Dubai load by default. Add or remove additional clocks and your choices are saved for your next visit.</p>
-        <div class="controls-row">
-          <label for="clockAddSelect">
-            Add Clock
-            <select id="clockAddSelect"></select>
-          </label>
-          <button id="addClockButton" type="button">Add Clock</button>
+      <section class="tool-panel" aria-label="Time tools">
+        <div class="sidebar-tabs" role="tablist" aria-label="Time tools tabs">
+          <div class="sidebar-tab-option">
+            <input type="radio" id="timeTabClockBtn" class="sidebar-tab-input" name="timeTab" checked onchange="setTimeTab('clock')">
+            <label for="timeTabClockBtn" id="timeTabClockLabel" class="sidebar-tab-btn is-active" role="tab" aria-selected="true" aria-controls="timeTabPanelClock">World Clock</label>
+          </div>
+          <div class="sidebar-tab-option">
+            <input type="radio" id="timeTabConvertBtn" class="sidebar-tab-input" name="timeTab" onchange="setTimeTab('convert')">
+            <label for="timeTabConvertBtn" id="timeTabConvertLabel" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="timeTabPanelConvert">Time Converter</label>
+          </div>
         </div>
-        <div id="clockGrid" class="clock-grid"></div>
-      </section>
 
-      <section class="tool-panel" aria-labelledby="meetingTitle">
-        <h2 id="meetingTitle" class="panel-title">Meeting Time Converter</h2>
-        <p class="panel-subtitle">Select any visible clock as the source, then enter a 24-hour time to see that meeting time in your other locations.</p>
-        <div class="meeting-row">
-          <label for="meetingSource">
-            Source Location
-            <select id="meetingSource"></select>
-          </label>
-          <label for="meetingDate">
-            Date
-            <input id="meetingDate" type="date">
-          </label>
-          <label for="meetingTime">
-            Time (24h)
-            <input id="meetingTime" type="time" step="60">
-          </label>
+        <div id="timeTabPanelClock" class="tab-panel is-active" role="tabpanel" aria-labelledby="timeTabClockLabel">
+          <div class="controls-row">
+            <label for="clockAddSelect">
+              <select id="clockAddSelect"></select>
+            </label>
+            <button id="addClockButton" type="button">Add Clock</button>
+          </div>
+          <div id="clockGrid" class="clock-grid"></div>
         </div>
-        <p id="conversionSummary" class="conversion-summary"></p>
-        <div id="conversionGrid" class="conversion-table-wrap"></div>
+
+        <div id="timeTabPanelConvert" class="tab-panel" role="tabpanel" aria-labelledby="timeTabConvertLabel">
+          <div class="meeting-row">
+            <label for="meetingSource">
+              Source
+              <select id="meetingSource"></select>
+            </label>
+            <label for="meetingDate">
+              Date
+              <input id="meetingDate" type="date">
+            </label>
+            <label for="meetingTime">
+              Time (24h)
+              <input id="meetingTime" type="time" step="60">
+            </label>
+          </div>
+          <p id="conversionSummary" class="conversion-summary"></p>
+          <div id="conversionGrid" class="conversion-table-wrap"></div>
+        </div>
       </section>
     </main>
   </div>
@@ -629,6 +703,25 @@
       var refreshTimerId = null;
       var themeBoundaryTimerId = null;
       var dragSourceKey = null;
+
+      window.setTimeTab = function (tabName) {
+        var map = {
+          clock: { input: 'timeTabClockBtn', label: 'timeTabClockLabel', panel: 'timeTabPanelClock' },
+          convert: { input: 'timeTabConvertBtn', label: 'timeTabConvertLabel', panel: 'timeTabPanelConvert' }
+        };
+        Object.keys(map).forEach(function (key) {
+          var isActive = key === tabName;
+          var inputEl = document.getElementById(map[key].input);
+          var labelEl = document.getElementById(map[key].label);
+          var panelEl = document.getElementById(map[key].panel);
+          if (inputEl) inputEl.checked = isActive;
+          if (labelEl) {
+            labelEl.classList.toggle('is-active', isActive);
+            labelEl.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          }
+          if (panelEl) panelEl.classList.toggle('is-active', isActive);
+        });
+      };
 
       function updateAppLogoForTheme() {
         var isNight = document.body.classList.contains('night-mode');
@@ -1010,7 +1103,8 @@
             var remove = document.createElement('button');
             remove.type = 'button';
             remove.className = 'remove-btn';
-            remove.textContent = 'Remove';
+            remove.setAttribute('aria-label', 'Remove clock');
+            remove.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8"></circle><path d="M7 7L13 13M13 7L7 13"></path></svg>';
             remove.dataset.key = clock.key;
             actions.appendChild(remove);
           }
@@ -1022,7 +1116,7 @@
 
           var dayText = document.createElement('p');
           dayText.className = 'clock-day-text';
-          dayText.textContent = dayAtClock ? 'Daytime' : 'Nighttime';
+          dayText.textContent = '';
           card.appendChild(head);
           card.appendChild(time);
           card.appendChild(dayText);
@@ -1304,6 +1398,7 @@
       function init() {
         setNightMode(resolveNightModePreference());
         scheduleThemeBoundarySync();
+        window.setTimeTab('clock');
 
         extraClockKeys = loadExtraClockKeys();
         if (!extraClockKeys.length) {
@@ -1325,3 +1420,10 @@
   <script src="search-ui.js" defer></script>
 </body>
 </html>
+
+
+
+
+
+
+

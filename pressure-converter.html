@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Interwell Pressure Converter</title>
+  <title>Interwell Units Converter</title>
   <link rel="stylesheet" href="brand/brand-tokens.css">
   <link rel="stylesheet" href="search-ui.css">
   <link rel="stylesheet" href="night-toggle.css">
@@ -131,13 +131,7 @@
       transform: translateY(-2px);
       background: color-mix(in srgb, var(--brand-mid-lavender) 18%, transparent);
     }
-    .nav-icon-btn svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-      display: block;
-    }
-    body.night-mode .nav-icon-btn {
+    .nav-icon-btn svg { width: 18px; height: 18px; fill: currentColor; display: block; }    body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
     
@@ -221,6 +215,58 @@
       gap: 8px;
       width: 100%;
     }
+    .sidebar-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      margin-bottom: 6px;
+      border: 1px solid color-mix(in srgb, var(--border) 78%, transparent 22%);
+      border-radius: 6px;
+      padding: 3px;
+      box-sizing: border-box;
+      width: fit-content;
+      max-width: 100%;
+      align-self: start;
+    }
+    .sidebar-tab-option {
+      display: flex;
+      align-items: stretch;
+    }
+    .sidebar-tab-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sidebar-tab-btn {
+      min-height: 24px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .sidebar-tab-btn.is-active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 8px 18px rgba(33, 13, 42, 0.2);
+    }
+    body.night-mode .sidebar-tab-btn.is-active {
+      background: #d3ef54;
+      color: #210d2a;
+      border-color: color-mix(in srgb, #d3ef54 84%, #95ab2f 16%);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.is-active { display: block; }
     .panel-title {
       margin: 0;
       font-size: 0.9rem;
@@ -266,6 +312,7 @@
     }
 
     .conversion-table-wrap {
+      margin-top: 8px;
       overflow-x: auto;
       border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
       border-radius: var(--panel-radius);
@@ -316,6 +363,7 @@
       .input-row {
         grid-template-columns: 1fr;
       }
+      .sidebar-tabs { grid-template-columns: repeat(2, auto); }
     }
   
 /* Prevent iOS Safari input zoom-on-focus */
@@ -348,7 +396,7 @@
         </div>
         <div class="app-meta">
           <div>By Darren Wilkinson</div>
-          <div>Updated: 14.05.2026</div>
+          <div>Updated: 15.05.2026</div>
         </div>
       </div>
       <div class="header-actions">
@@ -363,30 +411,120 @@
     </header>
 
     <main class="tool-main">
-      <section class="tool-panel" aria-labelledby="pressureTitle">
-        <h2 id="pressureTitle" class="panel-title">Pressure Converter</h2>
-        <p class="panel-subtitle">Enter a value and choose a source unit. The table converts between psi, bar, and MPa.</p>
-        <div class="input-row">
-          <label for="pressureInput">
-            Pressure Value
-            <input id="pressureInput" type="number" step="any" value="1">
-          </label>
-          <label for="pressureUnit">
-            Input Unit
-            <select id="pressureUnit">
-              <option value="psi" selected>psi</option>
-              <option value="bar">bar</option>
-              <option value="mpa">MPa</option>
-            </select>
-          </label>
+      <section class="tool-panel" aria-labelledby="unitsTitle">
+        <h2 id="unitsTitle" class="panel-title">Units Converter</h2>
+        <p class="panel-subtitle">Choose a conversion tab, enter a value, and select the source unit.</p>
+
+        <div class="sidebar-tabs" role="tablist" aria-label="Converter types">
+          <div class="sidebar-tab-option">
+            <input type="radio" id="tabPressureBtn" class="sidebar-tab-input" name="converterTab" checked onchange="setConverterTab('pressure')">
+            <label for="tabPressureBtn" id="tabPressureLabel" class="sidebar-tab-btn is-active" role="tab" aria-selected="true" aria-controls="tabPanelPressure">Pressure</label>
+          </div>
+          <div class="sidebar-tab-option">
+            <input type="radio" id="tabDistanceBtn" class="sidebar-tab-input" name="converterTab" onchange="setConverterTab('distance')">
+            <label for="tabDistanceBtn" id="tabDistanceLabel" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="tabPanelDistance">Distance</label>
+          </div>
+          <div class="sidebar-tab-option">
+            <input type="radio" id="tabTemperatureBtn" class="sidebar-tab-input" name="converterTab" onchange="setConverterTab('temperature')">
+            <label for="tabTemperatureBtn" id="tabTemperatureLabel" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="tabPanelTemperature">Temperature</label>
+          </div>
+          <div class="sidebar-tab-option">
+            <input type="radio" id="tabCasingBtn" class="sidebar-tab-input" name="converterTab" onchange="setConverterTab('casing')">
+            <label for="tabCasingBtn" id="tabCasingLabel" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="tabPanelCasing">Casing Weight</label>
+          </div>
         </div>
-        <div class="conversion-table-wrap">
-          <table class="conversion-table">
-            <thead>
-              <tr><th>Unit</th><th>Value</th></tr>
-            </thead>
-            <tbody id="pressureTableBody"></tbody>
-          </table>
+
+        <div id="tabPanelPressure" class="tab-panel is-active" role="tabpanel" aria-labelledby="tabPressureLabel">
+          <div class="input-row">
+            <label for="pressureInput">
+              Pressure Value
+              <input id="pressureInput" type="number" step="any" value="1">
+            </label>
+            <label for="pressureUnit">
+              Input Unit
+              <select id="pressureUnit">
+                <option value="psi" selected>psi</option>
+                <option value="bar">bar</option>
+                <option value="mpa">MPa</option>
+              </select>
+            </label>
+          </div>
+          <div class="conversion-table-wrap">
+            <table class="conversion-table">
+              <thead><tr><th>Unit</th><th>Value</th></tr></thead>
+              <tbody id="pressureTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tabPanelDistance" class="tab-panel" role="tabpanel" aria-labelledby="tabDistanceLabel">
+          <div class="input-row">
+            <label for="distanceInput">
+              Distance Value
+              <input id="distanceInput" type="number" step="any" value="1">
+            </label>
+            <label for="distanceUnit">
+              Input Unit
+              <select id="distanceUnit">
+                <option value="m" selected>m</option>
+                <option value="ft">ft</option>
+                <option value="km">km</option>
+                <option value="mi">mi</option>
+                <option value="in">in</option>
+              </select>
+            </label>
+          </div>
+          <div class="conversion-table-wrap">
+            <table class="conversion-table">
+              <thead><tr><th>Unit</th><th>Value</th></tr></thead>
+              <tbody id="distanceTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tabPanelTemperature" class="tab-panel" role="tabpanel" aria-labelledby="tabTemperatureLabel">
+          <div class="input-row">
+            <label for="temperatureInput">
+              Temperature Value
+              <input id="temperatureInput" type="number" step="any" value="20">
+            </label>
+            <label for="temperatureUnit">
+              Input Unit
+              <select id="temperatureUnit">
+                <option value="c" selected>Celsius (°C)</option>
+                <option value="f">Fahrenheit (°F)</option>
+                <option value="k">Kelvin (K)</option>
+              </select>
+            </label>
+          </div>
+          <div class="conversion-table-wrap">
+            <table class="conversion-table">
+              <thead><tr><th>Unit</th><th>Value</th></tr></thead>
+              <tbody id="temperatureTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tabPanelCasing" class="tab-panel" role="tabpanel" aria-labelledby="tabCasingLabel">
+          <div class="input-row">
+            <label for="casingInput">
+              Casing Weight Value
+              <input id="casingInput" type="number" step="any" value="20">
+            </label>
+            <label for="casingUnit">
+              Input Unit
+              <select id="casingUnit">
+                <option value="lbft" selected>lb/ft</option>
+                <option value="kgm">kg/m</option>
+              </select>
+            </label>
+          </div>
+          <div class="conversion-table-wrap">
+            <table class="conversion-table">
+              <thead><tr><th>Unit</th><th>Value</th></tr></thead>
+              <tbody id="casingTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>
@@ -398,12 +536,29 @@
       var pressureInput = document.getElementById('pressureInput');
       var pressureUnit = document.getElementById('pressureUnit');
       var pressureTableBody = document.getElementById('pressureTableBody');
+      var distanceInput = document.getElementById('distanceInput');
+      var distanceUnit = document.getElementById('distanceUnit');
+      var distanceTableBody = document.getElementById('distanceTableBody');
+      var temperatureInput = document.getElementById('temperatureInput');
+      var temperatureUnit = document.getElementById('temperatureUnit');
+      var temperatureTableBody = document.getElementById('temperatureTableBody');
+      var casingInput = document.getElementById('casingInput');
+      var casingUnit = document.getElementById('casingUnit');
+      var casingTableBody = document.getElementById('casingTableBody');
 
       var UNIT_FACTORS_TO_PSI = {
         psi: 1,
         bar: 14.5037738,
         mpa: 145.0377377
       };
+      var UNIT_FACTORS_TO_METRE = {
+        m: 1,
+        ft: 0.3048,
+        km: 1000,
+        mi: 1609.344,
+        in: 0.0254
+      };
+      var LBFT_TO_KGM = 1.48816394357;
 
       function updateAppLogoForTheme() {
         var isNight = document.body.classList.contains('night-mode');
@@ -499,7 +654,7 @@
       function formatValue(value) {
         if (!Number.isFinite(value)) return '-';
         return value.toLocaleString('en-GB', {
-          maximumFractionDigits: 0
+          maximumFractionDigits: 6
         });
       }
 
@@ -526,9 +681,125 @@
         });
       }
 
+      function toMetre(value, unit) {
+        return value * UNIT_FACTORS_TO_METRE[unit];
+      }
+
+      function fromMetre(valueMetre, unit) {
+        return valueMetre / UNIT_FACTORS_TO_METRE[unit];
+      }
+
+      function renderDistanceTable() {
+        var raw = Number(distanceInput.value);
+        var sourceUnit = distanceUnit.value || 'm';
+        var metreValue = Number.isFinite(raw) ? toMetre(raw, sourceUnit) : NaN;
+        var units = ['m', 'ft', 'km', 'mi', 'in'];
+        distanceTableBody.innerHTML = '';
+        units.forEach(function (unit) {
+          var row = document.createElement('tr');
+          if (unit === sourceUnit) row.className = 'source-row';
+          var unitCell = document.createElement('td');
+          unitCell.textContent = unit;
+          var valueCell = document.createElement('td');
+          valueCell.textContent = formatValue(fromMetre(metreValue, unit));
+          row.appendChild(unitCell);
+          row.appendChild(valueCell);
+          distanceTableBody.appendChild(row);
+        });
+      }
+
+      function toKelvin(value, unit) {
+        if (unit === 'c') return value + 273.15;
+        if (unit === 'f') return (value - 32) * 5 / 9 + 273.15;
+        return value;
+      }
+
+      function fromKelvin(valueKelvin, unit) {
+        if (unit === 'c') return valueKelvin - 273.15;
+        if (unit === 'f') return (valueKelvin - 273.15) * 9 / 5 + 32;
+        return valueKelvin;
+      }
+
+      function renderTemperatureTable() {
+        var raw = Number(temperatureInput.value);
+        var sourceUnit = temperatureUnit.value || 'c';
+        var kelvinValue = Number.isFinite(raw) ? toKelvin(raw, sourceUnit) : NaN;
+        var units = ['c', 'f', 'k'];
+        var labels = { c: 'Celsius (°C)', f: 'Fahrenheit (°F)', k: 'Kelvin (K)' };
+        temperatureTableBody.innerHTML = '';
+        units.forEach(function (unit) {
+          var row = document.createElement('tr');
+          if (unit === sourceUnit) row.className = 'source-row';
+          var unitCell = document.createElement('td');
+          unitCell.textContent = labels[unit];
+          var valueCell = document.createElement('td');
+          valueCell.textContent = formatValue(fromKelvin(kelvinValue, unit));
+          row.appendChild(unitCell);
+          row.appendChild(valueCell);
+          temperatureTableBody.appendChild(row);
+        });
+      }
+
+      function toKgPerM(value, unit) {
+        if (unit === 'kgm') return value;
+        return value * LBFT_TO_KGM;
+      }
+
+      function fromKgPerM(valueKgPerM, unit) {
+        if (unit === 'kgm') return valueKgPerM;
+        return valueKgPerM / LBFT_TO_KGM;
+      }
+
+      function renderCasingTable() {
+        var raw = Number(casingInput.value);
+        var sourceUnit = casingUnit.value || 'lbft';
+        var kgPerMValue = Number.isFinite(raw) ? toKgPerM(raw, sourceUnit) : NaN;
+        var units = ['lbft', 'kgm'];
+        var labels = { lbft: 'lb/ft', kgm: 'kg/m' };
+        casingTableBody.innerHTML = '';
+        units.forEach(function (unit) {
+          var row = document.createElement('tr');
+          if (unit === sourceUnit) row.className = 'source-row';
+          var unitCell = document.createElement('td');
+          unitCell.textContent = labels[unit];
+          var valueCell = document.createElement('td');
+          valueCell.textContent = formatValue(fromKgPerM(kgPerMValue, unit));
+          row.appendChild(unitCell);
+          row.appendChild(valueCell);
+          casingTableBody.appendChild(row);
+        });
+      }
+
+      window.setConverterTab = function (tabName) {
+        var map = {
+          pressure: { input: 'tabPressureBtn', label: 'tabPressureLabel', panel: 'tabPanelPressure' },
+          distance: { input: 'tabDistanceBtn', label: 'tabDistanceLabel', panel: 'tabPanelDistance' },
+          temperature: { input: 'tabTemperatureBtn', label: 'tabTemperatureLabel', panel: 'tabPanelTemperature' },
+          casing: { input: 'tabCasingBtn', label: 'tabCasingLabel', panel: 'tabPanelCasing' }
+        };
+        Object.keys(map).forEach(function (key) {
+          var isActive = key === tabName;
+          var inputEl = document.getElementById(map[key].input);
+          var labelEl = document.getElementById(map[key].label);
+          var panelEl = document.getElementById(map[key].panel);
+          if (inputEl) inputEl.checked = isActive;
+          if (labelEl) {
+            labelEl.classList.toggle('is-active', isActive);
+            labelEl.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          }
+          if (panelEl) panelEl.classList.toggle('is-active', isActive);
+        });
+      };
+
       function bindEvents() {
         pressureInput.addEventListener('input', renderTable);
         pressureUnit.addEventListener('change', renderTable);
+        distanceInput.addEventListener('input', renderDistanceTable);
+        distanceUnit.addEventListener('change', renderDistanceTable);
+        temperatureInput.addEventListener('input', renderTemperatureTable);
+        temperatureUnit.addEventListener('change', renderTemperatureTable);
+        casingInput.addEventListener('input', renderCasingTable);
+        casingUnit.addEventListener('change', renderCasingTable);
 
         var nightToggle = document.getElementById('nightMode');
         if (nightToggle) {
@@ -544,6 +815,10 @@
         scheduleThemeBoundarySync();
         bindEvents();
         renderTable();
+        renderDistanceTable();
+        renderTemperatureTable();
+        renderCasingTable();
+        window.setConverterTab('pressure');
       }
 
       init();
@@ -552,3 +827,10 @@
   <script src="search-ui.js" defer></script>
 </body>
 </html>
+
+
+
+
+
+
+

@@ -284,13 +284,7 @@
       transform: translateY(-2px);
       background: color-mix(in srgb, var(--brand-mid-lavender) 18%, transparent);
     }
-    .nav-icon-btn svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-      display: block;
-    }
-    body.night-mode .nav-icon-btn {
+    .nav-icon-btn svg { width: 18px; height: 18px; fill: currentColor; display: block; }    body.night-mode .nav-icon-btn {
       color: #f2eaf8;
     }
     
@@ -471,6 +465,15 @@
       color: #ffffff;
       filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
     }
+    .brand-tool-logo {
+      object-fit: contain;
+    }
+    body.night-mode .brand-tool-logo {
+      filter: brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+    }
+    body:not(.night-mode) .brand-tool-logo {
+      filter: none;
+    }
     .tool-link .title {
       font-weight: 600;
       font-size: 1.02rem;
@@ -588,6 +591,13 @@
             </span>
           </a>
 
+          <a class="tool-link" href="brand-resources.html">
+            <span class="tool-content">
+              <img class="tool-icon brand-tool-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="" aria-hidden="true">
+              <span class="title">Brand Resources</span>
+            </span>
+          </a>
+
           <a class="tool-link" href="iat.html">
             <span class="tool-content">
               <svg class="tool-icon" viewBox="0 0 96 96" aria-hidden="true">
@@ -596,21 +606,6 @@
                 <path d="M55 46l6 14 6-14z" fill="currentColor"/>
               </svg>
               <span class="title">Image Annotating Tool</span>
-            </span>
-          </a>
-
-          <a class="tool-link" href="pressure-converter.html">
-            <span class="tool-content">
-              <svg class="tool-icon" viewBox="0 0 96 96" aria-hidden="true">
-                <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter">
-                  <path d="M28 18V68H68V18"/>
-                  <line x1="28" y1="68" x2="68" y2="68"/>
-                  <line x1="28" y1="42" x2="44" y2="42"/>
-                  <line x1="52" y1="30" x2="68" y2="30"/>
-                  <line x1="48" y1="68" x2="48" y2="84"/>
-                </g>
-              </svg>
-              <span class="title">Pressure Converter</span>
             </span>
           </a>
 
@@ -623,6 +618,18 @@
                 <circle cx="48" cy="48" r="4" fill="currentColor"/>
               </svg>
               <span class="title">Time Converter</span>
+            </span>
+          </a>
+
+          <a class="tool-link" href="pressure-converter.html">
+            <span class="tool-content">
+              <svg class="tool-icon" viewBox="0 0 96 96" aria-hidden="true">
+                <g transform="rotate(-37 48 48)" fill="currentColor">
+                  <path d="M24 24H60V18L74 30L60 42V36H24Z"/>
+                  <path d="M72 72H36V78L22 66L36 54V60H72Z"/>
+                </g>
+              </svg>
+              <span class="title">Units Converter</span>
             </span>
           </a>
 
@@ -864,6 +871,14 @@
   <script src="search-ui.js" defer></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 
 
