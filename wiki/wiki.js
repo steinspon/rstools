@@ -470,15 +470,27 @@
     var items = Array.isArray(treePayload.tree) ? treePayload.tree : [];
     var prefix = "wiki/content/";
 
+    var fallbackTitleMap = new Map();
+    if (window.WIKI_FALLBACK && window.WIKI_FALLBACK.manifest && Array.isArray(window.WIKI_FALLBACK.manifest.pages)) {
+      window.WIKI_FALLBACK.manifest.pages.forEach(function (page) {
+        var file = normalizePath(page && page.file ? page.file : "");
+        var title = String(page && page.title ? page.title : "").trim();
+        if (file && title) {
+          fallbackTitleMap.set(file.toLowerCase(), title);
+        }
+      });
+    }
+
     var pages = items
       .filter(function (entry) {
         return entry && entry.type === "blob" && typeof entry.path === "string" && entry.path.indexOf(prefix) === 0 && /\.md$/i.test(entry.path);
       })
       .map(function (entry) {
         var file = normalizePath(entry.path.slice(prefix.length));
+        var fallbackTitle = fallbackTitleMap.get(file.toLowerCase()) || "";
         return {
           file: file,
-          title: fileNameToTitle(file),
+          title: fallbackTitle || fileNameToTitle(file),
           folder: folderFromFile(file)
         };
       })
@@ -497,17 +509,6 @@
   }
 
   async function loadManifest() {
-    if (isGitHubPages()) {
-      try {
-        var githubManifest = await buildManifestFromGitHubApi();
-        if (githubManifest && githubManifest.pages && githubManifest.pages.length) {
-          return githubManifest;
-        }
-      } catch (err) {
-        console.warn("GitHub API manifest discovery failed:", err);
-      }
-    }
-
     try {
       var staticManifest = await fetchJson(MANIFEST_PATH);
       if (staticManifest && Array.isArray(staticManifest.pages) && staticManifest.pages.length) {
@@ -519,6 +520,17 @@
 
     if (window.WIKI_FALLBACK && window.WIKI_FALLBACK.manifest && Array.isArray(window.WIKI_FALLBACK.manifest.pages)) {
       return window.WIKI_FALLBACK.manifest;
+    }
+
+    if (isGitHubPages()) {
+      try {
+        var githubManifest = await buildManifestFromGitHubApi();
+        if (githubManifest && githubManifest.pages && githubManifest.pages.length) {
+          return githubManifest;
+        }
+      } catch (err) {
+        console.warn("GitHub API manifest discovery failed:", err);
+      }
     }
 
     throw new Error("No wiki manifest available.");
