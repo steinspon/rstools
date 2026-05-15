@@ -60,7 +60,7 @@
     }
 
     body.night-mode {
-      --bg: #110b16;
+      --bg: #C7B2EA;
       --surface: rgba(30, 20, 40, 0.92);
       --surface-alt: rgba(25, 17, 34, 0.9);
       --border: rgba(208, 191, 222, 0.22);
@@ -328,6 +328,8 @@
       white-space: nowrap;
     }
     .header-actions {
+      --header-control-bg: color-mix(in srgb, var(--surface) 82%, #ffffff 18%);
+      --header-control-border: color-mix(in srgb, var(--border) 82%, transparent);
       display: flex;
       align-items: center;
       gap: 3px;
@@ -336,36 +338,87 @@
       padding-top: 4px;
       border-top: 1px solid var(--border);
     }
+    body.night-mode .header-actions {
+      --header-control-bg: color-mix(in srgb, var(--surface) 84%, #000000 16%);
+      --header-control-border: color-mix(in srgb, var(--border) 82%, transparent);
+    }
     .theme-switch {
       display: inline-flex;
       align-items: center;
       gap: 4px;
       min-height: var(--control-height);
       padding: 0 6px;
-      border: 1px solid var(--border);
+      border: 1px solid var(--header-control-border);
       border-radius: 4px;
-      background: color-mix(in srgb, var(--surface) 70%, #efe6f7 30%);
+      background: var(--header-control-bg);
       color: var(--text);
       font-size: var(--control-font);
       font-weight: 500;
       cursor: pointer;
     }
     .logout-button {
-      min-height: var(--control-height);
-      padding: var(--control-py) 8px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: color-mix(in srgb, var(--surface) 80%, #ffffff 20%);
-      color: var(--text);
-      font-family: inherit;
-      font-size: var(--control-font);
-      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: 34px;
+      height: 22px;
+      border: 1px solid var(--header-control-border);
+      border-radius: 6px;
+      padding: 0;
       cursor: pointer;
-      transition: transform .14s ease, background .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
+      position: relative;
+      overflow: hidden;
+      transition: width .22s ease, transform .14s ease, box-shadow .14s ease, background .18s ease, border-color .18s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
+      background: var(--header-control-bg);
+      color: var(--text);
+    }
+    .logout-button .sign {
+      width: 100%;
+      height: 100%;
+      transition: width .22s ease, padding-left .22s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .logout-button .sign svg {
+      width: 12px;
+      height: 12px;
+      display: block;
+    }
+    .logout-button .sign svg path {
+      fill: currentColor;
+    }
+    .logout-button .text {
+      position: absolute;
+      right: 0;
+      width: 0;
+      opacity: 0;
+      white-space: nowrap;
+      color: currentColor;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      transition: width .22s ease, opacity .18s ease, padding-right .22s ease;
     }
     .logout-button:hover {
+      width: 94px;
       transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(33, 13, 42, 0.12);
+      box-shadow: 0 6px 16px rgba(33, 13, 42, 0.18);
+      border-color: color-mix(in srgb, var(--brand-mid-lavender) 52%, var(--border));
+    }
+    .logout-button:hover .sign {
+      width: 30%;
+      padding-left: 10px;
+    }
+    .logout-button:hover .text {
+      opacity: 1;
+      width: 70%;
+      padding-right: 9px;
+    }
+    .logout-button:active {
+      transform: translate(1px, 1px);
     }
     .theme-switch input[type="checkbox"] {
       width: 14px;
@@ -373,6 +426,15 @@
       accent-color: var(--primary);
       padding: 0;
       margin: 0;
+    }
+    .header-actions .search-form {
+      --input-bg: var(--header-control-bg);
+      border-color: var(--header-control-border);
+    }
+    .header-actions .toggle-switch {
+      --toggle-day-track: var(--header-control-bg);
+      --toggle-night-track: var(--header-control-bg);
+      --toggle-border: var(--header-control-border);
     }
 
     .suite-main {
@@ -411,20 +473,20 @@
     }
     .tool-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px 20px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px 14px;
     }
     .tool-link {
       position: relative;
-      min-height: 250px;
-      padding: 18px;
+      min-height: 190px;
+      padding: 12px;
       border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-      border-radius: 16px;
+      border-radius: 12px;
       text-decoration: none;
       color: #ffffff;
       overflow: hidden;
       isolation: isolate;
-      box-shadow: 0 8px 28px -9px rgba(0, 0, 0, 0.42);
+      box-shadow: 0 7px 20px -10px rgba(0, 0, 0, 0.38);
       transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
     .tool-link:hover {
@@ -441,10 +503,10 @@
       z-index: 1;
     }
     body:not(.night-mode) .tool-link {
-      background: rgba(255, 255, 255, 0.72);
+      background: var(--surface);
     }
     body.night-mode .tool-link {
-      background: rgba(36, 21, 48, 0.72);
+      background: var(--surface);
     }
 
     .tool-content {
@@ -455,12 +517,12 @@
       align-content: center;
       justify-items: center;
       text-align: center;
-      gap: 14px;
-      padding: 10px 8px;
+      gap: 10px;
+      padding: 8px 6px;
     }
     .tool-icon {
-      width: 74px;
-      height: 74px;
+      width: 56px;
+      height: 56px;
       display: block;
       color: #ffffff;
       filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
@@ -476,11 +538,11 @@
     }
     .tool-link .title {
       font-weight: 600;
-      font-size: 1.02rem;
+      font-size: 0.9rem;
       line-height: 1.2;
       letter-spacing: 0.01em;
       text-wrap: balance;
-      max-width: 17ch;
+      max-width: 16ch;
       text-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
     }
     body:not(.night-mode) .tool-link .tool-icon,
@@ -488,6 +550,10 @@
       color: var(--brand-dark-purple);
       text-shadow: none;
       filter: none;
+    }
+
+    @media (max-width: 1200px) {
+      .tool-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
 
     @media (max-width: 980px) {
@@ -506,10 +572,14 @@
         align-items: flex-start;
         flex-direction: column;
       }
-      .tool-grid { grid-template-columns: 1fr; }
+      .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .tool-link {
-        min-height: 200px;
+        min-height: 170px;
       }
+    }
+
+    @media (max-width: 640px) {
+      .tool-grid { grid-template-columns: 1fr; }
     }
   
 /* Prevent iOS Safari input zoom-on-focus */
@@ -564,7 +634,14 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="logout-button" id="logoutButton" type="button">Logout</button>
+        <button class="logout-button" id="logoutButton" type="button" aria-label="Logout" title="Logout">
+          <span class="sign" aria-hidden="true">
+            <svg viewBox="0 0 512 512">
+              <path d="M502.6 273.4l-96 96c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l55-55H208c-13.3 0-24-10.7-24-24s10.7-24 24-24h219.7l-55-55c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l96 96c9.4 9.3 9.4 24.5 0 33.8zM176 432H96c-26.5 0-48-21.5-48-48V128c0-26.5 21.5-48 48-48h80c13.3 0 24-10.7 24-24s-10.7-24-24-24H96C43 32 0 75 0 128v256c0 53 43 96 96 96h80c13.3 0 24-10.7 24-24s-10.7-24-24-24z"/>
+            </svg>
+          </span>
+          <span class="text">Logout</span>
+        </button>
         <div class="toggle-switch" title="Night Mode">
           <label class="switch-label" for="nightMode">
             <input id="nightMode" class="checkbox" type="checkbox">

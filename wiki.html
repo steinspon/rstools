@@ -57,7 +57,7 @@
     }
 
     body.night-mode {
-      --bg: #110b16;
+      --bg: #C7B2EA;
       --surface: rgba(30, 20, 40, 0.92);
       --surface-alt: rgba(25, 17, 34, 0.9);
       --border: rgba(208, 191, 222, 0.22);
@@ -79,7 +79,7 @@
       margin: 0;
       font-family: "formular-interwell", "Segoe UI", sans-serif;
       font-size: 11px;
-      background: linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%);
+      background: var(--bg);
       color: var(--text);
       -webkit-text-size-adjust: 100%;
     }
@@ -238,66 +238,92 @@
     }
 
     #wiki-nav {
+      padding: 10px;
+      overflow: hidden;
+      border-radius: var(--panel-radius);
+    }
+    #wiki-nav-tree {
       overflow: auto;
-      padding: 8px;
+      max-height: 100%;
+      padding-right: 2px;
     }
 
     .wiki-nav-root,
     .wiki-nav-root ul {
       list-style: none;
-      padding-left: 11px;
+      padding-left: 0;
       margin: 0;
     }
-
-    .wiki-nav-root { padding-left: 0; }
+    .wiki-nav-root { display: grid; gap: 3px; }
+    .wiki-nav-root ul {
+      margin-top: 2px;
+      margin-left: 10px;
+      padding-left: 8px;
+      border-left: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+      display: grid;
+      gap: 2px;
+    }
+    .wiki-nav-root ul[hidden] {
+      display: none;
+    }
 
     .wiki-folder-toggle {
       width: 100%;
       border: 0;
       background: transparent;
       text-align: left;
-      padding: 3px 5px;
-      border-radius: 4px;
-      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 8px;
+      color: var(--muted);
       cursor: pointer;
-      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      transition: background 160ms ease, color 160ms ease;
     }
 
-    .wiki-folder-toggle::before {
-      content: "";
+    .wiki-folder-toggle::after {
+      content: "\203A";
       display: inline-block;
-      width: 0;
-      height: 0;
-      border-top: 4px solid transparent;
-      border-bottom: 4px solid transparent;
-      border-left: 5px solid currentColor;
-      margin-right: 7px;
-      transition: transform 140ms ease;
-      transform-origin: 35% 50%;
+      margin-left: 2px;
+      transition: transform 180ms ease;
+      transform-origin: 50% 50%;
+      font-size: 15px;
+      line-height: 1;
       opacity: 0.9;
     }
 
-    .wiki-folder-toggle[aria-expanded="true"]::before {
+    .wiki-folder-toggle[aria-expanded="true"]::after {
       transform: rotate(90deg);
+    }
+    body.night-mode .wiki-folder-toggle::after {
+      color: var(--brand-accent-lime);
     }
 
     .wiki-folder-toggle:hover,
     .wiki-nav-link:hover {
-      background: var(--surface-alt);
+      background: color-mix(in srgb, var(--surface-alt) 84%, var(--surface) 16%);
+      color: var(--text);
     }
 
     .wiki-nav-link {
       display: block;
       text-decoration: none;
-      color: var(--text);
-      padding: 3px 5px;
-      border-radius: 4px;
-      font-size: 0.96em;
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      transition: background 160ms ease, color 160ms ease;
     }
 
     .wiki-nav-link.active {
-      background: var(--surface-alt);
-      font-weight: 600;
+      background: color-mix(in srgb, var(--surface-alt) 70%, var(--primary) 30%);
+      color: var(--primary-strong);
+      font-weight: 650;
     }
 
     .wiki-content {
@@ -306,50 +332,8 @@
       min-height: 0;
     }
 
-    .wiki-find {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-      padding: 7px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    #wiki-find-input {
-      width: min(420px, 100%);
-      min-height: var(--control-height);
-      border: 1px solid var(--field-border);
-      border-radius: var(--radius);
-      padding: var(--control-py) 8px;
-      font: inherit;
-      background: var(--surface-alt);
-      color: var(--text);
-    }
-
-    .wiki-find button {
-      min-height: var(--control-height);
-      border: 1px solid var(--field-border);
-      border-radius: var(--radius);
-      background: var(--surface-alt);
-      color: var(--text);
-      padding: var(--control-py) 9px;
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .wiki-find button:hover {
-      background: color-mix(in srgb, var(--surface-alt) 84%, var(--primary) 16%);
-    }
-
-    #wiki-find-count {
-      font-size: 10px;
-      color: var(--muted);
-      min-width: 52px;
-      text-align: right;
-    }
-
     #wiki-article {
-      overflow: auto;
+      overflow: visible;
       padding: 12px;
       line-height: 1.58;
     }
@@ -373,70 +357,147 @@
     .wiki-toc {
       margin: 0 0 12px;
       border: 1px solid var(--border);
-      border-radius: 4px;
-      background: var(--surface-alt);
-      padding: 6px 8px;
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 6px;
+    }
+    body.night-mode .wiki-toc {
+      background: color-mix(in srgb, var(--surface) 86%, #ffffff 14%);
+      border-color: color-mix(in srgb, var(--border) 75%, transparent 25%);
     }
 
     .wiki-toc > summary {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      width: 100%;
+      border-radius: 8px;
+      padding: 6px 8px;
       cursor: pointer;
       font-weight: 600;
-      color: var(--primary-strong);
+      color: var(--muted);
       list-style: none;
       user-select: none;
+      transition: background 160ms ease, color 160ms ease;
     }
 
     .wiki-toc > summary::-webkit-details-marker {
       display: none;
     }
 
-    .wiki-toc > summary::before {
-      content: "\25B8";
+    .wiki-toc > summary::after {
+      content: "\203A";
       display: inline-block;
-      margin-right: 6px;
-      transition: transform 140ms ease;
+      margin-left: 2px;
+      transition: transform 180ms ease;
+      transform-origin: 50% 50%;
+      font-size: 15px;
+      line-height: 1;
+      opacity: 0.9;
     }
 
-    .wiki-toc[open] > summary::before {
+    .wiki-toc[open] > summary::after {
       transform: rotate(90deg);
+    }
+    body.night-mode .wiki-toc > summary::after {
+      color: var(--brand-accent-lime);
+    }
+    .wiki-toc > summary:hover {
+      background: color-mix(in srgb, var(--surface-alt) 84%, var(--surface) 16%);
+      color: var(--text);
     }
 
     .wiki-toc ol {
-      margin: 7px 0 0;
-      padding-left: 16px;
+      list-style: none;
+      margin: 2px 0 0;
+      padding-left: 0;
     }
 
     .wiki-toc-item {
-      margin: 2px 0;
+      margin: 0;
     }
 
     .wiki-toc-node > summary {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      width: 100%;
+      border-radius: 8px;
+      padding: 6px 8px;
       list-style: none;
       cursor: pointer;
+      color: var(--muted);
+      transition: background 160ms ease, color 160ms ease;
+    }
+    .wiki-toc-leaf-link {
+      display: block;
+      width: 100%;
+      border-radius: 8px;
+      padding: 6px 8px;
+      color: var(--muted);
+      transition: background 160ms ease, color 160ms ease;
+    }
+    .wiki-toc-leaf-link:hover {
+      background: color-mix(in srgb, var(--surface-alt) 84%, var(--surface) 16%);
+      color: var(--text);
     }
 
     .wiki-toc-node > summary::-webkit-details-marker {
       display: none;
     }
 
-    .wiki-toc-node > summary::before {
-      content: "+";
+    .wiki-toc-node > summary::after {
+      content: "\203A";
       display: inline-block;
-      width: 12px;
-      margin-right: 6px;
-      text-align: center;
-      color: var(--muted);
-      font-weight: 700;
+      margin-left: 2px;
+      transition: transform 180ms ease;
+      transform-origin: 50% 50%;
+      font-size: 15px;
+      line-height: 1;
+      opacity: 0.9;
     }
 
-    .wiki-toc-node[open] > summary::before {
-      content: "-";
+    .wiki-toc-node[open] > summary::after {
+      transform: rotate(90deg);
+    }
+    body.night-mode .wiki-toc-node > summary::after {
+      color: var(--brand-accent-lime);
+    }
+    .wiki-toc-node > summary:hover {
+      background: color-mix(in srgb, var(--surface-alt) 84%, var(--surface) 16%);
+      color: var(--text);
     }
 
     .wiki-toc-node > ol {
-      margin-top: 3px;
+      margin-top: 2px;
+      margin-left: 10px;
+      padding-left: 8px;
+      border-left: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
     }
-
+    .wiki-toc-node:not([open]) > ol {
+      display: none;
+    }
+    .wiki-toc ol[hidden] {
+      display: none;
+    }
+    #wiki-article .wiki-toc a {
+      display: block;
+      width: 100%;
+      text-decoration: none;
+      color: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+    .wiki-toc-label {
+      display: inline;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.25;
+      color: inherit;
+    }
     #wiki-article a {
       color: var(--link);
       text-decoration-thickness: 1.5px;
@@ -569,15 +630,11 @@
     </header>
 
     <main class="wiki-main">
-      <aside class="wiki-panel" id="wiki-nav" aria-label="Wiki navigation"></aside>
+      <aside class="wiki-panel" id="wiki-nav" aria-label="Wiki navigation">
+        <div id="wiki-nav-tree"></div>
+      </aside>
 
       <section class="wiki-panel wiki-content">
-        <div class="wiki-find" aria-label="Find in page">
-          <input id="wiki-find-input" type="search" placeholder="Find in this page..." autocomplete="off">
-          <button id="wiki-find-prev" type="button" aria-label="Previous match">Prev</button>
-          <button id="wiki-find-next" type="button" aria-label="Next match">Next</button>
-          <span id="wiki-find-count">0/0</span>
-        </div>
         <article id="wiki-article" aria-live="polite"></article>
       </section>
     </main>

@@ -66,7 +66,7 @@
       --accent-warm: #d3ef54;
     }
     body.night-mode {
-      --bg: #110b16;
+      --bg: #C7B2EA;
       --surface: rgba(30, 20, 40, 0.92);
       --surface-alt: rgba(25, 17, 34, 0.9);
       --border: rgba(208, 191, 222, 0.22);
@@ -96,10 +96,7 @@
       overflow: auto;
       font-family: "formular-interwell", "Segoe UI", sans-serif;
       font-size: 11px;
-      background:
-        radial-gradient(1200px 420px at 15% -5%, rgba(119, 74, 160, 0.2), transparent 55%),
-        radial-gradient(900px 360px at 88% -10%, rgba(33, 13, 42, 0.16), transparent 60%),
-        linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%);
+      background: var(--bg);
       color: var(--text);
       -webkit-text-size-adjust: 100%;
     }
@@ -318,7 +315,7 @@
       display: flex;
       flex: 1;
       min-height: 0;
-      overflow: hidden;
+      overflow: visible;
       gap: var(--space-lg);
     }
 
@@ -328,7 +325,7 @@
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 6px;
-      overflow-y: auto;
+      overflow: visible;
       padding: var(--space-lg);
       flex-shrink: 0;
       box-shadow: var(--shadow);
@@ -343,7 +340,7 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       box-shadow: var(--shadow);
-      overflow-y: auto;
+      overflow: visible;
       display: flex;
       flex-direction: column;
       align-items: stretch;
@@ -661,6 +658,61 @@
       accent-color: var(--primary);
       padding: 0;
       margin: 0;
+    }
+    .size-stepper {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid color-mix(in srgb, var(--field-border) 88%, var(--border) 12%);
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--field-bg) 92%, var(--surface) 8%);
+      overflow: hidden;
+    }
+    .size-stepper button {
+      min-height: 26px;
+      min-width: 26px;
+      border: 0;
+      border-right: 1px solid var(--field-border);
+      background: transparent;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0;
+      box-shadow: none;
+      transform: none;
+      transition: opacity .15s ease, color .15s ease, background .15s ease;
+    }
+    .size-stepper button:last-child {
+      border-right: 0;
+      border-left: 1px solid var(--field-border);
+    }
+    .size-stepper button:hover {
+      background: color-mix(in srgb, var(--surface-alt) 88%, var(--surface) 12%);
+      color: var(--text);
+      opacity: .82;
+      box-shadow: none;
+      transform: none;
+    }
+    .size-stepper input[type="number"] {
+      width: 58px;
+      min-height: 26px;
+      border: 0;
+      border-radius: 0;
+      text-align: center;
+      padding: 0 2px;
+      background: transparent;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    #plotSizePercentInput::-webkit-outer-spin-button,
+    #plotSizePercentInput::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    #plotSizePercentInput {
+      -moz-appearance: textfield;
+      appearance: textfield;
     }
 
     /* DATA GRID STYLING FOR LAYERS */
@@ -1064,12 +1116,8 @@
     }
 
     @media (min-width: 981px) {
-      body {
-        overflow: hidden;
-      }
-
       .wrap.app-shell {
-        height: 100vh;
+        min-height: 100vh;
         padding: var(--app-pad);
         gap: 8px;
       }
@@ -1592,6 +1640,15 @@ body.night-mode .access-submit {
            </div>
            <span style="font-size:0.8em; color:var(--muted);">mm</span>
         </div>
+        <div class="flex-row" style="margin-top:6px;">
+           <label style="width:100px;">Plot Size:</label>
+           <div class="size-stepper" title="Scale both plot windows from default size">
+             <button type="button" id="plotSizePercentDownBtn" aria-label="Decrease plot size">-</button>
+             <input type="number" id="plotSizePercentInput" min="10" max="200" step="5" value="50" aria-label="Plot size percent">
+             <button type="button" id="plotSizePercentUpBtn" aria-label="Increase plot size">+</button>
+           </div>
+           <span style="font-size:0.8em; color:var(--muted);">%</span>
+         </div>
         <div style="font-size:0.75rem; color:var(--muted); margin-top:4px;">
            Check to fix scale. Use separate lock sizes for radial and longitudinal views.
         </div>
@@ -2221,6 +2278,7 @@ const meltAnimationState = {
 let hasUnsavedChanges = false;
 let pendingNavigationHref = null;
 let bypassBeforeUnload = false;
+const DEFAULT_PLOT_SIZE_PERCENT = 50;
 
 function markUnsavedChanges() {
   hasUnsavedChanges = true;
@@ -2245,6 +2303,12 @@ function hideUnsavedGate() {
   document.body.classList.remove('lock-active');
   pendingNavigationHref = null;
 }
+
+window.__rstoolsHandleNavigationAttempt = function (targetHref) {
+  if (!hasUnsavedChanges) return false;
+  showUnsavedGate(targetHref);
+  return true;
+};
 
 window.addEventListener('beforeunload', function (event) {
   if (!hasUnsavedChanges || bypassBeforeUnload) return;
@@ -3170,20 +3234,44 @@ function getCurrentVisibleSpanMm() {
   return referenceDiam / Math.max(0.001, view.scale || 1);
 }
 
+function getPlotSizePercent() {
+  const input = document.getElementById('plotSizePercentInput');
+  const raw = parseFloat(input?.value);
+  if (!Number.isFinite(raw)) return DEFAULT_PLOT_SIZE_PERCENT;
+  return Math.max(10, Math.min(200, raw));
+}
+
+function setPlotSizePercent(value) {
+  const input = document.getElementById('plotSizePercentInput');
+  if (!input) return;
+  const clamped = Math.max(10, Math.min(200, Math.round((Number(value) || DEFAULT_PLOT_SIZE_PERCENT) / 5) * 5));
+  input.value = String(clamped);
+}
+
 function setCanvasDisplaySize() {
   const logicalSize = 700;
+  const scaledLogicalSize = Math.round(logicalSize * (getPlotSizePercent() / 100));
   const bindings = [
     { canvas: document.getElementById('circleCanvas'), wrap: document.getElementById('canvasWrap') },
     { canvas: document.getElementById('longitudinalCanvas'), wrap: document.getElementById('canvasWrapLongitudinal') }
   ];
 
   const availableWidths = bindings
-    .map(({ wrap }) => (wrap ? Math.max(280, Math.min(logicalSize, Math.floor(wrap.clientWidth || logicalSize))) : null))
+    .map(({ wrap }) => {
+      if (!wrap) return null;
+      const parentWidth = Math.floor(wrap.parentElement?.clientWidth || 0);
+      const availableWidth = parentWidth > 0 ? parentWidth : Math.floor(wrap.clientWidth || scaledLogicalSize);
+      return Math.max(280, Math.min(scaledLogicalSize, availableWidth));
+    })
     .filter((w) => Number.isFinite(w));
 
-  const sharedWidth = availableWidths.length ? Math.min(...availableWidths) : logicalSize;
+  const sharedWidth = availableWidths.length ? Math.min(...availableWidths) : scaledLogicalSize;
 
-  bindings.forEach(({ canvas }) => {
+  bindings.forEach(({ canvas, wrap }) => {
+    if (wrap) {
+      wrap.style.maxWidth = `${sharedWidth}px`;
+      wrap.style.width = '100%';
+    }
     if (!canvas) return;
     canvas.style.width = `${sharedWidth}px`;
     canvas.style.height = `${sharedWidth}px`;
@@ -4879,6 +4967,26 @@ window.onload = function () {
       requestPlot({ rebuildTable: false });
     });
   });
+  const plotSizePercentInput = document.getElementById('plotSizePercentInput');
+  const plotSizePercentDownBtn = document.getElementById('plotSizePercentDownBtn');
+  const plotSizePercentUpBtn = document.getElementById('plotSizePercentUpBtn');
+  const applyPlotSizePercent = (nextValue) => {
+    setPlotSizePercent(nextValue);
+    markUnsavedChanges();
+    setCanvasDisplaySize();
+    requestPlot({ rebuildTable: false });
+  };
+  if (plotSizePercentInput) {
+    setPlotSizePercent(DEFAULT_PLOT_SIZE_PERCENT);
+    plotSizePercentInput.addEventListener('input', () => applyPlotSizePercent(plotSizePercentInput.value));
+    plotSizePercentInput.addEventListener('change', () => applyPlotSizePercent(plotSizePercentInput.value));
+  }
+  if (plotSizePercentDownBtn) {
+    plotSizePercentDownBtn.addEventListener('click', () => applyPlotSizePercent(getPlotSizePercent() - 5));
+  }
+  if (plotSizePercentUpBtn) {
+    plotSizePercentUpBtn.addEventListener('click', () => applyPlotSizePercent(getPlotSizePercent() + 5));
+  }
   const longitudinalNotesEl = document.getElementById('longitudinalNotes');
   if (longitudinalNotesEl) {
     wireRichNotesEditor('longitudinalNotes', 'longitudinalNotesToolbar', () => {
@@ -5049,7 +5157,14 @@ function wireButtons() {
 
     const resetViewBtn = document.getElementById('resetViewBtn');
     if (resetViewBtn) {
-        resetViewBtn.onclick = () => { view.scale=1; view.panX=0; view.panY=0; requestPlot({ rebuildTable: false }); };
+        resetViewBtn.onclick = () => {
+            view.scale = 1;
+            view.panX = 0;
+            view.panY = 0;
+            setPlotSizePercent(DEFAULT_PLOT_SIZE_PERCENT);
+            setCanvasDisplaySize();
+            requestPlot({ rebuildTable: false });
+        };
     }
     const lockViewBtn = document.getElementById('lockViewBtn');
     const lockEl = document.getElementById('lockViewCheckbox');
@@ -8755,6 +8870,7 @@ function fallbackLoad(input) {
 }
 
 function applySettingsData(data, preserveTitle) {
+    const preservedPlotSizePercent = getPlotSizePercent();
     const longitudinalNotesEl = document.getElementById('longitudinalNotes');
     if (longitudinalNotesEl) {
         const richValue = data.longitudinalNotesHtml ?? data.longitudinalNotes;
@@ -8812,6 +8928,8 @@ function applySettingsData(data, preserveTitle) {
         document.getElementById('lockViewSizeLongitudinal').value = longitudinal;
         syncLockViewToolbarButton();
     }
+    setPlotSizePercent(preservedPlotSizePercent);
+    setCanvasDisplaySize();
     if (data.rulerEnabled !== undefined) {
         document.getElementById('showRulerCheckbox').checked = Boolean(data.rulerEnabled);
     } else {

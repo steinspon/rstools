@@ -40,6 +40,23 @@
     if (q && input) {
       input.value = q;
     }
+
+    form.addEventListener('submit', function (event) {
+      var action = form.getAttribute('action') || 'search.html';
+      var nextUrl = new URL(action, window.location.href);
+      var formData = new FormData(form);
+      var query = String(formData.get('q') || '').trim();
+      if (query) nextUrl.searchParams.set('q', query);
+      else nextUrl.searchParams.delete('q');
+
+      if (typeof window.__rstoolsHandleNavigationAttempt === 'function') {
+        var intercepted = window.__rstoolsHandleNavigationAttempt(nextUrl.href);
+        if (intercepted) {
+          event.preventDefault();
+          return;
+        }
+      }
+    });
   }
 
   function initHeaderSearch() {

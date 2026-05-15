@@ -9,17 +9,19 @@
     pagesByFile: new Map(),
     pagesByFileLower: new Map(),
     currentPage: "",
+    expandedNavFolders: new Set(),
     articleBaseHtml: "",
     matches: [],
     activeMatchIndex: -1
   };
 
-  var navEl = document.getElementById("wiki-nav");
+  var navEl = document.getElementById("wiki-nav-tree");
   var articleEl = document.getElementById("wiki-article");
   var findInput = document.getElementById("wiki-find-input");
   var findPrevBtn = document.getElementById("wiki-find-prev");
   var findNextBtn = document.getElementById("wiki-find-next");
   var findCountEl = document.getElementById("wiki-find-count");
+  var hasFindUi = Boolean(findInput && findPrevBtn && findNextBtn && findCountEl);
 
   function nowBust() {
     return "v=" + Date.now();
@@ -321,6 +323,10 @@
     var list = Array.isArray(headings) ? headings.filter(function (item) {
       return item && item.id && item.text && item.level >= 1 && item.level <= 6;
     }) : [];
+    // Exclude the page title (first H1) from the TOC; users already see it in the article header.
+    if (list.length > 0 && list[0].level === 1) {
+      list = list.slice(1);
+    }
 
     if (!list.length) {
       return "";
@@ -356,12 +362,11 @@
         var node = nodes[j];
         var hasChildren = node.children.length > 0;
         if (hasChildren) {
-          var openAttr = node.level === 1 ? " open" : "";
           html += (
             "<li class=\"wiki-toc-item wiki-toc-level-" + node.level + "\">" +
-              "<details class=\"wiki-toc-node\"" + openAttr + ">" +
+              "<details class=\"wiki-toc-node\">" +
                 "<summary>" +
-                  "<a href=\"#" + encodeURIComponent(node.id) + "\">" + escapeHtml(node.text) + "</a>" +
+                  "<span class=\"wiki-toc-label\">" + escapeHtml(node.text) + "</span>" +
                 "</summary>" +
                 renderNodes(node.children) +
               "</details>" +
@@ -370,7 +375,7 @@
         } else {
           html += (
             "<li class=\"wiki-toc-item wiki-toc-level-" + node.level + "\">" +
-              "<a href=\"#" + encodeURIComponent(node.id) + "\">" + escapeHtml(node.text) + "</a>" +
+              "<a class=\"wiki-toc-leaf-link\" href=\"#" + encodeURIComponent(node.id) + "\">" + escapeHtml(node.text) + "</a>" +
             "</li>"
           );
         }
@@ -561,15 +566,25 @@
       btn.textContent = folderNode.name;
 
       var childList = document.createElement("ul");
-      var openByDefault = state.currentPage && (state.currentPage === folderNode.fullPath || state.currentPage.indexOf(folderNode.fullPath + "/") === 0);
+      if (!String(folderNode.name || "").trim()) {
+        return;
+      }
+      var folderPath = normalizePath(folderNode.fullPath || "");
+      var openByDefault = state.expandedNavFolders.has(folderPath);
 
       btn.setAttribute("aria-expanded", openByDefault ? "true" : "false");
       childList.hidden = !openByDefault;
 
       btn.addEventListener("click", function () {
         var expanded = btn.getAttribute("aria-expanded") === "true";
-        btn.setAttribute("aria-expanded", expanded ? "false" : "true");
-        childList.hidden = expanded;
+        var willExpand = !expanded;
+        btn.setAttribute("aria-expanded", willExpand ? "true" : "false");
+        childList.hidden = !willExpand;
+        if (willExpand) {
+          state.expandedNavFolders.add(folderPath);
+        } else {
+          state.expandedNavFolders.delete(folderPath);
+        }
       });
 
       renderNode(folderNode, childList);
@@ -652,10 +667,15 @@
   function clearMatchState() {
     state.matches = [];
     state.activeMatchIndex = -1;
-    findCountEl.textContent = "0/0";
+    if (findCountEl) {
+      findCountEl.textContent = "0/0";
+    }
   }
 
   function updateFindCounter() {
+    if (!findCountEl) {
+      return;
+    }
     if (!state.matches.length) {
       findCountEl.textContent = "0/0";
       return;
@@ -806,9 +826,13 @@
     var url = new URL(window.location.href);
     url.searchParams.set("page", page);
 
-    var hitValue = String(findInput.value || "").trim();
-    if (hitValue) {
-      url.searchParams.set("hit", hitValue);
+    if (findInput) {
+      var hitValue = String(findInput.value || "").trim();
+      if (hitValue) {
+        url.searchParams.set("hit", hitValue);
+      } else {
+        url.searchParams.delete("hit");
+      }
     } else {
       url.searchParams.delete("hit");
     }
@@ -840,11 +864,15 @@
         pageMeta.title = h1;
       }
 
-      var initialHit = getQueryParams().get("hit") || "";
-      if (findInput.value !== initialHit) {
-        findInput.value = initialHit;
+      if (hasFindUi) {
+        var initialHit = getQueryParams().get("hit") || "";
+        if (findInput.value !== initialHit) {
+          findInput.value = initialHit;
+        }
+        highlightTerm(findInput.value);
+      } else {
+        clearMatchState();
       }
-      highlightTerm(findInput.value);
       highlightHashHeading();
       renderNavigation();
     } catch (err) {
@@ -872,6 +900,29 @@
       }
 
       var href = link.getAttribute("href") || "";
+      if (href.startsWith("#")) {
+        ev.preventDefault();
+        var rawId = href.slice(1);
+        var decodedId = "";
+        try {
+          decodedId = decodeURIComponent(rawId);
+        } catch (err) {
+          decodedId = rawId;
+        }
+        if (!decodedId) {
+          return;
+        }
+        var target = document.getElementById(decodedId);
+        if (!target) {
+          return;
+        }
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+        var url = new URL(window.location.href);
+        url.hash = encodeURIComponent(decodedId);
+        history.replaceState({}, "", url.toString());
+        highlightHashHeading();
+        return;
+      }
       if (!href.startsWith("?page=")) {
         return;
       }
@@ -894,6 +945,9 @@
   }
 
   function wireFindUi() {
+    if (!hasFindUi) {
+      return;
+    }
     findInput.addEventListener("input", function () {
       var page = state.currentPage;
       var url = new URL(window.location.href);
@@ -967,6 +1021,10 @@
   window.addEventListener("popstate", function () {
     var page = getSelectedPageFromUrl();
     if (page) {
+      if (normalizePath(page) === normalizePath(state.currentPage || "")) {
+        highlightHashHeading();
+        return;
+      }
       renderPage(page);
     }
   });

@@ -67,11 +67,11 @@
 body {
   margin:0;
   font-family: "formular-interwell", "Segoe UI", sans-serif;
-  background: radial-gradient(1200px 420px at 15% -5%, rgba(119, 74, 160, 0.2), transparent 55%), radial-gradient(900px 360px at 88% -10%, rgba(33, 13, 42, 0.16), transparent 60%), linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%);
+  background: var(--bg);
   color:var(--text)
 }
 body.night-mode {
-  --bg:#080b10;
+  --bg:#C7B2EA;
   --panel:#141922;
   --text:#eef3f8;
   --muted:#9aa7b6;
@@ -406,7 +406,7 @@ svg {
   --font-plot:formular-interwell, Arial, sans-serif;
 }
 body.night-mode {
-  --bg: #110b16;
+  --bg: #C7B2EA;
   --surface: rgba(30, 20, 40, 0.92);
   --surface-alt: rgba(25, 17, 34, 0.9);
   --border: rgba(208, 191, 222, 0.22);
@@ -429,13 +429,13 @@ body.night-mode {
   --table-border:#493955;
 }
 * { box-sizing:border-box; }
-html { background: radial-gradient(1200px 420px at 15% -5%, rgba(119, 74, 160, 0.2), transparent 55%), radial-gradient(900px 360px at 88% -10%, rgba(33, 13, 42, 0.16), transparent 60%), linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%); }
+html { background: var(--bg); }
 body {
   margin:0;
   min-height:100vh;
   font-family:var(--font-ui);
   font-size:11px;
-  background: radial-gradient(1200px 420px at 15% -5%, rgba(119, 74, 160, 0.2), transparent 55%), radial-gradient(900px 360px at 88% -10%, rgba(33, 13, 42, 0.16), transparent 60%), linear-gradient(180deg, #f8f4fb 0%, var(--bg) 100%);
+  background: var(--bg);
   color:var(--text);
   letter-spacing:0;
 }
@@ -511,9 +511,26 @@ button,input,select { font:inherit; }
     .app-brand .nav-icon-btn {
       flex-shrink: 0;
     }
-    .app-brand .nav-icon-btn + .nav-icon-btn {
-      margin-left: 6px;
-    }
+.app-brand .nav-icon-btn + .nav-icon-btn {
+  margin-left: 6px;
+}
+#homeNavBtn,
+#backNavBtn,
+#forwardNavBtn {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+#homeNavBtn:hover,
+#backNavBtn:hover,
+#forwardNavBtn:hover {
+  background: color-mix(in srgb, var(--brand-mid-lavender) 18%, transparent);
+}
 .app-header h1 {
   margin:0;
   font-size:.82rem;
@@ -1956,6 +1973,11 @@ const hideUnsavedGate=()=> {
   gate.classList.add('hidden');
   document.body.classList.remove('lock-active');
   pendingNavigationHref=null;
+};
+window.__rstoolsHandleNavigationAttempt=(targetHref)=> {
+  if(!hasUnsavedChanges) return false;
+  showUnsavedGate(targetHref);
+  return true;
 };
 const plotBg=()=>cssVar('--plot-bg','#fff'),
 plotLine=()=>cssVar('--plot-line','#000'),
