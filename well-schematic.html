@@ -1,0 +1,3455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interwell Well Schematic Creator</title>
+  <link rel="stylesheet" href="brand/brand-tokens.css">
+  <link rel="stylesheet" href="search-ui.css">
+  <link rel="stylesheet" href="night-toggle.css">
+  <style>
+    :root {
+      --bg: #f4f0f7;
+      --surface: rgba(255,255,255,.88);
+      --surface-alt: rgba(255,255,255,.72);
+      --border: rgba(33,13,42,.16);
+      --text: #22122d;
+      --muted: #685774;
+      --primary: #210d2a;
+      --primary-strong: #13081a;
+      --lavender: #c7b2ea;
+      --lime: #def359;
+      --neutral-lavender: #e3dfeb;
+      --neutral-green: #e4ebd7;
+      --brown: #302711;
+      --danger: #b0294a;
+      --field-bg: #ffffff;
+      --field-text: var(--text);
+      --field-border: #c8bdd0;
+      --plot-bg: #ffffff;
+      --plot-line: #210d2a;
+      --table-head: #f3edf7;
+      --shadow: 0 10px 26px rgba(33,13,42,.08);
+      --radius: 6px;
+      --control-height: 24px;
+      --control-font: 10px;
+    }
+    body.night-mode {
+      --bg: #110b16;
+      --surface: rgba(30,20,40,.94);
+      --surface-alt: rgba(25,17,34,.9);
+      --border: rgba(227,223,235,.22);
+      --text: #f2eaf8;
+      --muted: #b8a6c4;
+      --primary: #f2eaf8;
+      --primary-strong: #ffffff;
+      --field-bg: #171022;
+      --field-text: #f2eaf8;
+      --field-border: #493955;
+      --plot-bg: #171022;
+      --plot-line: #f2eaf8;
+      --table-head: #2a1f35;
+      --shadow: 0 8px 22px rgba(0,0,0,.26);
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      font-family: "formular-interwell", Arial, sans-serif;
+      font-size: 11px;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-text-size-adjust: 100%;
+    }
+    button, input, select, textarea { font: inherit; font-variant-numeric: tabular-nums; }
+    button, .btn {
+      min-height: var(--control-height);
+      border: 1px solid color-mix(in srgb, var(--field-border) 88%, var(--border));
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--surface-alt) 82%, #fff 18%);
+      color: var(--text);
+      padding: 3px 8px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    button:hover, .btn:hover { border-color: color-mix(in srgb, var(--lavender) 60%, var(--border)); }
+    button.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      font-weight: 600;
+    }
+    body.night-mode button.primary { background: var(--lime); color: #210d2a; border-color: var(--lime); }
+    button.danger { color: var(--danger); }
+    input, select, textarea {
+      width: 100%;
+      min-height: var(--control-height);
+      border: 1px solid var(--field-border);
+      border-radius: 4px;
+      background: var(--field-bg);
+      color: var(--field-text);
+      padding: 3px 6px;
+    }
+    input[type="checkbox"] {
+      width: 14px;
+      min-width: 14px;
+      height: 14px;
+      min-height: 14px;
+      accent-color: var(--primary);
+      padding: 0;
+      margin: 0;
+      justify-self: start;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 11px;
+    }
+    .checkbox-row input[type="checkbox"] {
+      flex: 0 0 14px;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    label { display: grid; gap: 3px; color: var(--muted); font-size: 10px; }
+    .wrap.app-shell {
+      min-height: 100vh;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .app-header {
+      position: relative;
+      z-index: 20;
+      display: grid;
+      gap: 4px;
+      padding: 5px 7px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .app-header-top, .header-actions, .menu-bar, .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .app-header-top { justify-content: space-between; }
+    .app-brand { display: flex; align-items: center; min-width: 0; }
+    .app-logo { width: auto; height: 18px; flex: 0 0 auto; margin-right: 6px; }
+    body.night-mode .app-logo { filter: brightness(0) invert(1) saturate(0); }
+    .app-brand .nav-icon-btn + .nav-icon-btn { margin-left: 6px; }
+    .nav-icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 0;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--brand-dark-purple);
+      cursor: pointer;
+    }
+    body.night-mode .nav-icon-btn { color: #f2eaf8; }
+    .nav-icon-btn svg { width: 18px; height: 18px; fill: currentColor; display: block; }
+    .app-meta { color: var(--muted); text-align: right; line-height: 1.35; white-space: nowrap; }
+    .header-actions {
+      justify-content: space-between;
+      flex-wrap: wrap;
+      padding-top: 4px;
+      border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    }
+    .menu-group { position: relative; display: inline-flex; }
+    .menu-popover {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      min-width: 180px;
+      display: none;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      z-index: 50;
+    }
+    .menu-group.open .menu-popover { display: grid; gap: 3px; }
+    .menu-item { justify-content: flex-start; width: 100%; }
+    .app-layout {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 360px minmax(520px, 1fr);
+      gap: 6px;
+      align-items: start;
+    }
+    .controls-panel { grid-column: 1; grid-row: 1 / span 2; }
+    .canvas-shell { grid-column: 2; grid-row: 1; }
+    .right-panel { grid-column: 2; grid-row: 2; }
+    .panel, .canvas-shell {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .panel {
+      overflow: auto;
+      padding: 8px;
+    }
+    .controls-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 6px;
+    }
+    .sidebar-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 4px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--surface);
+      padding: 3px;
+      border: 1px solid color-mix(in srgb, var(--border) 78%, transparent 22%);
+      border-radius: 6px;
+    }
+    .sidebar-tab-option {
+      display: flex;
+      align-items: stretch;
+    }
+    .sidebar-tab-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .sidebar-tab-btn {
+      min-height: 24px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: center;
+      padding: 0 3px;
+      transition: background .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .sidebar-tab-btn.is-active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 8px 18px rgba(33,13,42,.18);
+    }
+    body.night-mode .sidebar-tab-btn.is-active {
+      background: var(--lime);
+      color: #210d2a;
+      border-color: var(--lime);
+    }
+    .sidebar-tab-panel {
+      display: none;
+      min-height: 0;
+    }
+    .sidebar-tab-panel.is-active {
+      display: block;
+    }
+    .canvas-shell {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+    .canvas-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border-bottom: 0;
+      background: color-mix(in srgb, var(--surface-alt) 82%, transparent);
+    }
+    .svg-wrap {
+      position: relative;
+      overflow: auto;
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--border) 30%, transparent) 1px, transparent 1px),
+        linear-gradient(180deg, color-mix(in srgb, var(--border) 28%, transparent) 1px, transparent 1px),
+        var(--plot-bg);
+      background-size: 24px 24px;
+      padding: 12px;
+    }
+    .depth-pan-scroll {
+      position: absolute;
+      right: 6px;
+      top: 84px;
+      width: 220px;
+      height: 18px;
+      z-index: 8;
+      opacity: .88;
+      accent-color: #ab4ce4;
+      cursor: ns-resize;
+      transform: rotate(90deg);
+      transform-origin: top right;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .depth-pan-scroll.hidden { display: none; }
+    #schematicSvg {
+      display: block;
+      width: 100%;
+      min-width: 760px;
+      height: auto;
+      background: var(--plot-bg);
+      color: var(--plot-line);
+      border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    }
+    details.section {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 7px;
+      background: color-mix(in srgb, var(--surface-alt) 84%, transparent);
+    }
+    details.section > summary {
+      cursor: pointer;
+      padding: 7px 8px;
+      font-weight: 600;
+      color: var(--text);
+      list-style: none;
+    }
+    details.section > summary::-webkit-details-marker { display: none; }
+    .section-body { display: grid; gap: 7px; padding: 0 8px 8px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .form-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .quick-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+    .quick-grid button { justify-content: flex-start; text-align: left; }
+    .add-tree,
+    .add-tree ul {
+      list-style: none;
+      margin: 0;
+      padding-left: 0;
+    }
+    .add-tree {
+      display: grid;
+      gap: 4px;
+    }
+    .add-tree ul {
+      margin-top: 2px;
+      margin-left: 10px;
+      padding-left: 8px;
+      border-left: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+      display: grid;
+      gap: 3px;
+    }
+    .add-tree ul[hidden] {
+      display: none;
+    }
+    .add-tree-toggle {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      text-align: left;
+      padding: 6px 8px;
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      transition: background 160ms ease, color 160ms ease;
+    }
+    .add-tree-toggle::after {
+      content: "\203A";
+      display: inline-block;
+      margin-left: 2px;
+      transition: transform 180ms ease;
+      transform-origin: 50% 50%;
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.9;
+    }
+    .add-tree-toggle[aria-expanded="true"]::after {
+      transform: rotate(90deg);
+    }
+    .add-tree-toggle:hover {
+      background: color-mix(in srgb, var(--surface-alt) 84%, var(--surface) 16%);
+      color: var(--text);
+    }
+    .add-tree-link {
+      display: block;
+      text-decoration: none;
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: background 160ms ease, color 160ms ease;
+      cursor: pointer;
+    }
+    .add-tree-link:hover {
+      background: color-mix(in srgb, var(--surface-alt) 84%, var(--surface) 16%);
+      color: var(--text);
+    }
+    .add-tree-link:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    .add-tree-link.is-action {
+      width: 100%;
+      font-size: 11px;
+    }
+    .item-list { display: grid; gap: 4px; }
+    .item-row {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr) auto;
+      gap: 5px;
+      align-items: center;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: color-mix(in srgb, var(--field-bg) 80%, transparent);
+    }
+    .item-row.selected {
+      border-color: var(--lime);
+      box-shadow: inset 3px 0 0 var(--lime);
+    }
+    .item-main { min-width: 0; display: grid; gap: 1px; }
+    .item-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .item-meta { color: var(--muted); font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mini-actions { display: flex; gap: 2px; }
+    .mini-actions button { min-width: 24px; padding: 2px 5px; }
+    .properties-empty {
+      color: var(--muted);
+      line-height: 1.45;
+      padding: 8px;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+    }
+    .selected-path { color: var(--muted); margin: 0 0 8px; }
+    .warning-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
+    .warning-list li {
+      padding: 6px;
+      border-left: 3px solid var(--lime);
+      background: color-mix(in srgb, var(--lime) 12%, transparent);
+      border-radius: 4px;
+      line-height: 1.35;
+    }
+    .legend-grid { display: grid; gap: 5px; }
+    .legend-item { display: grid; grid-template-columns: 26px 1fr; align-items: center; gap: 6px; }
+    .legend-swatch { height: 12px; border: 1px solid currentColor; }
+    .status-line {
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hidden { display: none !important; }
+    body.lock-active { overflow: hidden; }
+    body.lock-active .app-shell { pointer-events: none; user-select: none; filter: blur(1px); }
+    .access-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(8,10,14,.62);
+      backdrop-filter: blur(4px);
+    }
+    .access-card {
+      width: min(420px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 20px 45px rgba(0,0,0,.34);
+      padding: 18px;
+    }
+    .dialog-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 1250;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      background: rgba(8,10,14,.55);
+      backdrop-filter: blur(3px);
+    }
+    .dialog-card {
+      width: min(540px, 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: 0 20px 45px rgba(0,0,0,.34);
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .dialog-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .dialog-sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .dialog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      max-height: 50vh;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+    .access-kicker {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .access-title { margin: 0 0 10px; font-size: 20px; }
+    .access-error { margin: 0 0 12px; line-height: 1.4; }
+    .element-hit { cursor: pointer; }
+    .element-hit:hover { filter: drop-shadow(0 0 4px rgba(222,243,89,.75)); }
+    .annotation-label,
+    .editable-item-label { cursor: text; }
+    .depth-handle { cursor: ns-resize; }
+    @media (max-width: 1180px) {
+      .app-layout { grid-template-columns: 330px minmax(480px, 1fr); }
+    }
+    @media (max-width: 820px) {
+      .app-header-top { align-items: flex-start; flex-direction: column; }
+      .app-meta { text-align: left; white-space: normal; }
+      .app-layout { grid-template-columns: 1fr; }
+      .controls-panel,
+      .canvas-shell,
+      .right-panel {
+        grid-column: 1;
+        grid-row: auto;
+      }
+      .panel { max-height: none; }
+      #schematicSvg { min-width: 700px; }
+    }
+    @supports (-webkit-touch-callout: none) {
+      @media (hover: none) and (pointer: coarse) {
+        input, select, textarea { font-size: 16px !important; }
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="access-gate hidden" id="unsavedGate" role="dialog" aria-modal="true" aria-labelledby="unsavedTitle">
+    <div class="access-card">
+      <p class="access-kicker">Unsaved Changes</p>
+      <h2 class="access-title" id="unsavedTitle">Leave This Page?</h2>
+      <p class="access-error">You have unsaved changes. Export JSON or stay on the page to keep working.</p>
+      <div class="toolbar-row">
+        <button class="primary" id="unsavedStayBtn" type="button">Stay</button>
+        <button id="unsavedLeaveBtn" type="button">Leave</button>
+      </div>
+    </div>
+  </div>
+  <div class="dialog-gate hidden" id="addDialogGate" role="dialog" aria-modal="true" aria-labelledby="addDialogTitle">
+    <form class="dialog-card" id="addDialogForm">
+      <h2 class="dialog-title" id="addDialogTitle">Add Element</h2>
+      <p class="dialog-sub" id="addDialogSubtitle">Enter element details before plotting.</p>
+      <div class="dialog-grid" id="addDialogFields"></div>
+      <div class="dialog-actions">
+        <button type="button" id="addDialogCancelBtn">Cancel</button>
+        <button type="submit" class="primary" id="addDialogSubmitBtn">Add Element</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="wrap app-shell">
+    <header class="app-header">
+      <div class="app-header-top">
+        <div class="app-brand">
+          <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell Logo">
+          <a class="nav-icon-btn" id="homeNavBtn" href="index.html" aria-label="Home" title="Home">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2L3 10.6v10.2h6.1v-6.3h5.8v6.3H21V10.6L12 3.2z"/></svg>
+          </a>
+          <button class="nav-icon-btn" id="backNavBtn" type="button" aria-label="Back" title="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.2 4.4L3.6 12l7.6 7.6 1.6-1.6-4.9-4.9H20v-2.2H7.9l4.9-4.9-1.6-1.6z"/></svg>
+          </button>
+          <button class="nav-icon-btn" id="forwardNavBtn" type="button" aria-label="Forward" title="Forward">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.8 4.4l7.6 7.6-7.6 7.6-1.6-1.6 4.9-4.9H4v-2.2h12.1l-4.9-4.9 1.6-1.6z"/></svg>
+          </button>
+        </div>
+        <div class="app-meta">
+          <div>By Darren Wilkinson</div>
+          <div>Updated: 16.05.2026</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="menu-bar">
+          <div class="menu-group" id="importMenu">
+            <button type="button" id="importMenuButton" aria-expanded="false" aria-controls="importMenuPanel">Import</button>
+            <div class="menu-popover" id="importMenuPanel">
+              <button type="button" class="menu-item" id="importJsonBtn">Schematic JSON</button>
+            </div>
+          </div>
+          <div class="menu-group" id="exportMenu">
+            <button type="button" class="primary" id="exportMenuButton" aria-expanded="false" aria-controls="exportMenuPanel">Export</button>
+            <div class="menu-popover" id="exportMenuPanel">
+              <button type="button" class="menu-item" id="exportJsonBtn">Schematic JSON</button>
+              <button type="button" class="menu-item" id="exportSvgBtn">Schematic SVG</button>
+              <button type="button" class="menu-item" id="exportPngBtn">Schematic PNG</button>
+              <button type="button" class="menu-item" id="exportPdfBtn">Schematic PDF</button>
+            </div>
+          </div>
+          <button type="button" id="newBtn">New Example</button>
+          <button type="button" id="clearBtn">Clear Canvas</button>
+        </div>
+        <div class="toolbar-row">
+          <span class="status-line" id="saveStatus">Saved locally</span>
+          <div class="toggle-switch" title="Night Mode">
+            <label class="switch-label" for="nightMode">
+              <input id="nightMode" class="checkbox" type="checkbox">
+              <span class="slider"></span>
+              <span class="toggle-text">Night Mode</span>
+            </label>
+          </div>
+        </div>
+        <input type="file" id="importFileInput" accept=".json,application/json" hidden>
+      </div>
+    </header>
+
+    <main class="app-layout">
+      <aside class="panel controls-panel">
+        <div class="sidebar-tabs" role="tablist" aria-label="Well schematic sidebar sections">
+          <div class="sidebar-tab-option">
+            <input type="radio" id="sidebarTabAddBtn" class="sidebar-tab-input" name="sidebarTab" checked onchange="setSidebarTab('add')">
+            <label for="sidebarTabAddBtn" id="sidebarTabAddLabel" class="sidebar-tab-btn is-active" role="tab" aria-selected="true" aria-controls="sidebarPanelAdd">Add Elements</label>
+          </div>
+          <div class="sidebar-tab-option">
+            <input type="radio" id="sidebarTabWellBtn" class="sidebar-tab-input" name="sidebarTab" onchange="setSidebarTab('well')">
+            <label for="sidebarTabWellBtn" id="sidebarTabWellLabel" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelWell">Well Info</label>
+          </div>
+          <div class="sidebar-tab-option">
+            <input type="radio" id="sidebarTabPlotBtn" class="sidebar-tab-input" name="sidebarTab" onchange="setSidebarTab('plot')">
+            <label for="sidebarTabPlotBtn" id="sidebarTabPlotLabel" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelPlot">Plot Settings</label>
+          </div>
+          <div class="sidebar-tab-option">
+            <input type="radio" id="sidebarTabElementBtn" class="sidebar-tab-input" name="sidebarTab" onchange="setSidebarTab('element')">
+            <label for="sidebarTabElementBtn" id="sidebarTabElementLabel" class="sidebar-tab-btn" role="tab" aria-selected="false" aria-controls="sidebarPanelElement">Element Settings</label>
+          </div>
+        </div>
+
+        <div id="sidebarPanelAdd" class="sidebar-tab-panel is-active" role="tabpanel" aria-labelledby="sidebarTabAddLabel">
+          <details class="section" open>
+            <summary>Add Elements</summary>
+            <div class="section-body">
+              <div id="quickAddButtons"></div>
+            </div>
+          </details>
+          <div id="collectionPanels"></div>
+        </div>
+
+        <div id="sidebarPanelWell" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabWellLabel">
+          <details class="section" open>
+            <summary>Well Information</summary>
+            <div class="section-body form-grid" id="wellInfoForm"></div>
+          </details>
+        </div>
+
+        <div id="sidebarPanelPlot" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabPlotLabel">
+          <details class="section" open>
+            <summary>Plot Settings</summary>
+            <div class="section-body">
+              <div class="form-grid" id="plotSettingsForm"></div>
+              <div class="toolbar-row">
+                <button type="button" id="autoFitScaleBtn">Auto Fit Scale</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div id="sidebarPanelElement" class="sidebar-tab-panel" role="tabpanel" aria-labelledby="sidebarTabElementLabel">
+          <details class="section" open>
+            <summary>Element Settings</summary>
+            <div class="section-body" id="propertiesPanel"></div>
+          </details>
+        </div>
+      </aside>
+
+      <section class="canvas-shell">
+        <div class="canvas-toolbar">
+          <div class="toolbar-row">
+            <button type="button" id="zoomInYBtn" title="Increase vertical scale">Zoom +</button>
+            <button type="button" id="zoomOutYBtn" title="Decrease vertical scale">Zoom -</button>
+            <button type="button" id="zoomResetYBtn" title="Reset vertical scale">Zoom Reset</button>
+            <button type="button" id="zoomA4Btn" title="Set plot area to A4 portrait ratio">Portrait</button>
+            <button type="button" id="zoomA4LandscapeBtn" title="Set plot area to A4 landscape ratio">Landscape</button>
+            <button type="button" id="fitDepthBtn">Fit Depth</button>
+          </div>
+          <div class="status-line" id="selectionStatus">No element selected</div>
+        </div>
+        <div class="svg-wrap">
+          <svg id="schematicSvg" class="plot-canvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="schematicTitle schematicDesc"></svg>
+          <input id="depthPanScrollbar" class="depth-pan-scroll hidden" type="range" min="0" max="100" step="1" value="0" aria-label="Depth window pan">
+        </div>
+      </section>
+
+      <aside class="panel right-panel">
+        <details class="section" open>
+          <summary>Validation</summary>
+          <div class="section-body">
+            <ul class="warning-list" id="warningList"></ul>
+          </div>
+        </details>
+        <details class="section" open>
+          <summary>Notes</summary>
+          <div class="section-body">
+            <textarea id="notesInput" placeholder="Engineering notes, assumptions, revision comments"></textarea>
+          </div>
+        </details>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    const LOGO_URL = 'https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png';
+    const STORAGE_KEY = 'rstools-well-schematic-v2';
+    const THEME_OVERRIDE_KEY = 'rstools-theme-override-v1';
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    let schematic = null;
+    let selected = null;
+    let hasUnsavedChanges = false;
+    let bypassBeforeUnload = false;
+    let pendingNavigationHref = null;
+    let themeBoundaryTimerId = null;
+    let pendingAddDialog = null;
+    let inlineAnnotationEditor = null;
+    let depthDragState = null;
+    let depthDragBadge = null;
+    let lastRenderDepthContext = null;
+    let wheelDeltaAccumulator = 0;
+    let wheelAltMode = false;
+    let wheelFrameId = null;
+    let wheelPanSaveTimer = null;
+    let wheelPanVelocity = 0;
+    let wheelPanAnimFrame = null;
+    let wheelLastTs = 0;
+    let liveRenderRaf = null;
+    let liveRenderNeedsValidation = false;
+    let liveRenderNeedsCollections = false;
+    let renderWidthPerInch = 4.4;
+    let renderCalloutTextX = 0;
+    let renderCalloutLineEndX = 0;
+
+    const collectionDefs = {
+      holeSections: { title: 'Hole Sections', singular: 'Hole Section', fields: ['id','label','diameterIn','topMD','bottomMD','fillColor','visible'] },
+      strings: { title: 'Casing / Liners', singular: 'String', fields: ['id','type','label','odIn','weight','topMD','bottomMD','shoeMD','annotationEnabled','annotationMD','fillColor','visible'] },
+      cement: { title: 'Annular Fill', singular: 'Annular Fill Interval', fields: ['id','label','material','insideStringId','outsideStringId','topMD','bottomMD','fillColor','visible'] },
+      completion: { title: 'Tubing / Completion', singular: 'Completion', fields: ['id','type','label','odIn','topMD','bottomMD','annotationEnabled','annotationMD','fillColor','visible'] },
+      components: { title: 'Components', singular: 'Component', fields: ['id','type','label','md','topMD','bottomMD','diameterIn','host','material','labelPosition','spf','phase','status','fillColor','visible'] },
+      formations: { title: 'Formations', singular: 'Formation', fields: ['id','name','topMD','bottomMD','lithology','fillColor','visible'] },
+      annotations: { title: 'Annotations', singular: 'Annotation', fields: ['id','targetType','targetId','text','side'] }
+    };
+
+    const fieldLabels = {
+      topMD: 'Top TVD', bottomMD: 'Bottom TVD', shoeMD: 'Shoe TVD',
+      odIn: 'OD (in)', diameterIn: 'Diameter (in)', rkbM: 'RKB (m)', waterDepthM: 'Water Depth (m)',
+      topDepth: 'Top Depth', bottomDepth: 'Bottom Depth', majorTick: 'Major Tick', minorTick: 'Minor Tick', calloutLineColor: 'Callout Line Colour',
+      plotBgDay: 'Plot Background (Day)', plotBgNight: 'Plot Background (Night)',
+      showLithology: 'Show Lithology', showAnnotations: 'Show Annotations', showPlotLogo: 'Show Plot Logo',
+      material: 'Material', labelPosition: 'Label Position', fillColor: 'Fill Colour', lineColor: 'Line Colour',
+      annotationEnabled: 'Show Annotation', annotationMD: 'Annotation Depth', md: 'Depth TVD'
+    };
+
+    const quickAddActions = {
+      open_hole: () => openAddDialog('holeSections', { label:'12-1/4 in open hole', diameterIn:12.25, topMD:0, bottomMD:1000 }),
+      surface_casing: () => openAddDialog('strings', { type:'casing', label:'20 in Surface Casing', odIn:20, topMD:0, bottomMD:700, shoeMD:700 }),
+      intermediate_casing: () => openAddDialog('strings', { type:'casing', label:'13-3/8 in Intermediate Casing', odIn:13.375, topMD:0, bottomMD:2200, shoeMD:2200 }),
+      production_casing: () => openAddDialog('strings', { type:'casing', label:'9-5/8 in Production Casing', odIn:9.625, topMD:0, bottomMD:4200, shoeMD:4200 }),
+      production_liner: () => openAddDialog('strings', { type:'liner', label:'7 in Production Liner', odIn:7, topMD:3900, bottomMD:5000, shoeMD:5000 }),
+      tubing: () => openAddDialog('completion', { type:'tubing', label:'5-1/2 in Tubing', odIn:5.5, topMD:0, bottomMD:4050 }),
+      cement_sheath: () => openAddDialog('cement', { label:'Annular fill', material:'cement', insideStringId:'production_casing', outsideStringId:'hole:hole_12_25', topMD:1800, bottomMD:4200 }),
+      production_packer: () => openAddDialog('components', { type:'packer', label:'Production packer', md:3980, host:'production_casing' }),
+      bridge_plug: () => openAddDialog('components', { type:'bridge_plug', label:'Bridge plug', topMD:4450, bottomMD:4500, host:'production_casing', labelPosition:'middle' }),
+      cement_plug: () => openAddDialog('components', { type:'cement_plug', label:'Cement plug', topMD:4300, bottomMD:4450, diameterIn:8.5, host:'production_casing', material:'cement', labelPosition:'top' }),
+      section_mill: () => openAddDialog('components', { type:'section_mill', label:'Section mill', topMD:1800, bottomMD:1950, diameterIn:12.25, host:'production_casing', labelPosition:'top' }),
+      dhsv: () => openAddDialog('components', { type:'dhsv', label:'DHSV', md:250, host:'prod_tubing' }),
+      perforations: () => openAddDialog('components', { type:'perforations', label:'Perforations', topMD:4550, bottomMD:4750, spf:6, phase:60, status:'open' }),
+      formation_top: () => openAddDialog('formations', { name:'Formation Top', topMD:3500, bottomMD:3900, lithology:'shale' }),
+      td_pbtd: () => { addItem('components', { type:'td', label:'TD', md:5000 }); addItem('components', { type:'pbtd', label:'PBTD', md:4900 }); }
+    };
+
+    const quickAddGroups = [
+      { label:'Templates', items:[['template_exploration','Simple vertical exploration well'],['template_production','Cased production well'],['template_liner','Well with liner'],['template_pa','Plug & abandonment schematic'],['template_intervention','Through-tubing intervention schematic']] },
+      { label:'Well Structure', items:[['open_hole','Open hole section'],['surface_casing','Surface casing'],['intermediate_casing','Intermediate casing'],['production_casing','Production casing'],['production_liner','Production liner']] },
+      { label:'Completion', items:[['tubing','Tubing'],['production_packer','Production packer'],['dhsv','DHSV']] },
+      { label:'Barriers', items:[['cement_sheath','Annular fill'],['bridge_plug','Bridge plug'],['cement_plug','Cement plug'],['section_mill','Section mill']] },
+      { label:'Reservoir', items:[['perforations','Perforations'],['formation_top','Formation top']] },
+      { label:'Markers', items:[['td_pbtd','TD / PBTD marker']] }
+    ];
+
+    function defaultSchematic() {
+      return {
+        schemaVersion: '1.0',
+        wellInfo: {
+          operator: 'Interwell', wellName: 'Example Well A-01', field: 'Example Field', country: '',
+          wellType: 'Producer', datum: 'RKB', rkbM: 0, waterDepthM: null, status: 'as-built',
+          revision: 'Rev A', date: new Date().toISOString().slice(0, 10),
+          inclinationDeg: 0, azimuthDeg: 0
+        },
+        plotSettings: {
+          depthUnit: 'm', topDepth: 0, bottomDepth: 5000, majorTick: 500, minorTick: 100, calloutLineColor: '#AB4CE4', verticalScale: 1,
+          plotBgDay: '#ffffff', plotBgNight: '#6b6b6b',
+          showPlotLogo: true,
+          showLithology: true, showAnnotations: true, theme: 'day'
+        },
+        holeSections: [
+          { id:'hole_36', label:'36 in conductor hole', diameterIn:36, topMD:0, bottomMD:150, visible:true },
+          { id:'hole_26', label:'26 in surface hole', diameterIn:26, topMD:0, bottomMD:700, visible:true },
+          { id:'hole_17_5', label:'17-1/2 in intermediate hole', diameterIn:17.5, topMD:700, bottomMD:2200, visible:true },
+          { id:'hole_12_25', label:'12-1/4 in production hole', diameterIn:12.25, topMD:2200, bottomMD:4200, visible:true },
+          { id:'hole_8_5', label:'8-1/2 in liner hole', diameterIn:8.5, topMD:4200, bottomMD:5000, visible:true }
+        ],
+        strings: [
+          { id:'conductor', type:'casing', label:'30 in Conductor', odIn:30, weight:'', topMD:0, bottomMD:150, shoeMD:150, annotationEnabled:true, annotationMD:null, color:null, visible:true },
+          { id:'surface_casing', type:'casing', label:'20 in Surface Casing', odIn:20, weight:'', topMD:0, bottomMD:700, shoeMD:700, annotationEnabled:true, annotationMD:null, color:null, visible:true },
+          { id:'intermediate_casing', type:'casing', label:'13-3/8 in Intermediate Casing', odIn:13.375, weight:'', topMD:0, bottomMD:2200, shoeMD:2200, annotationEnabled:true, annotationMD:null, color:null, visible:true },
+          { id:'production_casing', type:'casing', label:'9-5/8 in Production Casing', odIn:9.625, weight:'', topMD:0, bottomMD:4200, shoeMD:4200, annotationEnabled:true, annotationMD:null, color:null, visible:true },
+          { id:'production_liner', type:'liner', label:'7 in Production Liner', odIn:7, weight:'', topMD:3900, bottomMD:5000, shoeMD:5000, annotationEnabled:true, annotationMD:null, color:null, visible:true }
+        ],
+        cement: [
+          { id:'cement_conductor', label:'Conductor cement', material:'cement', insideStringId:'conductor', outsideStringId:'hole:hole_36', topMD:0, bottomMD:150, visible:true },
+          { id:'cement_surface', label:'Surface casing cement', material:'cement', insideStringId:'surface_casing', outsideStringId:'hole:hole_26', topMD:0, bottomMD:700, visible:true },
+          { id:'cement_intermediate', label:'Intermediate casing cement', material:'cement', insideStringId:'intermediate_casing', outsideStringId:'hole:hole_17_5', topMD:650, bottomMD:2200, visible:true },
+          { id:'cement_production', label:'Production casing cement', material:'cement', insideStringId:'production_casing', outsideStringId:'hole:hole_12_25', topMD:1850, bottomMD:4200, visible:true },
+          { id:'cement_liner', label:'Liner cement', material:'cement', insideStringId:'production_liner', outsideStringId:'hole:hole_8_5', topMD:3900, bottomMD:5000, visible:true }
+        ],
+        completion: [
+          { id:'prod_tubing', type:'tubing', label:'5-1/2 in Tubing', odIn:5.5, topMD:0, bottomMD:4050, annotationEnabled:true, annotationMD:null, visible:true }
+        ],
+        components: [
+          { id:'packer_1', type:'packer', label:'Production packer', md:3980, host:'production_casing', visible:true },
+          { id:'perfs_1', type:'perforations', label:'Perforations', topMD:4550, bottomMD:4750, spf:6, phase:60, status:'open', visible:true },
+          { id:'pbtd_1', type:'pbtd', label:'PBTD', md:4900, host:'production_liner', visible:true },
+          { id:'td_1', type:'td', label:'TD', md:5000, host:'production_liner', visible:true }
+        ],
+        formations: [
+          { id:'formation_1', name:'Top Chalk', topMD:3200, bottomMD:3800, lithology:'chalk', color:null, visible:true },
+          { id:'formation_2', name:'Reservoir A', topMD:4050, bottomMD:4550, lithology:'sandstone', color:null, visible:true },
+          { id:'formation_3', name:'Reservoir B', topMD:4550, bottomMD:4900, lithology:'sandstone', color:null, visible:true }
+        ],
+        annotations: [
+          { id:'note_1', targetType:'component', targetId:'packer_1', text:'Check packer envelope', side:'right' },
+          { id:'note_2', targetType:'component', targetId:'perfs_1', text:'Open perforations 4550-4750 m', side:'right' }
+        ],
+        notes: 'Default engineering example for a nested production well with liner and completion.'
+      };
+    }
+
+    function emptySchematic() {
+      const base = defaultSchematic();
+      return {
+        schemaVersion: '1.0',
+        wellInfo: {
+          operator: '',
+          wellName: 'Untitled Well',
+          field: '',
+          country: '',
+          wellType: '',
+          datum: 'RKB',
+          rkbM: 0,
+          waterDepthM: null,
+          status: 'draft',
+          revision: '',
+          date: new Date().toISOString().slice(0, 10),
+          inclinationDeg: 0,
+          azimuthDeg: 0
+        },
+        plotSettings: { ...base.plotSettings },
+        holeSections: [],
+        strings: [],
+        cement: [],
+        completion: [],
+        components: [],
+        formations: [],
+        annotations: [],
+        notes: ''
+      };
+    }
+
+    function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+    function num(v, fallback = 0) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
+    function esc(v) {
+      return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+    function makeId(prefix) {
+      return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    }
+    function itemTitle(item) { return item.label || item.name || item.id || 'Untitled'; }
+    function itemDepthText(item) {
+      if (item.md !== undefined && item.md !== '') return `${item.md} ${schematic.plotSettings.depthUnit} TVD`;
+      if (item.topMD !== undefined || item.bottomMD !== undefined) return `${item.topMD ?? ''}-${item.bottomMD ?? ''} ${schematic.plotSettings.depthUnit} TVD`;
+      return item.type || '';
+    }
+
+    function initialise() {
+      schematic = normalizeSchematic(loadLocal() || defaultSchematic());
+      selected = null;
+      buildStaticUi();
+      bindEvents();
+      setNightMode(resolveNightModePreference());
+      scheduleThemeBoundarySync();
+      renderAll(false);
+      markSavedChanges();
+    }
+
+    function loadLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed && parsed.schemaVersion === '1.0' ? parsed : null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    function normalizeSchematic(data) {
+      const next = data || defaultSchematic();
+      Object.keys(collectionDefs).forEach(key => { if (!Array.isArray(next[key])) next[key] = []; });
+      next.strings = (next.strings || []).map(item => {
+        const normalized = { annotationEnabled:true, annotationMD:null, ...item };
+        delete normalized.tocMD;
+        return normalized;
+      });
+      next.completion = (next.completion || []).map(item => ({ annotationEnabled:true, annotationMD:null, ...item }));
+      next.cement = (next.cement || []).map(item => normalizeAnnularFill(item, next));
+      next.components = (next.components || []).map(item => normalizeComponentDraft({ ...item }));
+      return next;
+    }
+
+    function normalizeAnnularFill(item, model = schematic) {
+      const normalized = { ...item };
+      if (!normalized.material) normalized.material = 'cement';
+      delete normalized.quality;
+
+      if (normalized.outsideStringId && legacyHoleId(normalized.outsideStringId, model)) {
+        normalized.outsideStringId = `hole:${normalized.outsideStringId}`;
+      }
+      if (!normalized.insideStringId && normalized.outsideStringId && boundaryIsTubularInModel(normalized.outsideStringId, model)) {
+        const tubularId = normalized.outsideStringId;
+        normalized.insideStringId = tubularId;
+        const containingHole = findContainingHoleIdForInterval(tubularId, normalized, model);
+        if (containingHole) normalized.outsideStringId = `hole:${containingHole}`;
+      }
+      return normalized;
+    }
+
+    function legacyHoleId(id, model = schematic) {
+      return !String(id).startsWith('hole:') && (model.holeSections || []).some(hole => hole.id === id);
+    }
+
+    function boundaryIsTubularInModel(id, model = schematic) {
+      if (!id || String(id).startsWith('hole:')) return false;
+      return [...(model.strings || []), ...(model.completion || [])].some(item => item.id === id);
+    }
+
+    function findContainingHoleIdForInterval(tubularId, interval, model = schematic) {
+      const tubular = [...(model.strings || []), ...(model.completion || [])].find(item => item.id === tubularId);
+      const topMd = num(interval.topMD, num(tubular?.topMD));
+      const bottomMd = num(interval.bottomMD, num(tubular?.bottomMD, topMd));
+      const od = num(tubular?.odIn, 0);
+      const candidates = (model.holeSections || [])
+        .filter(hole => num(hole.topMD) <= topMd && num(hole.bottomMD) >= bottomMd && num(hole.diameterIn) > od)
+        .sort((a, b) => num(a.diameterIn) - num(b.diameterIn));
+      return candidates[0]?.id || null;
+    }
+
+    function saveLocal() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(schematic)); } catch (err) {}
+    }
+
+    function markUnsavedChanges() {
+      hasUnsavedChanges = true;
+      saveLocal();
+      document.getElementById('saveStatus').textContent = 'Unsaved changes, draft stored locally';
+    }
+
+    function markSavedChanges() {
+      hasUnsavedChanges = false;
+      saveLocal();
+      document.getElementById('saveStatus').textContent = 'Saved locally';
+    }
+
+    function setSidebarTab(tabName) {
+      const tabs = {
+        add: ['sidebarTabAddBtn', 'sidebarTabAddLabel', 'sidebarPanelAdd'],
+        well: ['sidebarTabWellBtn', 'sidebarTabWellLabel', 'sidebarPanelWell'],
+        plot: ['sidebarTabPlotBtn', 'sidebarTabPlotLabel', 'sidebarPanelPlot'],
+        element: ['sidebarTabElementBtn', 'sidebarTabElementLabel', 'sidebarPanelElement']
+      };
+      Object.entries(tabs).forEach(([name, ids]) => {
+        const active = name === tabName;
+        const [inputId, labelId, panelId] = ids;
+        const input = document.getElementById(inputId);
+        const label = document.getElementById(labelId);
+        const panel = document.getElementById(panelId);
+        if (input) input.checked = active;
+        if (label) {
+          label.classList.toggle('is-active', active);
+          label.setAttribute('aria-selected', String(active));
+        }
+        if (panel) panel.classList.toggle('is-active', active);
+      });
+    }
+    window.setSidebarTab = setSidebarTab;
+
+    function renderAll(markDirty = true) {
+      renderTopForms();
+      renderCollectionPanels();
+      renderProperties();
+      renderSchematic();
+      renderValidation();
+      if (markDirty) markUnsavedChanges();
+    }
+
+    function buildStaticUi() {
+      const quick = document.getElementById('quickAddButtons');
+      quick.innerHTML = `
+        <ul class="add-tree">
+          ${quickAddGroups.map((group, idx) => `
+            <li>
+              <button type="button" class="add-tree-toggle" data-add-group="${idx}" aria-expanded="false">${esc(group.label)}</button>
+                <ul hidden>
+                ${group.items.map(([action, label]) => `<li><a class="add-tree-link is-action" href="#" data-quick-action="${esc(action)}">${esc(label)}</a></li>`).join('')}
+              </ul>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+      const collectionPanels = document.getElementById('collectionPanels');
+      collectionPanels.innerHTML = Object.entries(collectionDefs).map(([key, def]) => `
+        <details class="section" open>
+          <summary>${esc(def.title)}</summary>
+          <div class="section-body">
+            <button type="button" data-add="${key}">Add ${esc(def.singular)}</button>
+            ${key === 'holeSections' ? '<div class="item-meta">Recommended workflow: define open hole intervals first, then add casing/tubular strings inside them.</div>' : ''}
+            <div class="item-list" id="${key}List"></div>
+          </div>
+        </details>
+      `).join('');
+    }
+
+    function bindEvents() {
+      document.getElementById('quickAddButtons').addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-add-group]');
+        if (toggle) {
+          const expanded = toggle.getAttribute('aria-expanded') === 'true';
+          toggle.setAttribute('aria-expanded', String(!expanded));
+          const list = toggle.nextElementSibling;
+          if (list) list.hidden = expanded;
+          return;
+        }
+        const btn = event.target.closest('[data-quick-action]');
+        if (!btn) return;
+        if (btn.matches('a')) event.preventDefault();
+        if (btn.dataset.quickAction === 'template_exploration') { applyTemplate('exploration'); return; }
+        if (btn.dataset.quickAction === 'template_production') { applyTemplate('production'); return; }
+        if (btn.dataset.quickAction === 'template_liner') { applyTemplate('liner'); return; }
+        if (btn.dataset.quickAction === 'template_pa') { applyTemplate('pa'); return; }
+        if (btn.dataset.quickAction === 'template_intervention') { applyTemplate('intervention'); return; }
+        const fn = quickAddActions[btn.dataset.quickAction];
+        if (typeof fn === 'function') fn();
+      });
+      document.getElementById('collectionPanels').addEventListener('click', handleCollectionClick);
+      document.getElementById('collectionPanels').addEventListener('dblclick', handleCollectionDoubleClick);
+      document.getElementById('wellInfoForm').addEventListener('input', handleTopFormInput);
+      document.getElementById('plotSettingsForm').addEventListener('input', handleTopFormInput);
+      document.getElementById('propertiesPanel').addEventListener('input', handlePropertyInput);
+      document.getElementById('propertiesPanel').addEventListener('click', handlePropertyClick);
+      document.getElementById('notesInput').addEventListener('input', (event) => {
+        schematic.notes = event.target.value;
+        markUnsavedChanges();
+      });
+      document.getElementById('addDialogCancelBtn').addEventListener('click', closeAddDialog);
+      document.getElementById('addDialogForm').addEventListener('submit', submitAddDialog);
+      document.getElementById('addDialogFields').addEventListener('change', handleAddDialogChange);
+      document.getElementById('fitDepthBtn').addEventListener('click', fitDepthRange);
+      document.getElementById('autoFitScaleBtn').addEventListener('click', fitDepthRange);
+      document.getElementById('zoomInYBtn').addEventListener('click', () => adjustVerticalScale(1.12));
+      document.getElementById('zoomOutYBtn').addEventListener('click', () => adjustVerticalScale(1 / 1.12));
+      document.getElementById('zoomResetYBtn').addEventListener('click', resetVerticalScale);
+      document.getElementById('zoomA4Btn').addEventListener('click', setVerticalScaleA4);
+      document.getElementById('zoomA4LandscapeBtn').addEventListener('click', setVerticalScaleA4Landscape);
+      document.getElementById('newBtn').addEventListener('click', () => {
+        if (hasUnsavedChanges && !confirm('Replace current schematic with the default example?')) return;
+        schematic = defaultSchematic();
+        selected = null;
+        renderAll();
+      });
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        if (hasUnsavedChanges && !confirm('Clear the current schematic and start with an empty canvas?')) return;
+        schematic = emptySchematic();
+        selected = null;
+        renderAll();
+      });
+      bindMenu('importMenu', 'importMenuButton');
+      bindMenu('exportMenu', 'exportMenuButton');
+      document.getElementById('importJsonBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+      document.getElementById('importFileInput').addEventListener('change', importJson);
+      document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+      document.getElementById('exportSvgBtn').addEventListener('click', exportSvg);
+      document.getElementById('exportPngBtn').addEventListener('click', exportPng);
+      document.getElementById('exportPdfBtn').addEventListener('click', exportPdf);
+      document.getElementById('nightMode').addEventListener('change', (event) => {
+        setNightModeOverride(event.target.checked);
+        setNightMode(event.target.checked);
+      });
+      document.getElementById('depthPanScrollbar').addEventListener('input', handleDepthPanInput);
+      document.getElementById('backNavBtn').addEventListener('click', () => guardedNavigate('back'));
+      document.getElementById('forwardNavBtn').addEventListener('click', () => guardedNavigate('forward'));
+      document.getElementById('homeNavBtn').addEventListener('click', (event) => {
+        if (handleNavigationAttempt('index.html')) event.preventDefault();
+      });
+      document.getElementById('unsavedStayBtn').addEventListener('click', hideUnsavedGate);
+      document.getElementById('unsavedLeaveBtn').addEventListener('click', () => {
+        bypassBeforeUnload = true;
+        if (pendingNavigationHref === 'back') history.back();
+        else if (pendingNavigationHref === 'forward') history.forward();
+        else window.location.href = pendingNavigationHref || 'index.html';
+      });
+      window.addEventListener('beforeunload', (event) => {
+        if (!hasUnsavedChanges || bypassBeforeUnload) return;
+        event.preventDefault();
+        event.returnValue = '';
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') saveLocal();
+      });
+      window.addEventListener('pagehide', saveLocal);
+    }
+
+    function dataDepthBounds() {
+      const all = ['holeSections','strings','cement','completion','components','formations'].flatMap(key => schematic[key] || []);
+      const tops = all.map(depthStart).filter(Number.isFinite);
+      const bottoms = all.map(item => num(item.bottomMD, num(item.md, 0))).filter(Number.isFinite);
+      if (!tops.length || !bottoms.length) return { min: 0, max: 5000 };
+      return { min: Math.min(...tops), max: Math.max(...bottoms) };
+    }
+
+    function updateDepthPanControl() {
+      const slider = document.getElementById('depthPanScrollbar');
+      if (!slider) return;
+      const bounds = dataDepthBounds();
+      const top = num(schematic.plotSettings.topDepth);
+      const bottom = num(schematic.plotSettings.bottomDepth, 5000);
+      const span = Math.max(1, bottom - top);
+      const totalSpan = Math.max(1, bounds.max - bounds.min);
+      const canPan = span < totalSpan - 0.001;
+      if (!canPan) {
+        slider.classList.add('hidden');
+        return;
+      }
+      const maxTop = bounds.max - span;
+      slider.classList.remove('hidden');
+      slider.min = String(bounds.min);
+      slider.max = String(Math.max(bounds.min, maxTop));
+      slider.step = String(Math.max(0.1, span / 300));
+      slider.value = String(Math.max(bounds.min, Math.min(maxTop, top)));
+    }
+
+    function panDepthWindow(deltaDepth, markDirty = true) {
+      const bounds = dataDepthBounds();
+      const top = num(schematic.plotSettings.topDepth);
+      const bottom = num(schematic.plotSettings.bottomDepth, 5000);
+      const span = Math.max(1, bottom - top);
+      const minTop = bounds.min;
+      const maxTop = bounds.max - span;
+      if (maxTop <= minTop) return;
+      const nextTop = Math.max(minTop, Math.min(maxTop, top + deltaDepth));
+      schematic.plotSettings.topDepth = nextTop;
+      schematic.plotSettings.bottomDepth = nextTop + span;
+      renderSchematic();
+      syncDepthRangeInputs();
+      if (markDirty) markUnsavedChanges();
+    }
+
+    function scheduleWheelInteraction(deltaY, isAlt) {
+      wheelDeltaAccumulator += deltaY;
+      wheelAltMode = wheelAltMode || Boolean(isAlt);
+      if (wheelFrameId !== null) return;
+      wheelFrameId = requestAnimationFrame(() => {
+        const totalDelta = wheelDeltaAccumulator;
+        const altMode = wheelAltMode;
+        wheelDeltaAccumulator = 0;
+        wheelAltMode = false;
+        wheelFrameId = null;
+        if (!Number.isFinite(totalDelta) || Math.abs(totalDelta) < 0.01) return;
+        if (altMode) {
+          const factor = Math.pow(1.0015, -totalDelta);
+          adjustVerticalScale(factor);
+          return;
+        }
+        const bounds = dataDepthBounds();
+        const topNow = num(schematic.plotSettings.topDepth);
+        const bottomNow = num(schematic.plotSettings.bottomDepth, 5000);
+        const spanNow = Math.max(1, bottomNow - topNow);
+        const totalSpan = Math.max(1, bounds.max - bounds.min);
+        if (spanNow >= totalSpan - 0.001) return;
+        const impulse = Math.max(-3.5, Math.min(3.5, totalDelta / 220));
+        wheelPanVelocity += impulse * Math.max(0.8, spanNow * 0.022);
+        if (wheelPanAnimFrame === null) {
+          wheelLastTs = 0;
+          wheelPanAnimFrame = requestAnimationFrame(runWheelPanInertia);
+        }
+        if (wheelPanSaveTimer) clearTimeout(wheelPanSaveTimer);
+        wheelPanSaveTimer = setTimeout(() => {
+          markUnsavedChanges();
+          wheelPanSaveTimer = null;
+        }, 280);
+      });
+    }
+
+    function runWheelPanInertia(ts) {
+      if (wheelLastTs === 0) wheelLastTs = ts;
+      const dtMs = Math.max(8, Math.min(40, ts - wheelLastTs));
+      wheelLastTs = ts;
+      const dtNorm = dtMs / 16.6667;
+      if (Math.abs(wheelPanVelocity) < 0.002) {
+        wheelPanVelocity = 0;
+        wheelPanAnimFrame = null;
+        wheelLastTs = 0;
+        return;
+      }
+      const deltaDepth = wheelPanVelocity * dtNorm;
+      panDepthWindow(deltaDepth, false);
+      // Friction decay tuned for responsive but smooth stop.
+      wheelPanVelocity *= Math.pow(0.86, dtNorm);
+      wheelPanAnimFrame = requestAnimationFrame(runWheelPanInertia);
+    }
+
+    function handleDepthPanInput(event) {
+      wheelPanVelocity = 0;
+      if (wheelPanAnimFrame !== null) {
+        cancelAnimationFrame(wheelPanAnimFrame);
+        wheelPanAnimFrame = null;
+        wheelLastTs = 0;
+      }
+      const value = Number(event.target.value);
+      if (!Number.isFinite(value)) return;
+      const top = value;
+      const bottom = num(schematic.plotSettings.bottomDepth, 5000);
+      const currentTop = num(schematic.plotSettings.topDepth);
+      const span = Math.max(1, bottom - currentTop);
+      schematic.plotSettings.topDepth = top;
+      schematic.plotSettings.bottomDepth = top + span;
+      renderSchematic();
+      syncDepthRangeInputs();
+      markUnsavedChanges();
+    }
+
+    function syncDepthRangeInputs() {
+      const topInput = document.querySelector('[data-group="plotSettings"][data-field="topDepth"]');
+      const bottomInput = document.querySelector('[data-group="plotSettings"][data-field="bottomDepth"]');
+      if (topInput) topInput.value = formatDepthInputDisplay(schematic.plotSettings.topDepth);
+      if (bottomInput) bottomInput.value = formatDepthInputDisplay(schematic.plotSettings.bottomDepth);
+      updateDepthPanControl();
+    }
+
+    function bindMenu(menuId, buttonId) {
+      const menu = document.getElementById(menuId);
+      const button = document.getElementById(buttonId);
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const open = menu.classList.toggle('open');
+        button.setAttribute('aria-expanded', String(open));
+      });
+      document.addEventListener('click', () => {
+        menu.classList.remove('open');
+        button.setAttribute('aria-expanded', 'false');
+      });
+      menu.addEventListener('click', event => event.stopPropagation());
+    }
+
+    function guardedNavigate(target) {
+      if (handleNavigationAttempt(target)) return;
+      if (target === 'back') history.back();
+      if (target === 'forward') history.forward();
+    }
+
+    function handleNavigationAttempt(targetHref) {
+      if (!hasUnsavedChanges) return false;
+      pendingNavigationHref = targetHref;
+      document.getElementById('unsavedGate').classList.remove('hidden');
+      document.body.classList.add('lock-active');
+      return true;
+    }
+    window.__rstoolsHandleNavigationAttempt = handleNavigationAttempt;
+
+    function hideUnsavedGate() {
+      pendingNavigationHref = null;
+      document.getElementById('unsavedGate').classList.add('hidden');
+      document.body.classList.remove('lock-active');
+    }
+
+    function renderTopForms() {
+      document.getElementById('wellInfoForm').innerHTML = [
+        ['operator','text'], ['wellName','text'], ['field','text'], ['country','text'], ['wellType','text'], ['datum','text'],
+        ['rkbM','number'], ['waterDepthM','number'], ['status','text'], ['revision','text'], ['date','date'],
+      ].map(([key, type]) => fieldHtml('wellInfo', key, schematic.wellInfo[key], type)).join('');
+      document.getElementById('plotSettingsForm').innerHTML = [
+        ['depthUnit','text'], ['topDepth','number'], ['bottomDepth','number'], ['majorTick','number'], ['minorTick','number'], ['calloutLineColor','color'], ['plotBgDay','color'], ['plotBgNight','color'],
+        ['showLithology','checkbox'], ['showAnnotations','checkbox'], ['showPlotLogo','checkbox']
+      ].map(([key, type]) => fieldHtml('plotSettings', key, schematic.plotSettings[key], type)).join('');
+      document.getElementById('notesInput').value = schematic.notes || '';
+    }
+
+    function fieldHtml(group, key, value, type = inferInputType(key, value)) {
+      const label = fieldLabels[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+      if (type === 'checkbox') {
+        return `<label class="checkbox-row"><input data-group="${group}" data-field="${key}" type="checkbox" ${value ? 'checked' : ''}><span>${esc(label)}</span></label>`;
+      }
+      if (type === 'color') {
+        const fallbackByKey = {
+          calloutLineColor: '#AB4CE4',
+          plotBgDay: '#ffffff',
+          plotBgNight: '#6b6b6b'
+        };
+        const fallback = fallbackByKey[key] || '#ffffff';
+        const color = colorInputValue(value, fallback);
+        return `<label>${esc(label)}<input data-group="${group}" data-field="${key}" type="color" value="${esc(color)}"></label>`;
+      }
+      const stepAttr = type === 'number' ? ' step="any"' : '';
+      const displayValue = type === 'number' && isDepthInputField(key) ? formatDepthInputDisplay(value) : (value ?? '');
+      return `<label>${esc(label)}<input data-group="${group}" data-field="${key}" type="${type}"${stepAttr} value="${esc(displayValue)}"></label>`;
+    }
+
+    function isDepthInputField(field) {
+      return field === 'md' || field === 'topMD' || field === 'bottomMD' || field === 'shoeMD' || field === 'annotationMD' || field === 'topDepth' || field === 'bottomDepth';
+    }
+
+    function formatDepthInputDisplay(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return value ?? '';
+      const rounded = Math.round(n * 100) / 100;
+      if (Math.abs(rounded - Math.round(rounded)) < 0.000001) return String(Math.round(rounded));
+      return rounded.toFixed(2).replace(/\.?0+$/, '');
+    }
+
+    function inferInputType(key, value) {
+      if (typeof value === 'boolean') return 'checkbox';
+      if (key === 'fillColor' || key === 'color' || key === 'lineColor' || key === 'calloutLineColor' || key === 'plotBgDay' || key === 'plotBgNight') return 'color';
+      if (/MD$|Depth|Tick|In$|Deg$|spf|phase|rkbM|waterDepthM/.test(key)) return 'number';
+      if (key === 'date') return 'date';
+      return 'text';
+    }
+
+    function handleTopFormInput(event) {
+      const input = event.target.closest('[data-group][data-field]');
+      if (!input) return;
+      schematic[input.dataset.group][input.dataset.field] = readInputValue(input);
+      scheduleLiveRender({ validation: true });
+    }
+
+    function scheduleLiveRender(options = {}) {
+      liveRenderNeedsValidation = liveRenderNeedsValidation || Boolean(options.validation);
+      liveRenderNeedsCollections = liveRenderNeedsCollections || Boolean(options.collections);
+      if (liveRenderRaf !== null) return;
+      liveRenderRaf = requestAnimationFrame(() => {
+        liveRenderRaf = null;
+        if (liveRenderNeedsCollections) renderCollectionPanels();
+        renderSchematic();
+        if (liveRenderNeedsValidation) renderValidation();
+        liveRenderNeedsValidation = false;
+        liveRenderNeedsCollections = false;
+        markUnsavedChanges();
+      });
+    }
+
+    function readInputValue(input) {
+      if (input.type === 'checkbox') return input.checked;
+      if (input.type === 'number') return input.value === '' ? null : Number(input.value);
+      return input.value;
+    }
+
+    function colorInputValue(value, fallback = '#555555') {
+      const color = String(value || '').trim();
+      if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+      if (/^#[0-9a-f]{3}$/i.test(color)) {
+        return '#' + color.slice(1).split('').map(ch => ch + ch).join('');
+      }
+      return fallback;
+    }
+
+    function defaultFillColorForItem(collection, item = {}) {
+      if (collection === 'holeSections') return '#e3dfeb';
+      if (collection === 'strings') return item.type === 'liner' ? '#302711' : '#210d2a';
+      if (collection === 'completion') return '#574064';
+      if (collection === 'cement') return annularMaterialColor(item.material);
+      if (collection === 'formations') return lithologyColor(item.lithology);
+      if (collection === 'components') {
+        if (item.type === 'cement_plug') return plugMaterialColor(item.material);
+        return componentColor(item.type);
+      }
+      return '#555555';
+    }
+
+    function itemFillColor(collection, item, fallback) {
+      return colorInputValue(item?.fillColor || item?.color, fallback || defaultFillColorForItem(collection, item));
+    }
+
+    function calloutStroke(selected = false) {
+      if (selected) return '#def359';
+      return colorInputValue(schematic?.plotSettings?.calloutLineColor, '#210d2a');
+    }
+
+    function isNightModeEnabled() {
+      return document.body.classList.contains('night-mode');
+    }
+
+    function currentPlotBackground() {
+      const night = isNightModeEnabled();
+      const configured = night
+        ? schematic?.plotSettings?.plotBgNight
+        : schematic?.plotSettings?.plotBgDay;
+      return colorInputValue(configured, night ? '#6b6b6b' : '#ffffff');
+    }
+
+    function renderCollectionPanels() {
+      Object.keys(collectionDefs).forEach(key => {
+        const el = document.getElementById(`${key}List`);
+        el.innerHTML = (schematic[key] || []).map((item, index) => `
+          <div class="item-row ${selected && selected.collection === key && selected.id === item.id ? 'selected' : ''}" data-collection="${key}" data-id="${esc(item.id)}">
+            <input type="checkbox" data-action="visible" ${item.visible !== false ? 'checked' : ''} title="Visible">
+            <div class="item-main" data-action="select">
+              <span class="item-label">${esc(itemTitle(item))}</span>
+              <span class="item-meta">${esc(item.type || item.lithology || collectionDefs[key].singular)} | ${esc(itemDepthText(item))}</span>
+            </div>
+            <div class="mini-actions">
+              <button type="button" data-action="up" title="Move up">&uarr;</button>
+              <button type="button" data-action="down" title="Move down">&darr;</button>
+              <button type="button" data-action="duplicate" title="Duplicate">Copy</button>
+              <button type="button" data-action="delete" class="danger" title="Delete">Del</button>
+            </div>
+          </div>
+        `).join('');
+      });
+    }
+
+    function handleCollectionClick(event) {
+      const addBtn = event.target.closest('[data-add]');
+      if (addBtn) {
+        openAddDialog(addBtn.dataset.add, {});
+        return;
+      }
+      const row = event.target.closest('.item-row');
+      if (!row) return;
+      const collection = row.dataset.collection;
+      const id = row.dataset.id;
+      const action = event.target.closest('[data-action]')?.dataset.action;
+      if (action === 'select' || !action) selectItem(collection, id);
+      if (action === 'visible') {
+        findItem(collection, id).visible = event.target.checked;
+        renderAll();
+      }
+      if (action === 'duplicate') duplicateItem(collection, id);
+      if (action === 'delete') deleteItem(collection, id);
+      if (action === 'up') moveItem(collection, id, -1);
+      if (action === 'down') moveItem(collection, id, 1);
+    }
+
+    function handleCollectionDoubleClick(event) {
+      const row = event.target.closest('.item-row');
+      if (!row) return;
+      event.preventDefault();
+      selectItem(row.dataset.collection, row.dataset.id);
+      openEditDialog(row.dataset.collection, row.dataset.id);
+    }
+
+    function baseItem(collection) {
+      const id = makeId(collection.replace(/s$/, ''));
+      if (collection === 'holeSections') return { id, label:'New hole section', diameterIn:12.25, topMD:0, bottomMD:1000, visible:true };
+      if (collection === 'strings') return { id, type:'casing', label:'New casing', odIn:9.625, weight:'', topMD:0, bottomMD:1000, shoeMD:1000, annotationEnabled:true, annotationMD:null, color:null, visible:true };
+      if (collection === 'cement') return { id, label:'New annular fill', material:'cement', insideStringId:null, outsideStringId:'', topMD:0, bottomMD:1000, visible:true };
+      if (collection === 'completion') return { id, type:'tubing', label:'New tubing', odIn:5.5, topMD:0, bottomMD:1000, annotationEnabled:true, annotationMD:null, visible:true };
+      if (collection === 'components') return { id, type:'packer', label:'New component', md:1000, host:'', labelPosition:'top', visible:true };
+      if (collection === 'formations') return { id, name:'New formation', topMD:1000, bottomMD:1500, lithology:'sandstone', color:null, visible:true };
+      return { id, targetType:'component', targetId:'', text:'New annotation', side:'right' };
+    }
+
+    function addItem(collection, overrides = {}) {
+      const item = { ...baseItem(collection), ...overrides };
+      if (!item.id) item.id = makeId(collection.replace(/s$/, ''));
+      if (item.visible === undefined && collection !== 'annotations') item.visible = true;
+      schematic[collection].push(item);
+      selected = { collection, id: item.id };
+      sortDepthCollections();
+      renderAll();
+    }
+
+    function openAddDialog(collection, overrides = {}) {
+      const draft = { ...baseItem(collection), ...overrides };
+      if (!draft.id) draft.id = makeId(collection.replace(/s$/, ''));
+      normalizeComponentDraft(draft);
+      pendingAddDialog = { collection, draft, mode:'add' };
+      document.getElementById('addDialogTitle').textContent = `Add ${collectionDefs[collection].singular}`;
+      document.getElementById('addDialogSubtitle').textContent = 'Fill required inputs before plotting.';
+      document.getElementById('addDialogSubmitBtn').textContent = 'Add Element';
+      renderAddDialogFields();
+      document.getElementById('addDialogGate').classList.remove('hidden');
+      document.body.classList.add('lock-active');
+    }
+
+    function openEditDialog(collection, id) {
+      const item = findItem(collection, id);
+      if (!item) return;
+      const draft = clone(item);
+      normalizeComponentDraft(draft);
+      pendingAddDialog = { collection, id, draft, mode:'edit' };
+      document.getElementById('addDialogTitle').textContent = `Edit ${collectionDefs[collection].singular}`;
+      document.getElementById('addDialogSubtitle').textContent = 'Update element details and apply changes.';
+      document.getElementById('addDialogSubmitBtn').textContent = 'Apply Changes';
+      renderAddDialogFields();
+      document.getElementById('addDialogGate').classList.remove('hidden');
+      document.body.classList.add('lock-active');
+    }
+
+    function closeAddDialog() {
+      pendingAddDialog = null;
+      document.getElementById('addDialogGate').classList.add('hidden');
+      document.body.classList.remove('lock-active');
+    }
+
+    function renderAddDialogFields() {
+      if (!pendingAddDialog) return;
+      const { collection, draft } = pendingAddDialog;
+      const fields = fieldsForDialog(collection, draft).filter(field => field !== 'id');
+      const rows = [];
+      if ((collection === 'strings' || collection === 'completion') && draft.odIn !== undefined) {
+        rows.push(`<label>Typical Size<select data-add-field="_typicalSize">${typicalSizeOptions(draft).map(opt => `<option value="${esc(opt.value)}" ${opt.selected ? 'selected' : ''}>${esc(opt.label)}</option>`).join('')}</select></label>`);
+      }
+      rows.push(...fields.map(field => addDialogFieldHtml(field, draft[field])));
+      document.getElementById('addDialogFields').innerHTML = rows.join('');
+    }
+
+    function addDialogFieldHtml(field, value) {
+      const label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+      if (field === 'fillColor') {
+        const color = colorInputValue(value, defaultFillColorForItem(pendingAddDialog?.collection, pendingAddDialog?.draft));
+        return `<label>${esc(label)}<input data-add-field="${field}" type="color" value="${esc(color)}"></label>`;
+      }
+      if (field === 'lineColor') {
+        const color = colorInputValue(value, '#210d2a');
+        return `<label>${esc(label)}<input data-add-field="${field}" type="color" value="${esc(color)}"></label>`;
+      }
+      if (field === 'material') {
+        const options = ['cement', 'epoxy', 'bismuth'];
+        return `<label>${esc(label)}<select data-add-field="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'cement') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'labelPosition') {
+        const options = ['top', 'middle', 'bottom'];
+        return `<label>${esc(label)}<select data-add-field="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'top') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'host') {
+        const options = getPlottedElementOptions();
+        return `<label>${esc(label)}<select data-add-field="${field}">${options.map(opt => `<option value="${esc(opt.value)}" ${String(value ?? '') === String(opt.value) ? 'selected' : ''}>${esc(opt.label)}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'insideStringId' || field === 'outsideStringId') {
+        const options = getCementBoundaryOptions(field === 'insideStringId');
+        return `<label>${esc(label)}<select data-add-field="${field}">${options.map(opt => `<option value="${esc(opt.value)}" ${String(value ?? '') === String(opt.value) ? 'selected' : ''}>${esc(opt.label)}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'text') {
+        return `<label>${esc(label)}<textarea data-add-field="${field}" rows="3">${esc(value ?? '')}</textarea></label>`;
+      }
+      const type = inferInputType(field, value);
+      if (type === 'checkbox') return `<label class="checkbox-row"><input data-add-field="${field}" type="checkbox" ${value ? 'checked' : ''}><span>${esc(label)}</span></label>`;
+      const stepAttr = type === 'number' ? ' step="any"' : '';
+      const displayValue = type === 'number' && isDepthInputField(field) ? formatDepthInputDisplay(value) : (value ?? '');
+      return `<label>${esc(label)}<input data-add-field="${field}" type="${type}"${stepAttr} value="${esc(displayValue)}"></label>`;
+    }
+
+    function handleAddDialogChange(event) {
+      if (!pendingAddDialog) return;
+      const control = event.target.closest('[data-add-field]');
+      if (!control) return;
+      const field = control.dataset.addField;
+      if (field === '_typicalSize') {
+        applyTypicalSizeToDraft(control.value);
+        renderAddDialogFields();
+        return;
+      }
+      pendingAddDialog.draft[field] = readInputValue(control);
+      if (field === 'type') {
+        normalizeComponentDraft(pendingAddDialog.draft);
+        renderAddDialogFields();
+      }
+    }
+
+    function submitAddDialog(event) {
+      event.preventDefault();
+      if (!pendingAddDialog) return;
+      const fields = document.querySelectorAll('#addDialogFields [data-add-field]');
+      fields.forEach(input => {
+        if (input.dataset.addField === '_typicalSize') return;
+        pendingAddDialog.draft[input.dataset.addField] = readInputValue(input);
+      });
+      const collection = pendingAddDialog.collection;
+      const draft = pendingAddDialog.draft;
+      normalizeComponentDraft(draft);
+      if (pendingAddDialog.mode === 'edit') {
+        const list = schematic[collection] || [];
+        const idx = list.findIndex(item => item.id === pendingAddDialog.id);
+        if (idx >= 0) {
+          list[idx] = draft;
+          selected = { collection, id: draft.id };
+          sortDepthCollections();
+          renderAll();
+        }
+      } else {
+        addItem(collection, draft);
+      }
+      closeAddDialog();
+    }
+
+    function typicalSizeOptions(draft) {
+      const sets = [
+        { value: '', label: 'Custom size' },
+        { value: '30|30 in Conductor', label: '30 in conductor' },
+        { value: '20|20 in Surface Casing', label: '20 in surface casing' },
+        { value: '13.375|13-3/8 in Casing', label: '13-3/8 in casing' },
+        { value: '9.625|9-5/8 in Production Casing', label: '9-5/8 in production casing' },
+        { value: '7|7 in Liner', label: '7 in liner' },
+        { value: '5.5|5-1/2 in Tubing', label: '5-1/2 in tubing' },
+        { value: '4.5|4-1/2 in Tubing', label: '4-1/2 in tubing' }
+      ];
+      const current = `${num(draft.odIn, 0)}|${draft.label || ''}`;
+      return sets.map(opt => ({ ...opt, selected: opt.value && current.startsWith(opt.value.split('|')[0] + '|') }));
+    }
+
+    function applyTypicalSizeToDraft(value) {
+      if (!pendingAddDialog || !value) return;
+      const [odRaw, label] = String(value).split('|');
+      const od = Number(odRaw);
+      if (Number.isFinite(od)) pendingAddDialog.draft.odIn = od;
+      if (label) pendingAddDialog.draft.label = label;
+    }
+
+    function normalizeComponentDraft(draft) {
+      if (!draft || !draft.type) return draft;
+      const intervalTypes = ['cement_plug', 'perforations', 'section_mill', 'bridge_plug'];
+      if (intervalTypes.includes(draft.type)) {
+        if (draft.md !== undefined && (draft.topMD === undefined || draft.topMD === null || draft.topMD === '')) {
+          draft.topMD = num(draft.md) - 25;
+          draft.bottomMD = num(draft.md) + 25;
+        }
+        delete draft.md;
+        if (draft.topMD === undefined || draft.topMD === null) draft.topMD = 0;
+        if (draft.bottomMD === undefined || draft.bottomMD === null) draft.bottomMD = num(draft.topMD) + 100;
+      }
+      if (draft.type === 'cement_plug') {
+        if (!draft.material) draft.material = 'cement';
+        if (!draft.labelPosition) draft.labelPosition = 'top';
+        if (draft.diameterIn === undefined || draft.diameterIn === null) draft.diameterIn = 8.5;
+      }
+      if (draft.type === 'section_mill') {
+        if (!draft.labelPosition) draft.labelPosition = 'top';
+        if (draft.diameterIn === undefined || draft.diameterIn === null) draft.diameterIn = 12.25;
+      }
+      if (draft.type === 'bridge_plug') {
+        if (!draft.labelPosition) draft.labelPosition = 'middle';
+        if (!draft.fillColor) draft.fillColor = '#ffffff';
+        if (!draft.lineColor) draft.lineColor = '#210d2a';
+      }
+      return draft;
+    }
+
+    function fieldsForDialog(collection, draft) {
+      if (collection !== 'components') return collectionDefs[collection].fields;
+      const common = ['id','type','label'];
+      if (draft.type === 'cement_plug') return [...common, 'topMD','bottomMD','diameterIn','host','material','labelPosition','fillColor','visible'];
+      if (draft.type === 'section_mill') return [...common, 'topMD','bottomMD','diameterIn','host','labelPosition','fillColor','visible'];
+      if (draft.type === 'bridge_plug') return [...common, 'topMD','bottomMD','host','labelPosition','fillColor','lineColor','visible'];
+      if (draft.type === 'perforations') return [...common, 'topMD','bottomMD','host','spf','phase','status','fillColor','visible'];
+      if (draft.type === 'td') return [...common, 'md','fillColor','visible'];
+      if (['pbtd','cut_point','packer','mechanical_plug','tubing_plug','dhsv','sleeve','mandrel','nipple'].includes(draft.type)) {
+        return [...common, 'md','host','fillColor','visible'];
+      }
+      return collectionDefs[collection].fields;
+    }
+
+    function selectItem(collection, id) {
+      selected = { collection, id };
+      renderCollectionPanels();
+      renderProperties();
+      renderSchematic();
+      setSidebarTab('element');
+    }
+
+    function deselectItem() {
+      if (!selected) return;
+      selected = null;
+      renderCollectionPanels();
+      renderProperties();
+      renderSchematic();
+    }
+
+    function findItem(collection, id) {
+      return (schematic[collection] || []).find(item => item.id === id);
+    }
+
+    function duplicateItem(collection, id) {
+      const item = clone(findItem(collection, id));
+      item.id = makeId(item.id || collection);
+      if (item.label) item.label += ' Copy';
+      if (item.name) item.name += ' Copy';
+      schematic[collection].push(item);
+      selected = { collection, id: item.id };
+      renderAll();
+    }
+
+    function deleteItem(collection, id) {
+      schematic[collection] = schematic[collection].filter(item => item.id !== id);
+      if (selected && selected.collection === collection && selected.id === id) selected = null;
+      renderAll();
+    }
+
+    function moveItem(collection, id, delta) {
+      const list = schematic[collection];
+      const idx = list.findIndex(item => item.id === id);
+      const next = idx + delta;
+      if (idx < 0 || next < 0 || next >= list.length) return;
+      [list[idx], list[next]] = [list[next], list[idx]];
+      renderAll();
+    }
+
+    function renderProperties() {
+      const panel = document.getElementById('propertiesPanel');
+      if (!selected) {
+        panel.innerHTML = '<div class="properties-empty">Select an item in a table or click a schematic element to edit its properties.</div>';
+        document.getElementById('selectionStatus').textContent = 'No element selected';
+        return;
+      }
+      const item = findItem(selected.collection, selected.id);
+      if (!item) { selected = null; renderProperties(); return; }
+      document.getElementById('selectionStatus').textContent = `${collectionDefs[selected.collection].singular}: ${itemTitle(item)}`;
+      const fields = fieldsForDialog(selected.collection, item).filter(field => item[field] !== undefined || ['id','label','name','visible'].includes(field));
+      panel.innerHTML = `
+        <p class="selected-path">${esc(collectionDefs[selected.collection].title)} / ${esc(itemTitle(item))}</p>
+        <div class="form-grid">${fields.map(field => propertyFieldHtml(field, item[field])).join('')}</div>
+        <div class="toolbar-row">
+          <button type="button" data-prop-action="duplicate">Duplicate</button>
+          <button type="button" data-prop-action="delete" class="danger">Delete</button>
+        </div>
+      `;
+    }
+
+    function propertyFieldHtml(field, value) {
+      const label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+      if (field === 'fillColor') {
+        const item = selected ? findItem(selected.collection, selected.id) : null;
+        const color = colorInputValue(value, defaultFillColorForItem(selected?.collection, item));
+        return `<label>${esc(label)}<input data-prop="${field}" type="color" value="${esc(color)}"></label>`;
+      }
+      if (field === 'lineColor') {
+        const color = colorInputValue(value, '#210d2a');
+        return `<label>${esc(label)}<input data-prop="${field}" type="color" value="${esc(color)}"></label>`;
+      }
+      if (field === 'material') {
+        const options = ['cement', 'epoxy', 'bismuth'];
+        return `<label>${esc(label)}<select data-prop="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'cement') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'labelPosition') {
+        const options = ['top', 'middle', 'bottom'];
+        return `<label>${esc(label)}<select data-prop="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'top') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'host') {
+        const options = getPlottedElementOptions();
+        return `<label>${esc(label)}<select data-prop="${field}">${options.map(opt => `<option value="${esc(opt.value)}" ${String(value ?? '') === String(opt.value) ? 'selected' : ''}>${esc(opt.label)}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'insideStringId' || field === 'outsideStringId') {
+        const options = getCementBoundaryOptions(field === 'insideStringId');
+        return `<label>${esc(label)}<select data-prop="${field}">${options.map(opt => `<option value="${esc(opt.value)}" ${String(value ?? '') === String(opt.value) ? 'selected' : ''}>${esc(opt.label)}</option>`).join('')}</select></label>`;
+      }
+      if (field === 'text') {
+        return `<label>${esc(label)}<textarea data-prop="${field}" rows="4">${esc(value ?? '')}</textarea></label>`;
+      }
+      const type = inferInputType(field, value);
+      if (type === 'checkbox') return `<label class="checkbox-row"><input data-prop="${field}" type="checkbox" ${value ? 'checked' : ''}><span>${esc(label)}</span></label>`;
+      const stepAttr = type === 'number' ? ' step="any"' : '';
+      const displayValue = type === 'number' && isDepthInputField(field) ? formatDepthInputDisplay(value) : (value ?? '');
+      return `<label>${esc(label)}<input data-prop="${field}" type="${type}"${stepAttr} value="${esc(displayValue)}"></label>`;
+    }
+
+    function getPlottedElementOptions() {
+      const rows = [{ value: '', label: 'None' }];
+      const buckets = [
+        ['String', schematic.strings || []],
+        ['Completion', schematic.completion || []],
+        ['Hole', schematic.holeSections || []],
+        ['Component', schematic.components || []],
+        ['Formation', schematic.formations || []],
+        ['Cement', schematic.cement || []]
+      ];
+      buckets.forEach(([kind, list]) => {
+        list.filter(item => item.visible !== false).forEach(item => {
+          rows.push({
+            value: item.id,
+            label: `${kind}: ${itemTitle(item)} (${item.id})`
+          });
+        });
+      });
+      return rows;
+    }
+
+    function getCementBoundaryOptions(allowNone) {
+      const rows = [];
+      if (allowNone) rows.push({ value: '', label: 'None (well centerline)' });
+      (schematic.strings || []).filter(item => item.visible !== false).forEach(item => {
+        rows.push({ value: item.id, label: `Tubular: ${itemTitle(item)} (${item.id})` });
+      });
+      (schematic.holeSections || []).filter(item => item.visible !== false).forEach(item => {
+        rows.push({ value: `hole:${item.id}`, label: `Open hole: ${itemTitle(item)} (${item.id})` });
+      });
+      return rows;
+    }
+
+    function handlePropertyInput(event) {
+      const input = event.target.closest('[data-prop]');
+      if (!input || !selected) return;
+      const item = findItem(selected.collection, selected.id);
+      const field = input.dataset.prop;
+      item[field] = readInputValue(input);
+      if (selected.collection === 'components') normalizeComponentDraft(item);
+      if (field === 'type' || field === 'material' || field === 'host' || field === 'insideStringId' || field === 'outsideStringId') {
+        // These can change what fields/options are shown; safe to rebuild panel.
+        renderProperties();
+      }
+      scheduleLiveRender({ collections: true, validation: true });
+    }
+
+    function handlePropertyClick(event) {
+      const btn = event.target.closest('[data-prop-action]');
+      if (!btn || !selected) return;
+      if (btn.dataset.propAction === 'duplicate') duplicateItem(selected.collection, selected.id);
+      if (btn.dataset.propAction === 'delete') deleteItem(selected.collection, selected.id);
+    }
+
+    function sortDepthCollections() {
+      ['holeSections','strings','cement','completion','components','formations'].forEach(key => {
+        schematic[key].sort((a, b) => depthStart(a) - depthStart(b));
+      });
+    }
+
+    function depthStart(item) { return num(item.topMD, num(item.md, 0)); }
+
+    function fitDepthRange() {
+      const all = ['holeSections','strings','cement','completion','components','formations'].flatMap(key => schematic[key] || []);
+      const tops = all.map(depthStart).filter(Number.isFinite);
+      const bottoms = all.map(item => num(item.bottomMD, num(item.md, 0))).filter(Number.isFinite);
+      if (!tops.length || !bottoms.length) return;
+      schematic.plotSettings.topDepth = Math.min(...tops, 0);
+      schematic.plotSettings.bottomDepth = Math.max(...bottoms);
+      const ticks = resolveDepthTicks(num(schematic.plotSettings.topDepth), num(schematic.plotSettings.bottomDepth), true);
+      schematic.plotSettings.minorTick = ticks.minor;
+      schematic.plotSettings.majorTick = ticks.major;
+      renderAll();
+    }
+
+    function adjustVerticalScale(multiplier) {
+      const current = Math.max(0.45, Math.min(3.2, num(schematic.plotSettings.verticalScale, 1)));
+      const next = Math.max(0.45, Math.min(3.2, current * multiplier));
+      schematic.plotSettings.verticalScale = Math.round(next * 1000) / 1000;
+      const top = num(schematic.plotSettings.topDepth);
+      const bottom = num(schematic.plotSettings.bottomDepth, 5000);
+      const span = Math.max(1, bottom - top);
+      const estimatedPlotHeight = Math.max(760 * schematic.plotSettings.verticalScale, span * 0.18 * schematic.plotSettings.verticalScale);
+      const ticks = resolveDepthTicks(top, bottom, true, estimatedPlotHeight);
+      schematic.plotSettings.minorTick = ticks.minor;
+      schematic.plotSettings.majorTick = ticks.major;
+      renderAll();
+      markUnsavedChanges();
+    }
+
+    function resetVerticalScale() {
+      schematic.plotSettings.verticalScale = 1;
+      const top = num(schematic.plotSettings.topDepth);
+      const bottom = num(schematic.plotSettings.bottomDepth, 5000);
+      const span = Math.max(1, bottom - top);
+      const estimatedPlotHeight = Math.max(760, span * 0.18);
+      const ticks = resolveDepthTicks(top, bottom, true, estimatedPlotHeight);
+      schematic.plotSettings.minorTick = ticks.minor;
+      schematic.plotSettings.majorTick = ticks.major;
+      renderAll();
+      markUnsavedChanges();
+    }
+
+    function setVerticalScaleA4() {
+      setVerticalScaleByAspect(Math.sqrt(2));
+    }
+
+    function setVerticalScaleA4Landscape() {
+      setVerticalScaleByAspect(1 / Math.sqrt(2));
+    }
+
+    function setVerticalScaleByAspect(targetHeightToWidth) {
+      const svg = document.getElementById('schematicSvg');
+      const svgWrap = svg?.parentElement;
+      const wrapWidth = Math.max(560, (svgWrap?.clientWidth || 1280) - 24);
+      const top = num(schematic.plotSettings.topDepth);
+      const bottom = num(schematic.plotSettings.bottomDepth, 5000);
+      const span = Math.max(1, bottom - top);
+      const basePlotHeight = Math.max(760, span * 0.18);
+      const plotAreaWidth = Math.max(1, (wrapWidth - 40) - 98);
+      const targetPlotHeight = plotAreaWidth * targetHeightToWidth;
+      const nextScale = Math.max(0.45, Math.min(3.2, targetPlotHeight / basePlotHeight));
+      schematic.plotSettings.verticalScale = Math.round(nextScale * 1000) / 1000;
+      const estimatedPlotHeight = Math.max(760 * schematic.plotSettings.verticalScale, span * 0.18 * schematic.plotSettings.verticalScale);
+      const ticks = resolveDepthTicks(top, bottom, true, estimatedPlotHeight);
+      schematic.plotSettings.minorTick = ticks.minor;
+      schematic.plotSettings.majorTick = ticks.major;
+      renderAll();
+      markUnsavedChanges();
+    }
+
+    function applyTemplate(name) {
+      const next = defaultSchematic();
+      if (name === 'exploration') {
+        next.wellInfo.status = 'exploration';
+        next.completion = [];
+        next.components = next.components.filter(c => ['td','pbtd'].includes(c.type));
+      }
+      if (name === 'production') {
+        next.wellInfo.status = 'as-built';
+        next.strings = next.strings.filter(s => s.type !== 'liner');
+        next.holeSections = next.holeSections.filter(h => h.bottomMD <= 4200);
+        next.plotSettings.bottomDepth = 4300;
+      }
+      if (name === 'pa') {
+        next.wellInfo.status = 'P&A';
+        next.components.push(
+          { id:'pa_bridge_plug', type:'bridge_plug', label:'P&A bridge plug', topMD:4260, bottomMD:4300, host:'production_casing', labelPosition:'middle', visible:true },
+          { id:'pa_cement_plug_1', type:'cement_plug', label:'Reservoir cement plug', topMD:4200, bottomMD:4450, diameterIn:8.5, host:'production_casing', material:'cement', labelPosition:'top', visible:true },
+          { id:'cut_point_1', type:'cut_point', label:'Casing cut point', md:1200, host:'surface_casing', visible:true }
+        );
+        next.notes = 'P&A mode: original construction retained with abandonment plugs added.';
+      }
+      if (name === 'intervention') {
+        next.wellInfo.status = 'intervention';
+        next.components.push(
+          { id:'tt_plug', type:'tubing_plug', label:'Through-tubing plug', md:4020, host:'prod_tubing', visible:true },
+          { id:'sleeve_1', type:'sleeve', label:'Sliding sleeve', md:3600, host:'prod_tubing', visible:true }
+        );
+      }
+      schematic = next;
+      selected = null;
+      renderAll();
+    }
+
+    function validateSchematic() {
+      const warnings = [];
+      const ps = schematic.plotSettings;
+      if (num(ps.topDepth) >= num(ps.bottomDepth)) warnings.push('Plot settings require top depth to be shallower than bottom depth.');
+      Object.entries(collectionDefs).forEach(([key]) => {
+        (schematic[key] || []).forEach(item => {
+          if (item.topMD !== undefined && item.bottomMD !== undefined && num(item.topMD) >= num(item.bottomMD)) {
+            warnings.push(`${itemTitle(item)}: topMD must be less than bottomMD.`);
+          }
+          if ((item.odIn !== undefined && num(item.odIn) <= 0) || (item.diameterIn !== undefined && num(item.diameterIn) <= 0)) {
+            warnings.push(`${itemTitle(item)}: diameter must be positive.`);
+          }
+          const top = depthStart(item);
+          const bottom = num(item.bottomMD, num(item.md, top));
+          if (top < num(ps.topDepth) || bottom > num(ps.bottomDepth)) warnings.push(`${itemTitle(item)} extends outside the plotted depth range.`);
+        });
+      });
+      schematic.strings.forEach(str => {
+        const hole = schematic.holeSections.find(h => num(h.topMD) <= num(str.topMD) && num(h.bottomMD) >= num(str.bottomMD));
+        if (hole && num(str.odIn) >= num(hole.diameterIn)) warnings.push(`${str.label}: string OD is not smaller than containing hole section diameter.`);
+      });
+      return warnings;
+    }
+
+    function renderValidation() {
+      const warnings = validateSchematic();
+      document.getElementById('warningList').innerHTML = warnings.length
+        ? warnings.map(w => `<li>${esc(w)}</li>`).join('')
+        : '<li>No validation warnings.</li>';
+    }
+
+    function renderSchematic() {
+      closeInlineAnnotationEditor();
+      const svg = document.getElementById('schematicSvg');
+      const svgWrap = svg.parentElement;
+      const ps = schematic.plotSettings;
+      const wrapWidth = Math.max(560, (svgWrap?.clientWidth || 1280) - 24);
+      const width = wrapWidth;
+      const top = num(ps.topDepth);
+      const selectedBottom = num(ps.bottomDepth, 5000);
+      const depthSpan = Math.max(1, selectedBottom - top);
+      // Add a small buffer below the selected depth so bottom annotations (e.g. TD) remain visible.
+      const bottom = selectedBottom + Math.max(20, depthSpan * 0.03);
+      const verticalScale = Math.max(0.45, Math.min(3.2, num(ps.verticalScale, 1)));
+      const plotHeight = Math.max(760 * verticalScale, (bottom - top) * 0.18 * verticalScale);
+      const margin = { top: 62, right: Math.min(280, Math.max(170, Math.floor(width * 0.24))), bottom: 44, left: 98 };
+      lastRenderDepthContext = { top, bottom, margin, plotHeight };
+      const height = margin.top + plotHeight + margin.bottom;
+      const formationTrackWidth = width < 900 ? 108 : 150;
+      const preferredCx = margin.left + (width < 900 ? 132 : 152);
+      const cx = Math.max(margin.left + 118, Math.min(preferredCx, width - margin.right - 210));
+      const lithX = Math.min(width - formationTrackWidth - 92, Math.max(cx + 176, cx + 160));
+      renderCalloutTextX = computeCalloutLabelX(cx, lithX, width);
+      renderCalloutLineEndX = renderCalloutTextX - 8;
+      const holeScaleRightBound = Math.max(cx + 130, lithX - 92);
+      updateRenderRadialScale(cx, holeScaleRightBound);
+      svg.setAttribute('width', width);
+      svg.setAttribute('height', height);
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.innerHTML = '';
+      const plotBg = currentPlotBackground();
+      svg.style.background = '';
+      svg.appendChild(el('title', { id:'schematicTitle' }, `${schematic.wellInfo.wellName || 'Well schematic'} well architecture schematic`));
+      svg.appendChild(el('desc', { id:'schematicDesc' }, 'TVD-scaled well architecture diagram showing open hole, tubulars, cement, completions, barriers, perforations, formation intervals, and annotations.'));
+      svg.appendChild(el('rect', { x:0, y:0, width, height, fill:'var(--plot-bg)' }));
+      svg.appendChild(el('rect', {
+        x: margin.left,
+        y: margin.top,
+        width: Math.max(1, (width - 40) - margin.left),
+        height: Math.max(1, plotHeight),
+        fill: plotBg
+      }));
+
+      // Explicit layer stack to keep open hole always back-most.
+      const layerHole = el('g', { id:'layer-hole' });
+      const layerFill = el('g', { id:'layer-annular-fill' });
+      const layerTubular = el('g', { id:'layer-tubulars' });
+      const layerComponents = el('g', { id:'layer-components-pre-mill' });
+      const layerComponentsPostMill = el('g', { id:'layer-components-post-mill' });
+      const layerOverlay = el('g', { id:'layer-overlays' });
+      const layerCursor = el('g', { id:'layer-cursor-guide' });
+      [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill, layerOverlay].forEach(layer => svg.appendChild(layer));
+      applyPlotAreaClip(svg, [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill], margin, width, plotHeight);
+      applySectionMillMasks(svg, [layerFill, layerTubular, layerComponents], cx, width, height, top, bottom, margin, plotHeight);
+
+      schematic.holeSections.filter(viz).forEach(item => drawHoleSection(layerHole, item, cx, top, bottom, margin, plotHeight));
+      schematic.cement.filter(viz).forEach(item => drawCement(layerFill, item, cx, top, bottom, margin, plotHeight));
+      schematic.strings.filter(viz).forEach(item => item.type === 'liner' ? drawLiner(layerTubular, item, cx, top, bottom, margin, plotHeight) : drawCasingString(layerTubular, item, cx, top, bottom, margin, plotHeight));
+      schematic.completion.filter(viz).forEach(item => drawTubing(layerTubular, item, cx, top, bottom, margin, plotHeight));
+      const lastSectionMillIndex = (schematic.components || []).reduce((last, item, index) => (viz(item) && item.type === 'section_mill' ? index : last), -1);
+      (schematic.components || []).forEach((item, index) => {
+        if (!viz(item)) return;
+        if (item.type === 'section_mill') return;
+        const targetLayer = index > lastSectionMillIndex ? layerComponentsPostMill : layerComponents;
+        if (item.type === 'perforations') drawPerforations(targetLayer, item, cx, top, bottom, margin, plotHeight);
+        else drawComponent(targetLayer, item, cx, top, bottom, margin, plotHeight);
+      });
+      drawHeader(layerOverlay, width, margin, top, bottom);
+      drawDatumLines(layerOverlay, width, margin, plotHeight, top, bottom);
+      drawDepthScale(layerOverlay, margin, plotHeight, top, bottom);
+      if (ps.showLithology) drawFormationTrack(layerOverlay, lithX, margin, plotHeight, top, bottom, formationTrackWidth);
+      schematic.components.filter(viz).filter(item => item.type === 'section_mill').forEach(item => drawSectionMill(layerOverlay, item, cx, top, bottom, margin, plotHeight));
+      const occupiedLabelBands = [];
+      drawAnnularFillLabels(layerOverlay, cx, lithX, width, margin, plotHeight, top, bottom, occupiedLabelBands);
+      if (ps.showAnnotations) drawAutoLabels(layerOverlay, cx, lithX, width, margin, plotHeight, top, bottom, occupiedLabelBands);
+      if (ps.showAnnotations) drawAnnotations(layerOverlay, cx, lithX, width, top, bottom, margin, plotHeight, occupiedLabelBands);
+      drawSelectedDepthHandles(layerOverlay, cx, top, bottom, margin, plotHeight);
+      drawLegend(layerOverlay, width, margin);
+      svg.appendChild(layerCursor);
+
+      let hoveringElement = false;
+      let zoomDragActive = false;
+      let zoomDragStartY = null;
+      let zoomDragCurrentY = null;
+      const guideLine = el('line', {
+        x1: margin.left,
+        x2: width - 40,
+        y1: margin.top,
+        y2: margin.top,
+        stroke: 'currentColor',
+        'stroke-width': 1,
+        'stroke-dasharray': '4 4',
+        opacity: .52
+      });
+      const guideBadge = el('rect', {
+        x: margin.left - 90,
+        y: margin.top - 9,
+        width: 64,
+        height: 16,
+        rx: 3,
+        fill: 'var(--surface)',
+        stroke: 'currentColor',
+        'stroke-width': .6,
+        opacity: .9
+      });
+      const guideText = el('text', {
+        x: margin.left - 58,
+        y: margin.top + 3,
+        fill: 'currentColor',
+        'font-size': 10,
+        'font-weight': 700,
+        'text-anchor': 'middle'
+      }, '');
+      layerCursor.appendChild(guideLine);
+      layerCursor.appendChild(guideBadge);
+      layerCursor.appendChild(guideText);
+      const zoomBand = el('rect', {
+        x: margin.left,
+        y: margin.top,
+        width: Math.max(1, (width - 40) - margin.left),
+        height: 1,
+        fill: 'color-mix(in srgb, var(--lavender) 35%, transparent)',
+        stroke: 'currentColor',
+        'stroke-width': 1,
+        'stroke-dasharray': '5 4',
+        opacity: .75
+      });
+      layerCursor.appendChild(zoomBand);
+      zoomBand.style.display = 'none';
+      layerCursor.style.display = 'none';
+
+      function formatDepthValue(md) {
+        const rounded = Math.round(md * 10) / 10;
+        const asText = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+        return `${asText} ${schematic.plotSettings.depthUnit} TVD`;
+      }
+      function updateCursorGuide(clientY) {
+        if (zoomDragActive) return;
+        if (hoveringElement) {
+          layerCursor.style.display = 'none';
+          return;
+        }
+        const rect = svg.getBoundingClientRect();
+        const y = Math.max(margin.top, Math.min(margin.top + plotHeight, clientY - rect.top));
+        const md = top + ((y - margin.top) / Math.max(1, plotHeight)) * (bottom - top);
+        guideLine.setAttribute('y1', String(y));
+        guideLine.setAttribute('y2', String(y));
+        guideBadge.setAttribute('y', String(y - 9));
+        guideText.setAttribute('y', String(y + 3));
+        guideText.textContent = formatDepthValue(md);
+        layerCursor.style.display = '';
+      }
+      function yToMd(y) {
+        return top + ((y - margin.top) / Math.max(1, plotHeight)) * (bottom - top);
+      }
+      function clampedPlotY(clientY) {
+        const rect = svg.getBoundingClientRect();
+        return Math.max(margin.top, Math.min(margin.top + plotHeight, clientY - rect.top));
+      }
+      function updateZoomBand() {
+        if (!zoomDragActive || zoomDragStartY === null || zoomDragCurrentY === null) return;
+        const y1 = Math.min(zoomDragStartY, zoomDragCurrentY);
+        const y2 = Math.max(zoomDragStartY, zoomDragCurrentY);
+        zoomBand.setAttribute('y', String(y1));
+        zoomBand.setAttribute('height', String(Math.max(1, y2 - y1)));
+      }
+      function clearZoomBand() {
+        zoomDragActive = false;
+        zoomDragStartY = null;
+        zoomDragCurrentY = null;
+        zoomBand.style.display = 'none';
+      }
+      function applyZoomBand() {
+        if (zoomDragStartY === null || zoomDragCurrentY === null) return clearZoomBand();
+        const spanPx = Math.abs(zoomDragCurrentY - zoomDragStartY);
+        if (spanPx < 6) return clearZoomBand();
+        const md1 = yToMd(zoomDragStartY);
+        const md2 = yToMd(zoomDragCurrentY);
+        const nextTop = Math.min(md1, md2);
+        const nextBottom = Math.max(md1, md2);
+        if (nextBottom - nextTop < 0.5) return clearZoomBand();
+        schematic.plotSettings.topDepth = nextTop;
+        schematic.plotSettings.bottomDepth = nextBottom;
+        const ticks = resolveDepthTicks(nextTop, nextBottom, true);
+        schematic.plotSettings.minorTick = ticks.minor;
+        schematic.plotSettings.majorTick = ticks.major;
+        clearZoomBand();
+        renderAll();
+      }
+
+      svg.onmousemove = (event) => {
+        if (zoomDragActive) {
+          zoomDragCurrentY = clampedPlotY(event.clientY);
+          updateZoomBand();
+          return;
+        }
+        updateCursorGuide(event.clientY);
+      };
+      svg.onmouseleave = () => {
+        if (zoomDragActive) clearZoomBand();
+        layerCursor.style.display = 'none';
+      };
+      svg.onwheel = (event) => {
+        if (event.altKey) {
+          event.preventDefault();
+          scheduleWheelInteraction(event.deltaY, true);
+          return;
+        }
+        const bounds = dataDepthBounds();
+        const topNow = num(schematic.plotSettings.topDepth);
+        const bottomNow = num(schematic.plotSettings.bottomDepth, 5000);
+        const spanNow = Math.max(1, bottomNow - topNow);
+        const totalSpan = Math.max(1, bounds.max - bounds.min);
+        const canDepthPan = spanNow < totalSpan - 0.001;
+        if (canDepthPan) {
+          event.preventDefault();
+          scheduleWheelInteraction(event.deltaY, false);
+        }
+      };
+      svg.oncontextmenu = (event) => {
+        event.preventDefault();
+      };
+      svg.onmousedown = (event) => {
+        const depthHandle = event.target.closest('.depth-handle');
+        if (depthHandle && event.button === 0) {
+          event.preventDefault();
+          event.stopPropagation();
+          beginDepthDrag(event, depthHandle.dataset.edge);
+          return;
+        }
+        if (event.button !== 2) return;
+        event.preventDefault();
+        const onElement = Boolean(event.target.closest('.element-hit'));
+        if (onElement) return;
+        zoomDragActive = true;
+        zoomDragStartY = clampedPlotY(event.clientY);
+        zoomDragCurrentY = zoomDragStartY;
+        layerCursor.style.display = '';
+        zoomBand.style.display = '';
+        guideLine.style.display = 'none';
+        guideBadge.style.display = 'none';
+        guideText.style.display = 'none';
+        updateZoomBand();
+      };
+      svg.onmouseup = (event) => {
+        if (event.button !== 2 || !zoomDragActive) return;
+        event.preventDefault();
+        guideLine.style.display = '';
+        guideBadge.style.display = '';
+        guideText.style.display = '';
+        applyZoomBand();
+      };
+      svg.onmouseover = (event) => {
+        if (!event.target.closest('.element-hit')) return;
+        hoveringElement = true;
+        layerCursor.style.display = 'none';
+      };
+      svg.onmouseout = (event) => {
+        if (!event.target.closest('.element-hit')) return;
+        const next = event.relatedTarget;
+        if (next && next.closest && next.closest('.element-hit')) return;
+        hoveringElement = false;
+      };
+      svg.onclick = (event) => {
+        const hit = event.target.closest('.element-hit');
+        if (hit) {
+          selectItem(hit.dataset.collection, hit.dataset.id);
+          return;
+        }
+        deselectItem();
+      };
+      svg.ondblclick = (event) => {
+        const annotationLabel = event.target.closest('.annotation-label');
+        if (annotationLabel) {
+          event.preventDefault();
+          event.stopPropagation();
+          const id = annotationLabel.getAttribute('data-id');
+          if (id) openInlineAnnotationEditor(id, annotationLabel);
+          return;
+        }
+        const editableLabel = event.target.closest('.editable-item-label');
+        if (editableLabel) {
+          event.preventDefault();
+          event.stopPropagation();
+          const collection = editableLabel.getAttribute('data-collection');
+          const id = editableLabel.getAttribute('data-id');
+          const field = editableLabel.getAttribute('data-field') || 'label';
+          if (collection && id) openInlineItemEditor(collection, id, field, editableLabel);
+          return;
+        }
+        const hit = event.target.closest('.element-hit');
+        if (hit) {
+          event.preventDefault();
+          event.stopPropagation();
+          selectItem(hit.dataset.collection, hit.dataset.id);
+          openEditDialog(hit.dataset.collection, hit.dataset.id);
+          return;
+        }
+        event.preventDefault();
+        fitDepthRange();
+      };
+      updateDepthPanControl();
+    }
+
+    function drawSelectedDepthHandles(svg, cx, top, bottom, margin, plotHeight) {
+      if (!selected) return;
+      const item = findItem(selected.collection, selected.id);
+      if (!item) return;
+      if (item.topMD === undefined || item.bottomMD === undefined) return;
+      const yTop = mdToY(item.topMD, top, bottom, margin, plotHeight);
+      const yBottom = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+      const x = cx + 10;
+      const handleStyle = { fill:'#def359', stroke:'#210d2a', 'stroke-width':1.2, class:'depth-handle', 'data-collection':selected.collection, 'data-id':selected.id };
+      svg.appendChild(el('circle', { ...handleStyle, cx:x, cy:yTop, r:6, 'data-edge':'top' }));
+      svg.appendChild(el('circle', { ...handleStyle, cx:x, cy:yBottom, r:6, 'data-edge':'bottom' }));
+    }
+
+    function beginDepthDrag(event, edge) {
+      if (!selected || !lastRenderDepthContext) return;
+      const item = findItem(selected.collection, selected.id);
+      if (!item) return;
+      depthDragState = { collection:selected.collection, id:selected.id, edge };
+      updateDepthDrag(event.clientY, event.clientX);
+      const move = (e) => updateDepthDrag(e.clientY, e.clientX);
+      const up = () => {
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', up);
+        depthDragState = null;
+        hideDepthDragBadge();
+        renderCollectionPanels();
+        renderProperties();
+        renderValidation();
+        markUnsavedChanges();
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+    }
+
+    function updateDepthDrag(clientY, clientX) {
+      if (!depthDragState || !lastRenderDepthContext) return;
+      const item = findItem(depthDragState.collection, depthDragState.id);
+      if (!item) return;
+      const ctx = lastRenderDepthContext;
+      const rect = document.getElementById('schematicSvg').getBoundingClientRect();
+      const y = Math.max(ctx.margin.top, Math.min(ctx.margin.top + ctx.plotHeight, clientY - rect.top));
+      const md = ctx.top + ((y - ctx.margin.top) / Math.max(1, ctx.plotHeight)) * (ctx.bottom - ctx.top);
+      const minGap = 0.1;
+      if (depthDragState.edge === 'top') {
+        item.topMD = Math.min(md, num(item.bottomMD) - minGap);
+      } else {
+        item.bottomMD = Math.max(md, num(item.topMD) + minGap);
+      }
+      showDepthDragBadge(clientX, clientY, `${formatDepthOneDecimal(depthDragState.edge === 'top' ? item.topMD : item.bottomMD)} ${schematic.plotSettings.depthUnit} TVD`);
+      renderSchematic();
+    }
+
+    function showDepthDragBadge(clientX, clientY, text) {
+      if (!depthDragBadge) {
+        const badge = document.createElement('div');
+        badge.style.position = 'fixed';
+        badge.style.zIndex = '1400';
+        badge.style.pointerEvents = 'none';
+        badge.style.padding = '2px 6px';
+        badge.style.borderRadius = '4px';
+        badge.style.border = '1px solid var(--border)';
+        badge.style.background = 'var(--surface)';
+        badge.style.color = 'var(--text)';
+        badge.style.font = '600 11px formular-interwell, Arial, sans-serif';
+        document.body.appendChild(badge);
+        depthDragBadge = badge;
+      }
+      depthDragBadge.textContent = text;
+      depthDragBadge.style.left = `${Math.round(clientX + 12)}px`;
+      depthDragBadge.style.top = `${Math.round(clientY - 24)}px`;
+      depthDragBadge.style.display = 'block';
+    }
+
+    function hideDepthDragBadge() {
+      if (!depthDragBadge) return;
+      depthDragBadge.style.display = 'none';
+    }
+
+    function viz(item) { return item.visible !== false; }
+    function mdToY(md, top, bottom, margin, plotHeight) {
+      const span = Math.max(1, bottom - top);
+      return margin.top + ((num(md) - top) / span) * plotHeight;
+    }
+    function diameterToWidth(inches) {
+      // Telescopic nesting should stay visible; use indicative, compressed scaling.
+      const d = Math.max(0.5, num(inches, 1));
+      return Math.max(42, Math.min(440, d * renderWidthPerInch));
+    }
+
+    function updateRenderRadialScale(cx, rightBound) {
+      const candidates = [];
+      (schematic.holeSections || []).forEach(item => { if (item.visible !== false) candidates.push(num(item.diameterIn, 0)); });
+      (schematic.strings || []).forEach(item => { if (item.visible !== false) candidates.push(num(item.odIn, 0)); });
+      (schematic.completion || []).forEach(item => { if (item.visible !== false) candidates.push(num(item.odIn, 0)); });
+      const maxNominalIn = Math.max(8.5, ...candidates.filter(Number.isFinite));
+      const usableHalfWidth = Math.max(220, rightBound - cx);
+      const desiredOuterWidth = usableHalfWidth * 1.55;
+      renderWidthPerInch = Math.max(4.4, Math.min(14, desiredOuterWidth / maxNominalIn));
+    }
+    function el(name, attrs = {}, text = null) {
+      const node = document.createElementNS(SVG_NS, name);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) node.setAttribute(key, value);
+      });
+      if (text !== null) node.textContent = text;
+      return node;
+    }
+    function addTitle(node, text) { node.appendChild(el('title', {}, text)); return node; }
+    function isSelected(collection, id) { return selected && selected.collection === collection && selected.id === id; }
+    function selectionAttrs(collection, id) {
+      return isSelected(collection, id) ? { stroke:'#def359', 'stroke-width':5 } : {};
+    }
+    function makeGroup(collection, item) {
+      const type = item.type || collection;
+      const g = el('g', {
+        class:`element-hit schematic-item schematic-item--${collection}`,
+        'data-kind':collection,
+        'data-type':type,
+        'data-collection':collection,
+        'data-id':item.id
+      });
+      addTitle(g, `${itemTitle(item)} | ${itemDepthText(item)}`);
+      return g;
+    }
+
+    function applySectionMillMasks(svg, layers, cx, width, height, top, bottom, margin, plotHeight) {
+      const mills = (schematic.components || []).filter(item => item.visible !== false && item.type === 'section_mill');
+      if (!mills.length) return;
+      const defs = el('defs');
+      const mask = el('mask', { id:'sectionMillMask', maskUnits:'userSpaceOnUse' });
+      mask.appendChild(el('rect', { x:0, y:0, width, height, fill:'#fff' }));
+      mills.forEach(item => {
+        const y1 = mdToY(item.topMD, top, bottom, margin, plotHeight);
+        const y2 = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+        const w = sectionMillWidth(item);
+        mask.appendChild(el('rect', {
+          x:cx - w / 2,
+          y:Math.min(y1, y2),
+          width:w,
+          height:Math.max(1, Math.abs(y2 - y1)),
+          fill:'#000'
+        }));
+      });
+      defs.appendChild(mask);
+      svg.appendChild(defs);
+      layers.forEach(layer => layer.setAttribute('mask', 'url(#sectionMillMask)'));
+    }
+
+    function applyPlotAreaClip(svg, layers, margin, width, plotHeight) {
+      const defs = svg.querySelector('defs') || el('defs');
+      if (!defs.parentNode) svg.appendChild(defs);
+      const clip = el('clipPath', { id:'plotAreaClip', clipPathUnits:'userSpaceOnUse' });
+      clip.appendChild(el('rect', {
+        x: margin.left,
+        y: margin.top,
+        width: Math.max(1, (width - 40) - margin.left),
+        height: Math.max(1, plotHeight)
+      }));
+      defs.appendChild(clip);
+      layers.forEach(layer => layer.setAttribute('clip-path', 'url(#plotAreaClip)'));
+    }
+
+    function drawHeader(svg, width, margin, top, bottom) {
+      const topText = formatDepthOneDecimal(top);
+      const bottomText = formatDepthOneDecimal(bottom);
+      svg.appendChild(el('text', { x: margin.left, y: 28, fill:'currentColor', 'font-size':18, 'font-weight':700 }, schematic.wellInfo.wellName || 'Well Schematic'));
+      svg.appendChild(el('text', { x: margin.left, y: 46, fill:'currentColor', 'font-size':11 }, `${schematic.wellInfo.operator || ''} ${schematic.wellInfo.field ? '| ' + schematic.wellInfo.field : ''} | ${topText}-${bottomText} ${schematic.plotSettings.depthUnit} TVD`));
+      if (schematic.plotSettings.showPlotLogo !== false) {
+        const logoStyle = isNightModeEnabled() ? 'filter: brightness(0) invert(1);' : '';
+        svg.appendChild(el('image', {
+          href: LOGO_URL,
+          x: width - 74,
+          y: 14,
+          width: 42,
+          height: 42,
+          preserveAspectRatio: 'xMidYMid meet',
+          opacity: .95,
+          style: logoStyle
+        }));
+      }
+      svg.appendChild(el('text', { x: width - margin.right + 20, y: 28, fill:'currentColor', 'font-size':10, 'text-anchor':'end' }, `Rev ${schematic.wellInfo.revision || '-'} | ${schematic.wellInfo.date || ''}`));
+      svg.appendChild(el('line', { x1:margin.left, y1:56, x2:width - 40, y2:56, stroke:'currentColor', 'stroke-width':1, opacity:.18 }));
+    }
+
+    function formatDepthOneDecimal(value) {
+      const n = num(value);
+      const rounded = Math.round(n * 10) / 10;
+      if (Math.abs(rounded - Math.round(rounded)) < 0.0001) return String(Math.round(rounded));
+      return rounded.toFixed(1);
+    }
+
+    function drawDatumLines(svg, width, margin, plotHeight, top, bottom) {
+      const plotRight = width - 40;
+      const waterDepth = schematic.wellInfo.waterDepthM;
+      if (top <= 0 && bottom >= 0) {
+        const y = mdToY(0, top, bottom, margin, plotHeight);
+        svg.appendChild(el('line', { x1:margin.left, y1:y, x2:plotRight, y2:y, stroke:'currentColor', 'stroke-width':1.8, opacity:.55 }));
+      }
+      if (waterDepth !== null && waterDepth !== '' && Number.isFinite(num(waterDepth)) && num(waterDepth) > top && num(waterDepth) < bottom) {
+        const surfaceY = mdToY(Math.max(0, top), top, bottom, margin, plotHeight);
+        const seabedY = mdToY(waterDepth, top, bottom, margin, plotHeight);
+        svg.appendChild(el('rect', { x:margin.left, y:surfaceY, width:plotRight - margin.left, height:Math.max(0, seabedY - surfaceY), fill:'#0c2340', opacity:.045 }));
+        svg.appendChild(el('line', { x1:margin.left, y1:seabedY, x2:plotRight, y2:seabedY, stroke:'#0c2340', 'stroke-width':1.4, 'stroke-dasharray':'8 4', opacity:.55 }));
+        svg.appendChild(el('text', { x:plotRight - 4, y:seabedY - 6, fill:'currentColor', 'font-size':10, 'font-weight':700, 'text-anchor':'end' }, 'Seabed / mudline'));
+      }
+    }
+
+    function drawDepthScale(svg, margin, plotHeight, top, bottom) {
+      const x = margin.left - 18;
+      svg.appendChild(el('line', { x1:x, y1:margin.top, x2:x, y2:margin.top + plotHeight, stroke:'currentColor', 'stroke-width':1.4 }));
+      const ticks = resolveDepthTicks(top, bottom, false, plotHeight);
+      const minor = ticks.minor;
+      const major = ticks.major;
+      for (let md = Math.ceil(top / minor) * minor; md <= bottom + (minor * 0.0001); md += minor) {
+        const y = mdToY(md, top, bottom, margin, plotHeight);
+        svg.appendChild(el('line', { x1:x - 6, y1:y, x2:x, y2:y, stroke:'currentColor', 'stroke-width':.7, opacity:.45 }));
+      }
+      for (let md = Math.ceil(top / major) * major; md <= bottom + (major * 0.0001); md += major) {
+        const y = mdToY(md, top, bottom, margin, plotHeight);
+        svg.appendChild(el('line', { x1:x - 11, y1:y, x2:x, y2:y, stroke:'currentColor', 'stroke-width':1.2, opacity:.85 }));
+        svg.appendChild(el('text', { x:x - 15, y:y + 3, fill:'currentColor', 'font-size':10, 'text-anchor':'end' }, formatDepthTick(md)));
+      }
+      const unit = String(schematic.plotSettings.depthUnit || '').trim() || 'm';
+      const reference = String(schematic.wellInfo.datum || '').trim() || 'RKB';
+      svg.appendChild(el('text', { x:x - 62, y:margin.top - 12, fill:'currentColor', 'font-size':10, 'font-weight':700 }, `${unit}TVD ${reference}`));
+    }
+
+    function resolveDepthTicks(top, bottom, forceAuto = false, plotHeightPx = null) {
+      const span = Math.max(1, bottom - top);
+      const targetMinorCount = plotHeightPx ? Math.max(8, Math.min(60, Math.round(plotHeightPx / 42))) : 18;
+      const targetMajorCount = plotHeightPx ? Math.max(4, Math.min(20, Math.round(plotHeightPx / 120))) : 7;
+      const recommendedMinor = niceTickStep(span / targetMinorCount);
+      const recommendedMajor = niceTickStep(span / targetMajorCount);
+      const userMinor = Math.max(0, num(schematic.plotSettings.minorTick, 0));
+      const userMajor = Math.max(0, num(schematic.plotSettings.majorTick, 0));
+      let minor = forceAuto ? recommendedMinor : (userMinor > 0 ? userMinor : recommendedMinor);
+      let major = forceAuto ? recommendedMajor : (userMajor > 0 ? userMajor : recommendedMajor);
+      major = Math.max(minor, major);
+      if (minor >= major) {
+        const subdivided = major / 5;
+        minor = niceTickStep(subdivided);
+        if (minor >= major) minor = major / 2;
+      }
+      return { minor, major };
+    }
+
+    function niceTickStep(rawStep) {
+      const step = Math.max(0.001, rawStep);
+      const pow10 = Math.pow(10, Math.floor(Math.log10(step)));
+      const n = step / pow10;
+      let nice = 10;
+      if (n <= 1) nice = 1;
+      else if (n <= 2) nice = 2;
+      else if (n <= 2.5) nice = 2.5;
+      else if (n <= 5) nice = 5;
+      return nice * pow10;
+    }
+
+    function formatDepthTick(value) {
+      const rounded = Math.round(value * 1000) / 1000;
+      if (Math.abs(rounded - Math.round(rounded)) < 0.0001) return String(Math.round(rounded));
+      return String(rounded).replace(/\.?0+$/, '');
+    }
+
+    function drawHoleSection(svg, item, cx, top, bottom, margin, plotHeight) {
+      const y1 = mdToY(item.topMD, top, bottom, margin, plotHeight);
+      const y2 = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+      const w = diameterToWidth(item.diameterIn);
+      const g = makeGroup('holeSections', item);
+      g.appendChild(el('rect', { x:cx - w/2, y:y1, width:w, height:Math.max(1, y2-y1), fill:itemFillColor('holeSections', item, '#e3dfeb'), opacity:.38, stroke:'#9b8eaa', 'stroke-dasharray':'4 4', ...selectionAttrs('holeSections', item.id) }));
+      svg.appendChild(g);
+    }
+
+    function drawCement(svg, item, cx, top, bottom, margin, plotHeight) {
+      const bounds = annularFillBounds(item);
+      const outerW = bounds.outerW;
+      const innerW = bounds.innerW;
+      const annulus = Math.max(4, (outerW - innerW) / 2);
+      const y1 = mdToY(item.topMD, top, bottom, margin, plotHeight);
+      const y2 = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+      const g = makeGroup('cement', item);
+      const outerHalf = outerW / 2;
+      const innerHalf = innerW / 2;
+      const h = Math.max(1, y2 - y1);
+      const fill = itemFillColor('cement', item, annularMaterialColor(item.material));
+      const opacity = .44;
+      g.appendChild(el('rect', {
+        x: cx - outerHalf,
+        y: y1,
+        width: annulus,
+        height: h,
+        fill,
+        opacity,
+        stroke: isSelected('cement', item.id) ? '#def359' : fill,
+        'stroke-width': isSelected('cement', item.id) ? 2.2 : 1
+      }));
+      g.appendChild(el('rect', {
+        x: cx + innerHalf,
+        y: y1,
+        width: annulus,
+        height: h,
+        fill,
+        opacity,
+        stroke: isSelected('cement', item.id) ? '#def359' : fill,
+        'stroke-width': isSelected('cement', item.id) ? 2.2 : 1
+      }));
+      svg.appendChild(g);
+    }
+
+    function drawAnnularFillLabels(svg, cx, lithX, width, margin, plotHeight, top, bottom, occupied = []) {
+      const labels = schematic.cement.filter(viz).map(item => {
+        const md = num(item.topMD);
+        if (md < top || md > bottom) return null;
+        const bounds = annularFillBounds(item);
+        const y = mdToY(md, top, bottom, margin, plotHeight);
+        const materialText = String(item.material || 'cement').toLowerCase();
+        return {
+          item,
+          anchorX: cx + bounds.outerW / 2 + 4,
+          anchorY: y,
+          labelY: y,
+          text: `TOF ${item.label || 'Annular fill'} (${materialText})`
+        };
+      }).filter(Boolean).sort((a, b) => a.anchorY - b.anchorY);
+      if (!labels.length) return;
+
+      const laneTop = margin.top + 12;
+      const laneBottom = margin.top + plotHeight - 10;
+      assignLabelLanePositions(labels, laneTop, laneBottom, 14, occupied);
+
+      const textX = computeCalloutLabelX(cx, lithX, width);
+      const lineEndX = textX - 8;
+      labels.forEach(label => {
+        const selected = isSelected('cement', label.item.id);
+        const stroke = calloutStroke(selected);
+        const kneeX = Math.max(label.anchorX + 24, lineEndX - 120);
+        const g = makeGroup('cement', label.item);
+        g.appendChild(el('path', {
+          d: routedLabelPath(label.anchorX, label.anchorY, label.labelY, kneeX, lineEndX),
+          fill: 'none',
+          stroke,
+          'stroke-width': selected ? 1.7 : .8,
+          opacity: selected ? .9 : .62
+        }));
+        g.appendChild(el('circle', { cx:label.anchorX, cy:label.anchorY, r:selected ? 3 : 2, fill:stroke, opacity:selected ? 1 : .65 }));
+        g.appendChild(el('text', {
+          x: textX,
+          y: label.labelY,
+          fill: 'currentColor',
+          'font-size': 10,
+          'font-weight': 600,
+          'text-anchor': 'start',
+          'dominant-baseline': 'middle'
+        }, label.text));
+        svg.appendChild(g);
+      });
+    }
+
+    function annularFillBounds(item) {
+      const md = num(item.bottomMD, num(item.topMD));
+      const innerFromField = item.insideStringId ? boundaryWidthAtDepth(item.insideStringId, md, 0) : 0;
+      const outerFromField = item.outsideStringId ? boundaryWidthAtDepth(item.outsideStringId, md, 0) : 0;
+      let innerW = innerFromField;
+      let outerW = outerFromField;
+
+      // Legacy fills sometimes named only a casing as the outside boundary.
+      // Interpret that as the annulus between the casing OD and containing open hole.
+      if (!innerW && item.outsideStringId && boundaryIsTubular(item.outsideStringId)) {
+        innerW = outerFromField;
+        outerW = findHoleWidthAtDepth(md, innerW);
+      }
+      if (!outerW && innerW) outerW = findHoleWidthAtDepth(md, innerW);
+      if (!innerW && !outerW) {
+        innerW = 0;
+        outerW = diameterToWidth(12);
+      }
+      if (innerW > outerW) [innerW, outerW] = [outerW, innerW];
+      if (outerW - innerW < 6) outerW = innerW + 12;
+      return { innerW, outerW };
+    }
+
+    function boundaryIsTubular(boundaryId) {
+      if (!boundaryId || String(boundaryId).startsWith('hole:')) return false;
+      return [...(schematic.strings || []), ...(schematic.completion || [])].some(s => s.id === boundaryId);
+    }
+
+    function annularMaterialColor(material) {
+      const m = String(material || 'cement').toLowerCase();
+      if (m === 'epoxy') return '#def359';
+      if (m === 'bismuth') return '#def359';
+      return '#646464';
+    }
+
+    function boundaryWidthAtDepth(boundaryId, md, fallbackWidth) {
+      if (!boundaryId) return fallbackWidth;
+      if (String(boundaryId).startsWith('hole:')) {
+        const holeId = String(boundaryId).slice(5);
+        const hole = (schematic.holeSections || []).find(h => h.id === holeId);
+        if (!hole) return fallbackWidth;
+        return diameterToWidth(hole.diameterIn);
+      }
+      const tubular = [...(schematic.strings || []), ...(schematic.completion || [])].find(s => s.id === boundaryId);
+      if (tubular) return diameterToWidth(tubular.odIn);
+
+      // Compatibility fallback for legacy cement objects that used plain IDs.
+      const legacyHole = (schematic.holeSections || []).find(h => h.id === boundaryId);
+      if (legacyHole) return diameterToWidth(legacyHole.diameterIn);
+      return fallbackWidth;
+    }
+
+    function drawCasingString(svg, item, cx, top, bottom, margin, plotHeight) {
+      drawStringPair(svg, 'strings', item, cx, top, bottom, margin, plotHeight, itemFillColor('strings', item, '#210d2a'), 2.4, { shoe: true });
+    }
+
+    function drawLiner(svg, item, cx, top, bottom, margin, plotHeight) {
+      drawStringPair(svg, 'strings', item, cx, top, bottom, margin, plotHeight, itemFillColor('strings', item, '#302711'), 2.4, { liner: true, shoe: true });
+    }
+
+    function drawTubing(svg, item, cx, top, bottom, margin, plotHeight) {
+      drawStringPair(svg, 'completion', item, cx, top, bottom, margin, plotHeight, itemFillColor('completion', item, '#574064'), 2);
+    }
+
+    function drawStringPair(svg, collection, item, cx, top, bottom, margin, plotHeight, color, strokeWidth, options = {}) {
+      const y1 = mdToY(item.topMD, top, bottom, margin, plotHeight);
+      const y2 = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+      const w = diameterToWidth(item.odIn);
+      const g = makeGroup(collection, item);
+      const stroke = itemFillColor(collection, item, color);
+      const attrs = isSelected(collection, item.id) ? { stroke:'#def359', 'stroke-width':5 } : { stroke, 'stroke-width':strokeWidth };
+      const shoeDepth = options.shoe ? num(item.shoeMD, num(item.bottomMD)) : null;
+      const shoeY = options.shoe ? mdToY(shoeDepth, top, bottom, margin, plotHeight) : y2;
+      const bodyBottomY = options.shoe ? Math.min(y2, shoeY) : y2;
+      const wallThickness = 8;
+      drawPipeWallBands(g, cx, w, wallThickness, y1, bodyBottomY, attrs.stroke, isSelected(collection, item.id));
+      if (options.shoe) {
+        drawCasingShoe(g, cx, w, shoeDepth, shoeY, isSelected(collection, item.id));
+      }
+      if (options.liner) g.appendChild(el('line', { x1:cx - w/2 - 9, y1, x2:cx + w/2 + 9, y2:y1, stroke, 'stroke-width':1.2, 'stroke-dasharray':'5 3' }));
+      svg.appendChild(g);
+    }
+
+    function drawPipeWallBands(group, cx, width, wallThickness, yTop, yBottom, fill, selectedPipe) {
+      const half = width / 2;
+      const h = Math.max(1, yBottom - yTop);
+      const stroke = selectedPipe ? '#210d2a' : 'none';
+      const strokeWidth = selectedPipe ? 0.8 : 0;
+      [
+        cx - half,
+        cx + half - wallThickness
+      ].forEach(x => {
+        group.appendChild(el('rect', {
+          x,
+          y: yTop,
+          width: wallThickness,
+          height: h,
+          fill,
+          stroke,
+          'stroke-width': strokeWidth
+        }));
+      });
+    }
+
+    function drawCasingShoe(group, cx, pipeWidth, shoeDepth, shoeY, selectedShoe) {
+      const pipeHalf = pipeWidth / 2;
+      const holeWidth = findHoleWidthAtDepth(shoeDepth, pipeWidth);
+      const holeHalf = holeWidth / 2;
+      // Keep shoe symbol size visually consistent between strings.
+      const shoeHeight = 12;
+      const fill = selectedShoe ? '#def359' : '#210d2a';
+      const stroke = selectedShoe ? '#210d2a' : 'none';
+      const strokeWidth = selectedShoe ? 1.5 : 0;
+      const yTop = shoeY - shoeHeight;
+      const yBottom = shoeY;
+      const wedges = [
+        {
+          points: `${cx - pipeHalf},${yBottom} ${cx - pipeHalf},${yTop} ${cx - holeHalf},${yBottom}`
+        },
+        {
+          points: `${cx + pipeHalf},${yBottom} ${cx + pipeHalf},${yTop} ${cx + holeHalf},${yBottom}`
+        }
+      ];
+      wedges.forEach(wedge => {
+        group.appendChild(el('polygon', {
+          points: wedge.points,
+          fill,
+          stroke,
+          'stroke-width': strokeWidth,
+          'stroke-linejoin': 'miter'
+        }));
+      });
+    }
+
+    function findHoleWidthAtDepth(md, pipeWidth) {
+      const candidates = schematic.holeSections
+        .filter(hole => hole.visible !== false)
+        .filter(hole => num(hole.topMD) <= num(md) && num(hole.bottomMD) >= num(md))
+        .filter(hole => hole.diameterIn !== undefined && hole.diameterIn !== null)
+        .map(hole => diameterToWidth(hole.diameterIn))
+        .filter(width => Number.isFinite(width) && width > pipeWidth)
+        .sort((a, b) => a - b);
+      if (!candidates.length) return pipeWidth + 26;
+      return candidates[0];
+    }
+
+    function drawComponent(svg, item, cx, top, bottom, margin, plotHeight) {
+      const md = item.md !== undefined ? item.md : ((num(item.topMD) + num(item.bottomMD)) / 2);
+      const y = mdToY(md, top, bottom, margin, plotHeight);
+      const w = componentWidth(item);
+      const h = item.bottomMD !== undefined && item.topMD !== undefined ? Math.max(8, mdToY(item.bottomMD, top, bottom, margin, plotHeight) - mdToY(item.topMD, top, bottom, margin, plotHeight)) : 14;
+      const yTop = item.bottomMD !== undefined && item.topMD !== undefined ? mdToY(item.topMD, top, bottom, margin, plotHeight) : y - h/2;
+      const g = makeGroup('components', item);
+      const fill = isSelected('components', item.id) ? '#def359' : itemFillColor('components', item, componentColor(item.type));
+      if (['td','pbtd','cut_point'].includes(item.type)) {
+        g.appendChild(el('line', { x1:cx - 120, y1:y, x2:cx + 120, y2:y, stroke:fill, 'stroke-width':2.2, 'stroke-dasharray':item.type === 'cut_point' ? '7 4' : '' }));
+        const labelX = Number.isFinite(renderCalloutTextX) && renderCalloutTextX > 0 ? renderCalloutTextX : (cx + 114);
+        g.appendChild(el('text', { x:labelX, y:y, fill:'currentColor', 'font-size':10, 'font-weight':700, 'text-anchor':'start', 'dominant-baseline':'middle', class:'editable-item-label', 'data-collection':'components', 'data-id':item.id, 'data-field':'label' }, item.label || item.type.toUpperCase()));
+      } else if (item.type === 'bridge_plug') {
+        const hostInnerW = hostInnerWidth(item);
+        const plugW = hostInnerW !== null
+          ? Math.max(10, hostInnerW - 2)
+          : Math.max(34, Math.min(92, w));
+        const y1 = Math.min(yTop, yTop + h);
+        const y2 = Math.max(yTop, yTop + h);
+        const plugH = Math.max(12, y2 - y1);
+        const plugFill = colorInputValue(item.fillColor, '#ffffff');
+        const plugLine = colorInputValue(item.lineColor, '#210d2a');
+        const stroke = isSelected('components', item.id) ? '#def359' : plugLine;
+        g.appendChild(el('rect', { x:cx - plugW/2, y:y1, width:plugW, height:plugH, fill:plugFill, stroke, 'stroke-width':1.4 }));
+        g.appendChild(el('line', { x1:cx - plugW/2, y1:y1, x2:cx + plugW/2, y2:y1 + plugH, stroke, 'stroke-width':1.4 }));
+        g.appendChild(el('line', { x1:cx + plugW/2, y1:y1, x2:cx - plugW/2, y2:y1 + plugH, stroke, 'stroke-width':1.4 }));
+        drawIntervalComponentLabel(g, item, cx + plugW / 2 + 10, y1, y2);
+      } else if (item.type === 'mechanical_plug' || item.type === 'tubing_plug') {
+        const plugW = Math.max(34, Math.min(92, w));
+        const plugH = 18;
+        const plugY = y - plugH / 2;
+        g.appendChild(el('rect', { x:cx - plugW/2, y:plugY, width:plugW, height:plugH, fill, stroke:'#210d2a', 'stroke-width':1 }));
+        g.appendChild(el('line', { x1:cx - plugW/2 + 5, y1:plugY + 3, x2:cx + plugW/2 - 5, y2:plugY + plugH - 3, stroke:'#e3dfeb', 'stroke-width':1.2 }));
+        g.appendChild(el('line', { x1:cx + plugW/2 - 5, y1:plugY + 3, x2:cx - plugW/2 + 5, y2:plugY + plugH - 3, stroke:'#e3dfeb', 'stroke-width':1.2 }));
+      } else if (item.type === 'cement_plug') {
+        const plugW = cementPlugWidth(item);
+        const plugFill = isSelected('components', item.id) ? '#def359' : itemFillColor('components', item, plugMaterialColor(item.material));
+        g.appendChild(el('rect', { x:cx - plugW/2, y:yTop, width:plugW, height:h, rx:1, fill:plugFill, stroke:'#210d2a', 'stroke-width':1 }));
+        drawIntervalComponentLabel(g, item, cx + plugW / 2 + 10, yTop, yTop + h);
+      } else if (item.type === 'packer') {
+        const packerW = Math.max(54, Math.min(120, w));
+        const bodyH = 22;
+        const y0 = y - bodyH / 2;
+        g.appendChild(el('rect', { x:cx - 8, y:y0, width:16, height:bodyH, fill:'var(--plot-bg)', stroke:fill, 'stroke-width':2 }));
+        g.appendChild(el('polygon', { points:`${cx - packerW/2},${y0} ${cx - 10},${y0 + bodyH/2} ${cx - packerW/2},${y0 + bodyH}`, fill, stroke:'#210d2a', 'stroke-width':.8 }));
+        g.appendChild(el('polygon', { points:`${cx + packerW/2},${y0} ${cx + 10},${y0 + bodyH/2} ${cx + packerW/2},${y0 + bodyH}`, fill, stroke:'#210d2a', 'stroke-width':.8 }));
+      } else if (item.type === 'dhsv' || item.type === 'sleeve' || item.type === 'mandrel' || item.type === 'nipple') {
+        g.appendChild(el('rect', { x:cx - w/2, y:y - 10, width:w, height:20, fill:'none', stroke:fill, 'stroke-width':3 }));
+        g.appendChild(el('line', { x1:cx - w/2, y1:y, x2:cx + w/2, y2:y, stroke:fill, 'stroke-width':2 }));
+      } else {
+        g.appendChild(el('rect', { x:cx - w/2, y:yTop, width:w, height:h, rx:2, fill, stroke:'#210d2a', 'stroke-width':1 }));
+      }
+      svg.appendChild(g);
+    }
+
+    function drawSectionMill(svg, item, cx, top, bottom, margin, plotHeight) {
+      const yTop = mdToY(item.topMD, top, bottom, margin, plotHeight);
+      const yBottom = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+      const plotTop = margin.top;
+      const plotBottom = margin.top + plotHeight;
+      const y1Raw = Math.min(yTop, yBottom);
+      const y2Raw = Math.max(yTop, yBottom);
+      const y1 = Math.max(plotTop, Math.min(plotBottom, y1Raw));
+      const y2 = Math.max(plotTop, Math.min(plotBottom, y2Raw));
+      if (y2 <= plotTop || y1 >= plotBottom || y2 <= y1) return;
+      const w = sectionMillWidth(item);
+      const selectedMill = isSelected('components', item.id);
+      const stroke = selectedMill ? '#def359' : itemFillColor('components', item, '#b0294a');
+      const g = makeGroup('components', item);
+      g.appendChild(el('rect', {
+        x:cx - w / 2,
+        y:y1,
+        width:w,
+        height:Math.max(1, y2 - y1),
+        fill:'none',
+        stroke,
+        'stroke-width':selectedMill ? 3 : 1.6,
+        'stroke-dasharray':'6 4'
+      }));
+      drawIntervalComponentLabel(g, item, cx + w / 2 + 10, y1, y2);
+      svg.appendChild(g);
+    }
+
+    function drawIntervalComponentLabel(group, item, x, yTop, yBottom) {
+      const position = String(item.labelPosition || 'top').toLowerCase();
+      const y = position === 'bottom' ? yBottom : position === 'middle' ? (yTop + yBottom) / 2 : yTop;
+      const lineEndX = Number.isFinite(renderCalloutLineEndX) && renderCalloutLineEndX > 0 ? renderCalloutLineEndX : (x + 44);
+      const textX = Number.isFinite(renderCalloutTextX) && renderCalloutTextX > 0 ? renderCalloutTextX : (x + 48);
+      group.appendChild(el('line', { x1:x - 10, y1:y, x2:lineEndX, y2:y, stroke:calloutStroke(isSelected('components', item.id)), 'stroke-width':.8, opacity:.68 }));
+      group.appendChild(el('text', {
+        x:textX,
+        y:y,
+        fill:'currentColor',
+        'font-size':10,
+        'font-weight':600,
+        'text-anchor':'start',
+        'dominant-baseline':'middle',
+        class:'editable-item-label',
+        'data-collection':'components',
+        'data-id':item.id,
+        'data-field':'label'
+      }, item.label || item.type || item.id));
+    }
+
+    function sectionMillWidth(item) {
+      if (item.diameterIn !== undefined && item.diameterIn !== null && item.diameterIn !== '') return diameterToWidth(item.diameterIn);
+      return componentWidth(item);
+    }
+
+    function cementPlugWidth(item) {
+      // Host takes precedence: when selected, plug should fit host ID.
+      const hostInnerW = hostInnerWidth(item);
+      if (hostInnerW !== null) return Math.max(10, hostInnerW - 2);
+      if (item.diameterIn !== undefined && item.diameterIn !== null && item.diameterIn !== '') {
+        return Math.max(40, Math.min(120, diameterToWidth(item.diameterIn)));
+      }
+      return Math.max(40, Math.min(120, componentWidth(item)));
+    }
+
+    function componentWidth(item) {
+      if (item.diameterIn !== undefined && item.diameterIn !== null && item.diameterIn !== '') {
+        return diameterToWidth(item.diameterIn);
+      }
+      if (item.host) {
+        const host = [...schematic.strings, ...schematic.completion].find(s => s.id === item.host);
+        if (host) return diameterToWidth(host.odIn) + 18;
+      }
+      return 86;
+    }
+
+    function hostInnerWidth(item) {
+      if (!item?.host) return null;
+      const host = [...schematic.strings, ...schematic.completion].find(s => s.id === item.host);
+      if (!host) return null;
+      const outerW = diameterToWidth(host.odIn);
+      const wallThickness = 8;
+      return Math.max(6, outerW - (wallThickness * 2));
+    }
+
+    function componentColor(type) {
+      if (type === 'cement_plug') return '#c7b2ea';
+      if (type === 'section_mill') return '#b0294a';
+      if (type === 'bridge_plug' || type === 'mechanical_plug' || type === 'tubing_plug') return '#302711';
+      if (type === 'packer') return '#210d2a';
+      return '#574064';
+    }
+
+    function plugMaterialColor(material) {
+      const m = String(material || 'cement').toLowerCase();
+      if (m === 'epoxy') return '#def359';
+      if (m === 'bismuth') return '#def359';
+      return '#555555';
+    }
+
+    function drawPerforations(svg, item, cx, top, bottom, margin, plotHeight) {
+      const y1 = mdToY(item.topMD, top, bottom, margin, plotHeight);
+      const y2 = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+      const g = makeGroup('components', item);
+      const stroke = isSelected('components', item.id) ? '#def359' : itemFillColor('components', item, '#b0294a');
+      for (let y = y1; y <= y2; y += 12) {
+        g.appendChild(el('line', { x1:cx - 58, y1:y + 5, x2:cx - 36, y2:y - 5, stroke, 'stroke-width':2 }));
+        g.appendChild(el('line', { x1:cx + 58, y1:y + 5, x2:cx + 36, y2:y - 5, stroke, 'stroke-width':2 }));
+      }
+      svg.appendChild(g);
+    }
+
+    function drawFormationTrack(svg, lithX, margin, plotHeight, top, bottom, trackW = 150) {
+      svg.appendChild(el('rect', { x:lithX, y:margin.top, width:trackW, height:plotHeight, fill:'#e4ebd7', opacity:.35, stroke:'currentColor', 'stroke-width':1, 'stroke-opacity':.18 }));
+      svg.appendChild(el('text', { x:lithX + trackW - 6, y:margin.top - 12, fill:'currentColor', 'font-size':10, 'font-weight':700, 'text-anchor':'end' }, 'Formations'));
+      schematic.formations.filter(viz).forEach(item => {
+        const y1 = mdToY(item.topMD, top, bottom, margin, plotHeight);
+        const y2 = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+        const g = makeGroup('formations', item);
+        const fill = itemFillColor('formations', item, lithologyColor(item.lithology));
+        g.appendChild(el('rect', { x:lithX, y:y1, width:trackW, height:Math.max(1, y2-y1), fill, opacity:.62, stroke:isSelected('formations', item.id) ? '#def359' : 'currentColor', 'stroke-width':isSelected('formations', item.id) ? 3 : .6, 'stroke-opacity':.45 }));
+        g.appendChild(el('line', { x1:lithX - 210, y1:y1, x2:lithX + trackW, y2:y1, stroke:'currentColor', 'stroke-width':1, 'stroke-dasharray':'3 4', opacity:.42 }));
+        g.appendChild(el('text', { x:lithX + trackW - 6, y:y1 + 13, fill:'#210d2a', 'font-size':10, 'font-weight':700, 'text-anchor':'end' }, item.name || item.id));
+        svg.appendChild(g);
+      });
+    }
+
+    function lithologyColor(lithology) {
+      const l = String(lithology || '').toLowerCase();
+      if (l.includes('sand')) return '#def359';
+      if (l.includes('shale')) return '#c7b2ea';
+      if (l.includes('chalk') || l.includes('lime')) return '#e3dfeb';
+      return '#e4ebd7';
+    }
+
+    function drawAutoLabels(svg, cx, lithX, width, margin, plotHeight, top, bottom, occupied = []) {
+      const labels = collectAutoLabels(cx, top, bottom, margin, plotHeight)
+        .filter(label => label.anchorY >= margin.top && label.anchorY <= margin.top + plotHeight)
+        .sort((a, b) => a.anchorY - b.anchorY);
+      if (!labels.length) return;
+
+      const laneTop = margin.top + 76;
+      const laneBottom = margin.top + plotHeight - 10;
+      assignLabelLanePositions(labels, laneTop, laneBottom, 14, occupied);
+
+      const textX = computeCalloutLabelX(cx, lithX, width);
+      const lineEndX = textX - 8;
+      labels.forEach(label => {
+        const selected = isSelected(label.collection, label.id);
+        const stroke = calloutStroke(selected);
+        const g = el('g', { class:'auto-label', 'data-kind':label.collection, 'data-id':label.id });
+        const kneeX = Math.max(label.anchorX + 28, lineEndX - 120);
+        g.appendChild(el('path', { d:routedLabelPath(label.anchorX, label.anchorY, label.labelY, kneeX, lineEndX), fill:'none', stroke, 'stroke-width':selected ? 1.7 : .8, opacity:selected ? .9 : .38 }));
+        g.appendChild(el('circle', { cx:label.anchorX, cy:label.anchorY, r:selected ? 3 : 2, fill:stroke, opacity:selected ? 1 : .55 }));
+        g.appendChild(el('text', { x:textX, y:label.labelY, fill:'currentColor', 'font-size':10, 'font-weight':600, 'text-anchor':'start', 'dominant-baseline':'middle', class:'editable-item-label', 'data-collection':label.collection, 'data-id':label.id, 'data-field':'label' }, label.text));
+        svg.appendChild(g);
+      });
+    }
+
+    function collectAutoLabels(cx, top, bottom, margin, plotHeight) {
+      const labels = [];
+      const inRange = md => num(md) >= top && num(md) <= bottom;
+      const add = (collection, item, text, md, anchorOffset) => {
+        if (!item || !text || !inRange(md)) return;
+        labels.push({
+          collection,
+          id:item.id,
+          text,
+          anchorY:mdToY(md, top, bottom, margin, plotHeight),
+          anchorX:cx + anchorOffset
+        });
+      };
+      schematic.strings.filter(viz).forEach(item => {
+        if (item.annotationEnabled === false) return;
+        const width = diameterToWidth(item.odIn);
+        const midMd = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === '' ? (num(item.topMD) + num(item.bottomMD)) / 2 : num(item.annotationMD);
+        add('strings', item, item.label || item.id, midMd, width / 2 + 1);
+      });
+      schematic.completion.filter(viz).forEach(item => {
+        if (item.annotationEnabled === false) return;
+        const width = diameterToWidth(item.odIn);
+        const midMd = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === '' ? (num(item.topMD) + num(item.bottomMD)) / 2 : num(item.annotationMD);
+        add('completion', item, item.label || item.id, midMd, width / 2 + 1);
+      });
+      schematic.components.filter(viz).forEach(item => {
+        if (['td', 'pbtd', 'cement_plug', 'section_mill', 'bridge_plug'].includes(item.type)) return;
+        const md = item.md !== undefined ? item.md : (num(item.topMD) + num(item.bottomMD)) / 2;
+        add('components', item, item.label || item.type || item.id, md, componentWidth(item) / 2 + 14);
+      });
+      return labels;
+    }
+
+    function drawAnnotations(svg, cx, lithX, width, top, bottom, margin, plotHeight, occupied = []) {
+      const textX = computeCalloutLabelX(cx, lithX, width);
+      const lineEndX = textX - 8;
+      const notes = schematic.annotations.map((note) => {
+        const target = findAnnotationTarget(note);
+        if (!target) return null;
+        const y = mdToY(target.md !== undefined ? target.md : ((num(target.topMD) + num(target.bottomMD)) / 2), top, bottom, margin, plotHeight);
+        return { note, y };
+      }).filter(Boolean).sort((a, b) => a.y - b.y);
+      const laneTop = margin.top + 34;
+      const laneBottom = margin.top + plotHeight - 10;
+      const labelDrafts = notes.map(({ note, y }) => ({ note, anchorY:y }));
+      assignLabelLanePositions(labelDrafts, laneTop, laneBottom, 15, occupied);
+      labelDrafts.forEach(({ note, anchorY, labelY }) => {
+        const g = makeGroup('annotations', note);
+        const stroke = calloutStroke(isSelected('annotations', note.id));
+        g.appendChild(el('path', { d:routedLabelPath(cx + 82, anchorY, labelY, lineEndX - 120, lineEndX), fill:'none', stroke, 'stroke-width':1, opacity:.72 }));
+        g.appendChild(el('circle', { cx:cx + 82, cy:anchorY, r:3, fill:stroke }));
+        g.appendChild(el('text', { x:textX, y:labelY, fill:'currentColor', 'font-size':10, 'text-anchor':'start', 'dominant-baseline':'middle', class:'annotation-label', 'data-id':note.id }, note.text || note.id));
+        svg.appendChild(g);
+      });
+    }
+
+    function openInlineAnnotationEditor(annotationId, textNode) {
+      const note = (schematic.annotations || []).find(a => a.id === annotationId);
+      if (!note || !textNode) return;
+      openInlineTextEditor(textNode, note.text || '', 'Edit annotation text', (nextValue) => {
+        const current = (schematic.annotations || []).find(a => a.id === annotationId);
+        if (!current) return;
+        current.text = nextValue;
+        renderSchematic();
+        renderCollectionPanels();
+        if (selected && selected.collection === 'annotations' && selected.id === annotationId) renderProperties();
+        markUnsavedChanges();
+      });
+    }
+
+    function openInlineItemEditor(collection, id, field, textNode) {
+      const item = findItem(collection, id);
+      if (!item || !textNode) return;
+      const currentText = item[field] || '';
+      openInlineTextEditor(textNode, currentText, 'Edit label', (nextValue) => {
+        const target = findItem(collection, id);
+        if (!target) return;
+        target[field] = nextValue;
+        renderSchematic();
+        renderCollectionPanels();
+        if (selected && selected.collection === collection && selected.id === id) renderProperties();
+        markUnsavedChanges();
+      });
+    }
+
+    function openInlineTextEditor(textNode, value, ariaLabel, onCommit) {
+      closeInlineAnnotationEditor();
+      const rect = textNode.getBoundingClientRect();
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = value || '';
+      input.setAttribute('aria-label', ariaLabel);
+      input.style.position = 'fixed';
+      input.style.left = `${Math.max(8, rect.left - 240)}px`;
+      input.style.top = `${Math.max(8, rect.top - 8)}px`;
+      input.style.width = `${Math.max(220, rect.width + 28)}px`;
+      input.style.height = '26px';
+      input.style.padding = '3px 6px';
+      input.style.border = '1px solid var(--field-border)';
+      input.style.borderRadius = '4px';
+      input.style.background = 'var(--field-bg)';
+      input.style.color = 'var(--field-text)';
+      input.style.zIndex = '1300';
+      let committed = false;
+      const commit = () => {
+        if (committed) return;
+        committed = true;
+        onCommit(input.value);
+      };
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          commit();
+          closeInlineAnnotationEditor();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          closeInlineAnnotationEditor();
+        }
+      });
+      input.addEventListener('blur', () => {
+        commit();
+        closeInlineAnnotationEditor();
+      });
+      document.body.appendChild(input);
+      inlineAnnotationEditor = input;
+      requestAnimationFrame(() => {
+        input.focus();
+        input.select();
+      });
+    }
+
+    function closeInlineAnnotationEditor() {
+      if (!inlineAnnotationEditor) return;
+      const node = inlineAnnotationEditor;
+      inlineAnnotationEditor = null;
+      if (document.body.contains(node)) node.remove();
+    }
+
+    function assignLabelLanePositions(labels, laneTop, laneBottom, minGap, occupied = []) {
+      const occupiedCopy = [...occupied].sort((a, b) => a - b);
+      let previousY = laneTop - minGap;
+      labels.forEach(label => {
+        const anchorY = num(label.anchorY);
+        let y = Math.max(anchorY, previousY + minGap);
+        y = avoidReservedBands(y, minGap, occupiedCopy, laneBottom, laneTop);
+        label.labelY = Math.max(laneTop, Math.min(laneBottom, y));
+        previousY = label.labelY;
+        occupiedCopy.push(label.labelY);
+      });
+      const overflow = labels.length ? labels[labels.length - 1].labelY - laneBottom : 0;
+      if (overflow > 0) {
+        labels.forEach(label => {
+          const shifted = Math.max(laneTop, label.labelY - overflow);
+          label.labelY = avoidReservedBands(shifted, minGap, occupiedCopy, laneBottom, laneTop);
+        });
+      }
+      labels.forEach(label => occupied.push(label.labelY));
+    }
+
+    function avoidReservedBands(y, minGap, reserved, laneBottom, laneTop = 0) {
+      const isFree = (candidate) => reserved.every(r => Math.abs(candidate - r) >= minGap);
+      const clamped = Math.max(laneTop, Math.min(laneBottom, y));
+      if (isFree(clamped)) return clamped;
+      const maxSteps = Math.ceil((laneBottom - laneTop) / Math.max(1, minGap)) + 2;
+      for (let step = 1; step <= maxSteps; step += 1) {
+        const down = clamped + (step * minGap);
+        const up = clamped - (step * minGap);
+        if (down <= laneBottom && isFree(down)) return down;
+        if (up >= laneTop && isFree(up)) return up;
+      }
+      return clamped;
+    }
+
+    function routedLabelPath(anchorX, anchorY, labelY, kneeX, labelX) {
+      if (Math.abs(anchorY - labelY) < 5) return `M ${anchorX} ${anchorY} H ${kneeX} H ${labelX}`;
+      return `M ${anchorX} ${anchorY} L ${kneeX} ${labelY} H ${labelX}`;
+    }
+
+    function computeCalloutLabelX(cx, lithX, width) {
+      const maxRight = width - 92;
+      const preferred = cx + Math.max(210, Math.min(300, (lithX - cx) + 64));
+      return Math.min(maxRight, preferred);
+    }
+
+    function findAnnotationTarget(note) {
+      if (note.targetType === 'component') return schematic.components.find(c => c.id === note.targetId);
+      if (note.targetType === 'string') return schematic.strings.find(s => s.id === note.targetId);
+      return schematic.components.find(c => c.id === note.targetId) || schematic.strings.find(s => s.id === note.targetId);
+    }
+
+    function drawLegend(svg, width, margin) {
+      if (width < 900) return;
+      const x = width - 190;
+      const y = margin.top + 8;
+      svg.appendChild(el('text', { x, y, fill:'currentColor', 'font-size':10, 'font-weight':700 }, 'Legend'));
+      [
+        ['Hole', '#e3dfeb'], ['Annular fill', '#555555'], ['Casing / liner', '#210d2a'], ['Plug / packer', '#302711'], ['Selection', '#def359']
+      ].forEach((row, i) => {
+        const yy = y + 18 + i * 18;
+        svg.appendChild(el('rect', { x, y:yy - 9, width:18, height:10, fill:row[1], opacity: row[0] === 'Cement' ? .4 : 1, stroke:'currentColor', 'stroke-width':.5 }));
+        svg.appendChild(el('text', { x:x + 25, y:yy, fill:'currentColor', 'font-size':10 }, row[0]));
+      });
+    }
+
+    function exportJson() {
+      downloadBlob(JSON.stringify(schematic, null, 2), filenameBase() + '_well_schematic.json', 'application/json');
+      markSavedChanges();
+    }
+
+    function importJson(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      file.text().then(text => {
+        try {
+          const parsed = JSON.parse(text);
+          if (!parsed || parsed.schemaVersion !== '1.0') throw new Error('Expected schemaVersion "1.0".');
+          parsed.wellInfo = parsed.wellInfo || {};
+          parsed.plotSettings = { ...defaultSchematic().plotSettings, ...(parsed.plotSettings || {}) };
+          parsed.notes = parsed.notes || '';
+          schematic = normalizeSchematic(parsed);
+          selected = null;
+          renderAll(false);
+          markSavedChanges();
+        } catch (err) {
+          alert(`Schematic JSON import failed: ${err.message || err}`);
+        } finally {
+          event.target.value = '';
+        }
+      });
+    }
+
+    async function exportSvg() {
+      const source = await getSerializedSvg();
+      downloadBlob(source, filenameBase() + '_well_schematic.svg', 'image/svg+xml');
+      markSavedChanges();
+    }
+
+    async function exportPng() {
+      const source = await getSerializedSvg();
+      const svg = document.getElementById('schematicSvg');
+      const viewBox = svg.viewBox.baseVal;
+      const img = new Image();
+      const url = URL.createObjectURL(new Blob([source], { type:'image/svg+xml' }));
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.ceil(viewBox.width * 2);
+        canvas.height = Math.ceil(viewBox.height * 2);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--plot-bg').trim() || '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(blob => {
+          if (blob) downloadBlob(blob, filenameBase() + '_well_schematic.png', 'image/png');
+          markSavedChanges();
+        }, 'image/png');
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        alert('PNG export failed in this browser. SVG export is still available.');
+      };
+      img.src = url;
+    }
+
+    async function exportPdf() {
+      try {
+        const source = await getSerializedSvg(true);
+        const svg = document.getElementById('schematicSvg');
+        const viewBox = svg.viewBox.baseVal;
+        const title = `${filenameBase()}_well_schematic`;
+        const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${esc(title)}</title>
+  <style>
+    @page { size: ${Math.max(1, Math.floor(viewBox.width))}px ${Math.max(1, Math.floor(viewBox.height))}px; margin: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: ${Math.max(1, Math.floor(viewBox.width))}px;
+      height: ${Math.max(1, Math.floor(viewBox.height))}px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .sheet {
+      width: ${Math.max(1, Math.floor(viewBox.width))}px;
+      height: ${Math.max(1, Math.floor(viewBox.height))}px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .sheet svg { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <div class="sheet">${source}</div>
+</body>
+ </html>`;
+        const frame = document.createElement('iframe');
+        frame.style.position = 'fixed';
+        frame.style.right = '0';
+        frame.style.bottom = '0';
+        frame.style.width = '0';
+        frame.style.height = '0';
+        frame.style.border = '0';
+        frame.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(frame);
+        const frameWin = frame.contentWindow;
+        const doc = frame.contentDocument || frameWin?.document;
+        if (!frameWin || !doc) throw new Error('Unable to initialize print frame.');
+        doc.open();
+        doc.write(html);
+        doc.close();
+        frameWin.addEventListener('afterprint', () => {
+          frame.remove();
+        }, { once: true });
+        frameWin.addEventListener('load', () => {
+          setTimeout(() => {
+            frameWin.focus();
+            frameWin.print();
+          }, 50);
+        }, { once: true });
+        markSavedChanges();
+      } catch (err) {
+        alert(`PDF export failed: ${err.message || err}`);
+      }
+    }
+
+    async function getSerializedSvg(inlineExternalImages = false) {
+      const svg = document.getElementById('schematicSvg').cloneNode(true);
+      svg.setAttribute('xmlns', SVG_NS);
+      if (inlineExternalImages) await inlineSvgImages(svg);
+      const style = document.createElementNS(SVG_NS, 'style');
+      const isNight = isNightModeEnabled();
+      const bg = currentPlotBackground();
+      style.textContent = `svg{font-family:Arial,sans-serif;background:${bg};color:${isNight ? '#f2eaf8' : '#210d2a'};--plot-bg:${bg}}`;
+      svg.insertBefore(style, svg.firstChild);
+      return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(svg);
+    }
+
+    async function inlineSvgImages(svgNode) {
+      const images = Array.from(svgNode.querySelectorAll('image'));
+      for (const img of images) {
+        const href = img.getAttribute('href') || img.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+        if (!href || href.startsWith('data:')) continue;
+        try {
+          const response = await fetch(href, { mode: 'cors' });
+          if (!response.ok) continue;
+          const blob = await response.blob();
+          const dataUrl = await blobToDataUrl(blob);
+          img.setAttribute('href', dataUrl);
+          img.removeAttributeNS('http://www.w3.org/1999/xlink', 'href');
+        } catch (_) {
+          // Keep original href on failure; browser may still render it.
+        }
+      }
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result || ''));
+        fr.onerror = () => reject(fr.error || new Error('FileReader failed'));
+        fr.readAsDataURL(blob);
+      });
+    }
+
+    function downloadBlob(content, filename, type) {
+      const blob = content instanceof Blob ? content : new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 300);
+    }
+
+    function filenameBase() {
+      return String(schematic.wellInfo.wellName || 'well_schematic').replace(/[^a-z0-9_-]+/gi, '_').replace(/^_+|_+$/g, '') || 'well_schematic';
+    }
+
+    function isNightByTime() {
+      const h = new Date().getHours();
+      return h >= 19 || h < 6;
+    }
+    function getNextThemeBoundary(fromDate = new Date()) {
+      const six = new Date(fromDate); six.setHours(6,0,0,0);
+      const nineteen = new Date(fromDate); nineteen.setHours(19,0,0,0);
+      if (fromDate < six) return six.getTime();
+      if (fromDate < nineteen) return nineteen.getTime();
+      six.setDate(six.getDate() + 1);
+      return six.getTime();
+    }
+    function readThemeOverride() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(THEME_OVERRIDE_KEY) || 'null');
+        if (!parsed || typeof parsed.enabled !== 'boolean' || !Number.isFinite(parsed.expiresAt)) return null;
+        return parsed;
+      } catch (err) { return null; }
+    }
+    function resolveNightModePreference() {
+      const override = readThemeOverride();
+      if (override && override.expiresAt > Date.now()) return override.enabled;
+      try { localStorage.removeItem(THEME_OVERRIDE_KEY); } catch (err) {}
+      return isNightByTime();
+    }
+    function setNightModeOverride(enabled) {
+      try { localStorage.setItem(THEME_OVERRIDE_KEY, JSON.stringify({ enabled:Boolean(enabled), expiresAt:getNextThemeBoundary(new Date()) })); } catch (err) {}
+    }
+    function scheduleThemeBoundarySync() {
+      if (themeBoundaryTimerId) clearTimeout(themeBoundaryTimerId);
+      const delay = Math.max(500, getNextThemeBoundary(new Date()) - Date.now() + 50);
+      themeBoundaryTimerId = setTimeout(() => {
+        try { localStorage.removeItem(THEME_OVERRIDE_KEY); } catch (err) {}
+        setNightMode(resolveNightModePreference());
+        scheduleThemeBoundarySync();
+      }, delay);
+    }
+    function setNightMode(enabled) {
+      document.getElementById('nightMode').checked = enabled;
+      document.body.classList.toggle('night-mode', enabled);
+      schematic.plotSettings.theme = enabled ? 'night' : 'day';
+      renderSchematic();
+      saveLocal();
+    }
+
+    initialise();
+  </script>
+  <script src="search-ui.js" defer></script>
+</body>
+</html>
