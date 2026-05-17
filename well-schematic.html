@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -574,17 +574,6 @@
   </style>
 </head>
 <body>
-  <div class="access-gate hidden" id="unsavedGate" role="dialog" aria-modal="true" aria-labelledby="unsavedTitle">
-    <div class="access-card">
-      <p class="access-kicker">Unsaved Changes</p>
-      <h2 class="access-title" id="unsavedTitle">Leave This Page?</h2>
-      <p class="access-error">You have unsaved changes. Export JSON or stay on the page to keep working.</p>
-      <div class="toolbar-row">
-        <button class="primary" id="unsavedStayBtn" type="button">Stay</button>
-        <button id="unsavedLeaveBtn" type="button">Leave</button>
-      </div>
-    </div>
-  </div>
   <div class="dialog-gate hidden" id="addDialogGate" role="dialog" aria-modal="true" aria-labelledby="addDialogTitle">
     <form class="dialog-card" id="addDialogForm">
       <h2 class="dialog-title" id="addDialogTitle">Add Element</h2>
@@ -720,6 +709,7 @@
             <button type="button" id="zoomA4Btn" title="Set plot area to A4 portrait ratio">Portrait</button>
             <button type="button" id="zoomA4LandscapeBtn" title="Set plot area to A4 landscape ratio">Landscape</button>
             <button type="button" id="fitDepthBtn">Fit Depth</button>
+            <button type="button" id="autoPlaceAnnotationsBtn" title="Reflow callouts for current aspect ratio">Auto Place Annotations</button>
           </div>
           <div class="status-line" id="selectionStatus">No element selected</div>
         </div>
@@ -752,6 +742,9 @@
     const THEME_OVERRIDE_KEY = 'rstools-theme-override-v1';
     const SVG_NS = 'http://www.w3.org/2000/svg';
     const MIN_VIEW_SPAN = 0.000001;
+    const MIN_VERTICAL_SCALE = 0.45;
+    const MAX_VERTICAL_SCALE = 14;
+    const MAX_PLOT_HEIGHT = 18000;
     const FIT_DEPTH_PAD_FACTOR = 0;
     const FIT_DEPTH_PAD_MAX = 0;
     const RENDER_BOTTOM_BUFFER_FACTOR = 0;
@@ -759,8 +752,7 @@
     let schematic = null;
     let selected = null;
     let hasUnsavedChanges = false;
-    let bypassBeforeUnload = false;
-    let pendingNavigationHref = null;
+    
     let themeBoundaryTimerId = null;
     let pendingAddDialog = null;
     let inlineAnnotationEditor = null;
@@ -769,15 +761,16 @@
     let annotationDragState = null;
     let calloutDragState = null;
     let calloutAnchorDragState = null;
+    let componentMdDragState = null;
     let suppressNextSvgClick = false;
     let lastRenderDepthContext = null;
     let wheelDeltaAccumulator = 0;
-    let wheelAltMode = false;
     let wheelFrameId = null;
     let wheelPanSaveTimer = null;
     let wheelPanVelocity = 0;
     let wheelPanAnimFrame = null;
     let wheelLastTs = 0;
+    let depthCompressionCache = null;
     let liveRenderRaf = null;
     let liveRenderNeedsValidation = false;
     let liveRenderNeedsCollections = false;
@@ -799,7 +792,7 @@
       strings: { title: 'Casing / Liners', singular: 'String', fields: ['id','type','label','odIn','weight','topMD','bottomMD','shoeMD','annotationEnabled','annotationMD','showDepthTop','showDepthBase','fillColor','visible'] },
       cement: { title: 'Annular Fill', singular: 'Annular Fill Interval', fields: ['id','label','material','insideStringId','outsideStringId','topMD','bottomMD','annotationMD','fillColor','visible'] },
       completion: { title: 'Tubing / Completion', singular: 'Completion', fields: ['id','type','label','odIn','topMD','bottomMD','annotationEnabled','annotationMD','showDepthTop','showDepthBase','fillColor','visible'] },
-      components: { title: 'Components', singular: 'Component', fields: ['id','type','label','md','topMD','bottomMD','diameterIn','host','material','labelPosition','showDepthTop','showDepthBase','status','fillColor','visible'] },
+      components: { title: 'Components', singular: 'Component', fields: ['id','type','label','md','topMD','bottomMD','diameterIn','host','material','labelPosition','showDepthTop','showDepthBase','status','fillColor','lineColor','lineWidth','lineType','text','textColor','textRotationDeg','wireToSurface','wireLineColor','wireLineWidth','wireLineType','visible'] },
       hiddenSections: { title: 'Hidden Sections', singular: 'Hidden Section', fields: ['id','label','topMD','bottomMD','lineType','lineColor','lineWidth','visible'] },
       formations: { title: 'Formations', singular: 'Formation', fields: ['id','name','topMD','bottomMD','showDepthTop','showDepthBase','lithology','fillColor','visible'] },
       annotations: { title: 'Annotations', singular: 'Annotation', fields: ['id','targetType','targetId','text','side'] }
@@ -817,7 +810,14 @@
       showDepthTop: 'Label Suffix: Top Depth', showDepthBase: 'Label Suffix: Base Depth',
       lineWidth: 'Line Width',
       lineType: 'Line Type',
-      perfLength: 'Perforation Length'
+      perfLength: 'Perforation Length',
+      text: 'Text',
+      textColor: 'Font Colour',
+      textRotationDeg: 'Text Rotation (deg)',
+      wireToSurface: 'Wire to Surface',
+      wireLineColor: 'Wireline Colour',
+      wireLineWidth: 'Wireline Width',
+      wireLineType: 'Wireline Type'
     };
 
     const quickAddActions = {
@@ -834,18 +834,403 @@
       section_mill: () => openAddDialog('components', { type:'section_mill', label:'Section mill', topMD:1800, bottomMD:1950, diameterIn:12.25, host:'production_casing', labelPosition:'top' }),
       dhsv: () => openAddDialog('components', { type:'dhsv', label:'DHSV', md:250, host:'prod_tubing' }),
       perforations: () => openAddDialog('components', { type:'perforations', label:'Perforations', topMD:4550, bottomMD:4750, status:'open', perfLength:18, fillColor:'#ffffff', lineColor:'#210d2a', lineWidth:1 }),
+      downhole_device_circle: () => openAddDialog('components', { type:'downhole_device_circle', label:'Circle', md:2500, diameterIn:2, lineColor:'#210d2a', lineWidth:1.2, lineType:'solid', fillColor:'#ffffff', text:'', textColor:'#210d2a', wireToSurface:false, wireLineColor:'#210d2a', wireLineWidth:1, wireLineType:'solid', host:'' }),
+      downhole_device_rectangle: () => openAddDialog('components', { type:'downhole_device_rectangle', label:'Rectangle', topMD:2450, bottomMD:2550, diameterIn:2, lineColor:'#210d2a', lineWidth:1.2, lineType:'solid', fillColor:'#ffffff', text:'', textColor:'#210d2a', textRotationDeg:0, wireToSurface:false, wireLineColor:'#210d2a', wireLineWidth:1, wireLineType:'solid', host:'' }),
+      template_rocksolid_alpha: () => applyTemplate('rocksolid_alpha'),
       formation_top: () => openAddDialog('formations', { name:'Formation Top', topMD:3500, bottomMD:3900, lithology:'shale' }),
       td_pbtd: () => { addItem('components', { type:'td', label:'TD', md:5000 }); addItem('components', { type:'pbtd', label:'PBTD', md:4900 }); }
     };
 
     const quickAddGroups = [
-      { label:'Templates', items:[['template_exploration','Simple vertical exploration well'],['template_production','Cased production well'],['template_liner','Well with liner'],['template_pa','Plug & abandonment schematic'],['template_intervention','Through-tubing intervention schematic']] },
+      { label:'Templates', items:[['template_rocksolid_alpha','RockSolid Example (alpha)']] },
       { label:'Well Structure', items:[['open_hole','Open hole section'],['surface_casing','Surface casing'],['intermediate_casing','Intermediate casing'],['production_casing','Production casing'],['production_liner','Production liner']] },
       { label:'Completion', items:[['tubing','Tubing'],['production_packer','Production packer'],['dhsv','DHSV']] },
       { label:'Barriers', items:[['cement_sheath','Annular fill'],['bridge_plug','Bridge plug'],['cement_plug','Cement plug'],['section_mill','Section mill']] },
+      { label:'Downhole Devices / Generic', items:[['downhole_device_circle','Circle'],['downhole_device_rectangle','Rectangle']] },
       { label:'Reservoir', items:[['perforations','Perforations'],['formation_top','Formation top']] },
       { label:'Markers', items:[['td_pbtd','TD / PBTD marker']] }
     ];
+
+    const ROCKSOLID_TEMPLATE_ALPHA = {
+  "schemaVersion": "1.0",
+  "wellInfo": {
+    "operator": "Interwell",
+    "wellName": "12-09 Test Well",
+    "field": "Stokke",
+    "country": "Norway",
+    "wellType": "",
+    "datum": "rkb",
+    "rkbM": 0,
+    "waterDepthM": null,
+    "status": "draft",
+    "revision": "1",
+    "date": "2026-05-16",
+    "inclinationDeg": 0,
+    "azimuthDeg": 0
+  },
+  "plotSettings": {
+    "depthUnit": "m",
+    "topDepth": 0,
+    "bottomDepth": 2000,
+    "majorTick": 10,
+    "minorTick": 2.5,
+    "calloutLineColor": "#000000",
+    "calloutHaloEnabled": true,
+    "calloutHaloColor": "#ffffff",
+    "verticalScale": 0.957,
+    "plotBgDay": "#ffffff",
+    "plotBgNight": "#242424",
+    "showPlotLogo": true,
+    "showLithology": true,
+    "showAnnotations": true,
+    "theme": "day",
+    "showTVD": false
+  },
+  "holeSections": [
+    {
+      "id": "holeSection_mp8n24ok_r81h",
+      "label": "Open Hole",
+      "diameterIn": 8.75,
+      "topMD": 0,
+      "bottomMD": 500,
+      "visible": true,
+      "fillColor": "#e3dfeb"
+    },
+    {
+      "id": "holeSection_mp8n3zzo_d1sw",
+      "label": "12-1/4 in open hole",
+      "diameterIn": 5.75,
+      "topMD": 500,
+      "bottomMD": 2000,
+      "visible": true,
+      "fillColor": "#e3dfeb"
+    }
+  ],
+  "strings": [
+    {
+      "annotationEnabled": true,
+      "annotationMD": 3.8,
+      "showDepthTop": false,
+      "showDepthBase": false,
+      "id": "string_mp8n2llq_s9e6",
+      "type": "casing",
+      "label": "20 in Surface Casing",
+      "odIn": 7,
+      "weight": "",
+      "topMD": 0,
+      "bottomMD": 500,
+      "shoeMD": 500,
+      "color": null,
+      "visible": true,
+      "fillColor": "#210d2a",
+      "labelLocked": false
+    },
+    {
+      "annotationEnabled": true,
+      "annotationMD": null,
+      "showDepthTop": false,
+      "showDepthBase": false,
+      "id": "string_mp8n34uy_93eg",
+      "type": "casing",
+      "label": "4.5 in Surface Casing",
+      "odIn": 4.5,
+      "weight": "",
+      "topMD": 0,
+      "bottomMD": 2000,
+      "shoeMD": 2000,
+      "color": null,
+      "visible": true,
+      "fillColor": "#210d2a",
+      "labelLocked": false
+    }
+  ],
+  "cement": [
+    {
+      "annotationMD": null,
+      "id": "cement_mp8nn75s_yfqq",
+      "label": "Annular fill",
+      "material": "cement",
+      "insideStringId": "hole:holeSection_mp8n24ok_r81h",
+      "outsideStringId": "string_mp8n2llq_s9e6",
+      "topMD": 360,
+      "bottomMD": 500.0231454504316,
+      "visible": true,
+      "fillColor": "#646464",
+      "labelLocked": false
+    },
+    {
+      "annotationMD": null,
+      "id": "cement_mp8n50jr_i7z7",
+      "label": "Annular fill",
+      "material": "cement",
+      "insideStringId": "hole:holeSection_mp8n3zzo_d1sw",
+      "outsideStringId": "string_mp8n34uy_93eg",
+      "topMD": 495.48489706646126,
+      "bottomMD": 2000,
+      "visible": true,
+      "fillColor": "#646464",
+      "labelLocked": false
+    }
+  ],
+  "completion": [],
+  "components": [
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "component_mp9zr9jy_bs9b",
+      "type": "downhole_device_rectangle",
+      "label": "RS BHA",
+      "host": "",
+      "labelPosition": "top",
+      "visible": true,
+      "topMD": 1693.256441777566,
+      "bottomMD": 1696.346760045597,
+      "diameterIn": 1.5,
+      "lineColor": "#210d2a",
+      "lineWidth": 1.2,
+      "lineType": "solid",
+      "fillColor": "#ffff00",
+      "text": "B",
+      "textColor": "#210d2a",
+      "textRotationDeg": 0,
+      "wireToSurface": true,
+      "wireLineColor": "#210d2a",
+      "wireLineWidth": 1,
+      "wireLineType": "solid",
+      "labelLocked": true,
+      "manualLabelY": 440.7
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": false,
+      "id": "component_mp9rmbaj_p078",
+      "type": "perforations",
+      "label": "Perforations",
+      "host": "string_mp8n34uy_93eg",
+      "labelPosition": "top",
+      "visible": true,
+      "topMD": 1691.163245735013,
+      "bottomMD": 1695,
+      "spf": 6,
+      "phase": 60,
+      "status": "open",
+      "fillColor": "#ffffff",
+      "perfLength": 18,
+      "lineColor": "#320b0b",
+      "lineWidth": 1,
+      "labelLocked": false,
+      "annotationMD": 1691.9
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "component_mp8n8ity_olxl",
+      "type": "section_mill",
+      "label": "Melted Window",
+      "host": "",
+      "labelPosition": "top",
+      "visible": true,
+      "topMD": 1696.2323040863328,
+      "bottomMD": 1700,
+      "diameterIn": 5.75,
+      "fillColor": "#b0294a",
+      "labelLocked": false
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "component_mp8nafqn_sgge",
+      "type": "cement_plug",
+      "label": "RockSolid Barrier",
+      "host": "",
+      "labelPosition": "top",
+      "visible": true,
+      "topMD": 1696.6786329723627,
+      "bottomMD": 1700,
+      "diameterIn": 5.75,
+      "material": "cement",
+      "fillColor": "#97ec18",
+      "labelLocked": false
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": false,
+      "id": "component_mp8ni0hs_fbc4",
+      "type": "bridge_plug",
+      "label": "Bridge Plug",
+      "host": "string_mp8n34uy_93eg",
+      "labelPosition": "middle",
+      "visible": true,
+      "topMD": 1700,
+      "bottomMD": 1701.8639684064676,
+      "fillColor": "#ffffff",
+      "lineColor": "#210d2a",
+      "labelLocked": false
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "component_mp9rkaxd_regg",
+      "type": "perforations",
+      "label": "Perforations",
+      "host": "string_mp8n34uy_93eg",
+      "labelPosition": "top",
+      "visible": true,
+      "topMD": 1702.8358406670452,
+      "bottomMD": 1704.6896803465368,
+      "spf": 6,
+      "phase": 60,
+      "status": "open",
+      "fillColor": "#ffffff",
+      "perfLength": 18,
+      "lineColor": "#000000",
+      "lineWidth": 1,
+      "labelLocked": false
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": false,
+      "id": "component_mp9z35kl_41z1",
+      "type": "downhole_device_circle",
+      "label": "BVS",
+      "md": 1703.8,
+      "host": "",
+      "labelPosition": "top",
+      "visible": true,
+      "diameterIn": 2,
+      "lineColor": "#000000",
+      "lineWidth": 1,
+      "lineType": "solid",
+      "fillColor": "#ffff00",
+      "text": "A",
+      "wireToSurface": false,
+      "wireLineColor": "#210d2a",
+      "wireLineWidth": 1,
+      "wireLineType": "solid",
+      "textColor": "#210d2a",
+      "textRotationDeg": 0,
+      "labelLocked": false
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "component_mp8pdhl1_vptw",
+      "type": "cement_plug",
+      "label": "Cement plug",
+      "host": "string_mp8n34uy_93eg",
+      "labelPosition": "top",
+      "visible": true,
+      "topMD": 1818.8733683886123,
+      "bottomMD": 1822.9485302027897,
+      "diameterIn": 8.5,
+      "material": "cement",
+      "fillColor": "#555555",
+      "labelLocked": false
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "component_mp9cxhc0_vxkz",
+      "type": "perforations",
+      "label": "Perforations",
+      "host": "string_mp8n34uy_93eg",
+      "labelPosition": "top",
+      "visible": true,
+      "topMD": 1900,
+      "bottomMD": 1920,
+      "spf": 10,
+      "phase": 10,
+      "status": "open",
+      "fillColor": "#574064",
+      "perfLength": 18,
+      "lineColor": "#ffffff",
+      "lineWidth": 1,
+      "labelLocked": false
+    },
+    {
+      "showDepthTop": false,
+      "showDepthBase": false,
+      "id": "component_mp8ndhdn_sxrr",
+      "type": "td",
+      "label": "TD",
+      "md": "2000",
+      "host": "",
+      "labelPosition": "top",
+      "visible": true,
+      "labelLocked": false
+    }
+  ],
+  "formations": [
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "formation_mp9spqb2_y4q3",
+      "name": "Formation Top",
+      "topMD": 500.4862320202245,
+      "bottomMD": 1696.6276672585693,
+      "lithology": "shale",
+      "color": null,
+      "visible": true,
+      "fillColor": "#999999"
+    },
+    {
+      "showDepthTop": true,
+      "showDepthBase": true,
+      "id": "formation_mp9s4bdu_ndj1",
+      "name": "Setting Depth Alternative 1",
+      "topMD": 1696.6276672585693,
+      "bottomMD": 1700.1238155427932,
+      "lithology": "shale",
+      "color": null,
+      "visible": true,
+      "fillColor": "#000000"
+    }
+  ],
+  "annotations": [],
+  "notes": "",
+  "hiddenSections": [
+    {
+      "id": "hidden_mp9exk45_t1e6",
+      "label": "Hidden section 2",
+      "topMD": 5.262288855139066,
+      "bottomMD": 492.61730913593124,
+      "lineType": "dashed",
+      "lineColor": "#b3b3b3",
+      "lineWidth": 1,
+      "visible": true
+    },
+    {
+      "id": "hidden_mp9ex4iq_gd83",
+      "label": "Hidden section 1",
+      "topMD": 501.4821084054526,
+      "bottomMD": 1689.2004882537321,
+      "lineType": "dashed",
+      "lineColor": "#b3b3b3",
+      "lineWidth": 1,
+      "visible": true
+    },
+    {
+      "id": "hidden_mp9exul9_107v",
+      "label": "Hidden section 4",
+      "topMD": 1706.263183660766,
+      "bottomMD": 1818.4135982759378,
+      "lineType": "dashed",
+      "lineColor": "#b3b3b3",
+      "lineWidth": 1,
+      "visible": true
+    },
+    {
+      "id": "hidden_mp9exrup_e60y",
+      "label": "Hidden section 3",
+      "topMD": 1823.6036273956497,
+      "bottomMD": 1998.8770836253661,
+      "lineType": "dashed",
+      "lineColor": "#b3b3b3",
+      "lineWidth": 1,
+      "visible": true
+    }
+  ]
+};
 
     function defaultSchematic() {
       return {
@@ -940,6 +1325,9 @@
 
     function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
     function num(v, fallback = 0) { const n = Number(v); return Number.isFinite(n) ? n : fallback; }
+    function clampVerticalScale(value) {
+      return Math.max(MIN_VERTICAL_SCALE, Math.min(MAX_VERTICAL_SCALE, num(value, 1)));
+    }
     function esc(v) {
       return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     }
@@ -955,6 +1343,13 @@
     function depthSuffixText(item) {
       const showTop = item?.showDepthTop === true;
       const showBase = item?.showDepthBase === true;
+      if (item?.type === 'downhole_device_circle') {
+        if (!showTop) return '';
+        const unit = schematic?.plotSettings?.depthUnit || 'm';
+        const hasMd = item?.md !== undefined && item?.md !== null && item?.md !== '';
+        const mdVal = hasMd ? formatDepthOneDecimal(item.md) : '';
+        return mdVal ? ` (${mdVal} ${unit})` : '';
+      }
       if (!showTop && !showBase) return '';
       const unit = schematic?.plotSettings?.depthUnit || 'm';
       const hasTop = item?.topMD !== undefined && item?.topMD !== null && item?.topMD !== '';
@@ -1000,6 +1395,7 @@
       const next = data || defaultSchematic();
       Object.keys(collectionDefs).forEach(key => { if (!Array.isArray(next[key])) next[key] = []; });
       next.plotSettings = { ...defaultSchematic().plotSettings, ...(next.plotSettings || {}) };
+      next.plotSettings.verticalScale = Math.round(clampVerticalScale(next.plotSettings.verticalScale) * 1000) / 1000;
       const legacyHidden = normalizeHiddenSections(next.plotSettings.hiddenSections);
       const currentHidden = normalizeHiddenSections(next.hiddenSections);
       next.hiddenSections = (currentHidden.length ? currentHidden : legacyHidden).map((section, index) => ({
@@ -1229,11 +1625,7 @@
         const btn = event.target.closest('[data-quick-action]');
         if (!btn) return;
         if (btn.matches('a')) event.preventDefault();
-        if (btn.dataset.quickAction === 'template_exploration') { applyTemplate('exploration'); return; }
-        if (btn.dataset.quickAction === 'template_production') { applyTemplate('production'); return; }
-        if (btn.dataset.quickAction === 'template_liner') { applyTemplate('liner'); return; }
-        if (btn.dataset.quickAction === 'template_pa') { applyTemplate('pa'); return; }
-        if (btn.dataset.quickAction === 'template_intervention') { applyTemplate('intervention'); return; }
+        if (btn.dataset.quickAction === 'template_rocksolid_alpha') { applyTemplate('rocksolid_alpha'); return; }
         const fn = quickAddActions[btn.dataset.quickAction];
         if (typeof fn === 'function') fn();
       });
@@ -1257,6 +1649,7 @@
       document.getElementById('zoomResetYBtn').addEventListener('click', resetVerticalScale);
       document.getElementById('zoomA4Btn').addEventListener('click', setVerticalScaleA4);
       document.getElementById('zoomA4LandscapeBtn').addEventListener('click', setVerticalScaleA4Landscape);
+      document.getElementById('autoPlaceAnnotationsBtn').addEventListener('click', autoPlaceAnnotations);
       document.getElementById('undoBtn').addEventListener('click', undoAction);
       document.getElementById('redoBtn').addEventListener('click', redoAction);
       document.getElementById('newBtn').addEventListener('click', () => {
@@ -1284,23 +1677,8 @@
         setNightMode(event.target.checked);
       });
       document.getElementById('depthPanScrollbar').addEventListener('input', handleDepthPanInput);
-      document.getElementById('backNavBtn').addEventListener('click', () => guardedNavigate('back'));
-      document.getElementById('forwardNavBtn').addEventListener('click', () => guardedNavigate('forward'));
-      document.getElementById('homeNavBtn').addEventListener('click', (event) => {
-        if (handleNavigationAttempt('index.html')) event.preventDefault();
-      });
-      document.getElementById('unsavedStayBtn').addEventListener('click', hideUnsavedGate);
-      document.getElementById('unsavedLeaveBtn').addEventListener('click', () => {
-        bypassBeforeUnload = true;
-        if (pendingNavigationHref === 'back') history.back();
-        else if (pendingNavigationHref === 'forward') history.forward();
-        else window.location.href = pendingNavigationHref || 'index.html';
-      });
-      window.addEventListener('beforeunload', (event) => {
-        if (!hasUnsavedChanges || bypassBeforeUnload) return;
-        event.preventDefault();
-        event.returnValue = '';
-      });
+      document.getElementById('backNavBtn').addEventListener('click', () => history.back());
+      document.getElementById('forwardNavBtn').addEventListener('click', () => history.forward());
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') saveLocal();
       });
@@ -1355,7 +1733,7 @@
       slider.value = String(Math.max(bounds.min, Math.min(maxTop, top)));
     }
 
-    function panDepthWindow(deltaDepth, markDirty = true) {
+    function panDepthWindow(deltaDepth, markDirty = true, syncInputs = true) {
       const bounds = dataDepthBounds();
       const top = num(schematic.plotSettings.topDepth);
       const bottom = num(schematic.plotSettings.bottomDepth, 5000);
@@ -1367,26 +1745,18 @@
       schematic.plotSettings.topDepth = nextTop;
       schematic.plotSettings.bottomDepth = nextTop + span;
       renderSchematic();
-      syncDepthRangeInputs();
+      if (syncInputs) syncDepthRangeInputs();
       if (markDirty) markUnsavedChanges();
     }
 
-    function scheduleWheelInteraction(deltaY, isAlt) {
+    function scheduleWheelInteraction(deltaY) {
       wheelDeltaAccumulator += deltaY;
-      wheelAltMode = wheelAltMode || Boolean(isAlt);
       if (wheelFrameId !== null) return;
       wheelFrameId = requestAnimationFrame(() => {
         const totalDelta = wheelDeltaAccumulator;
-        const altMode = wheelAltMode;
         wheelDeltaAccumulator = 0;
-        wheelAltMode = false;
         wheelFrameId = null;
         if (!Number.isFinite(totalDelta) || Math.abs(totalDelta) < 0.01) return;
-        if (altMode) {
-          const factor = Math.pow(1.0015, -totalDelta);
-          adjustVerticalScale(factor);
-          return;
-        }
         const bounds = dataDepthBounds();
         const topNow = num(schematic.plotSettings.topDepth);
         const bottomNow = num(schematic.plotSettings.bottomDepth, 5000);
@@ -1416,10 +1786,11 @@
         wheelPanVelocity = 0;
         wheelPanAnimFrame = null;
         wheelLastTs = 0;
+        syncDepthRangeInputs();
         return;
       }
       const deltaDepth = wheelPanVelocity * dtNorm;
-      panDepthWindow(deltaDepth, false);
+      panDepthWindow(deltaDepth, false, false);
       // Friction decay tuned for responsive but smooth stop.
       wheelPanVelocity *= Math.pow(0.86, dtNorm);
       wheelPanAnimFrame = requestAnimationFrame(runWheelPanInertia);
@@ -1468,26 +1839,7 @@
       menu.addEventListener('click', event => event.stopPropagation());
     }
 
-    function guardedNavigate(target) {
-      if (handleNavigationAttempt(target)) return;
-      if (target === 'back') history.back();
-      if (target === 'forward') history.forward();
-    }
-
-    function handleNavigationAttempt(targetHref) {
-      if (!hasUnsavedChanges) return false;
-      pendingNavigationHref = targetHref;
-      document.getElementById('unsavedGate').classList.remove('hidden');
-      document.body.classList.add('lock-active');
-      return true;
-    }
-    window.__rstoolsHandleNavigationAttempt = handleNavigationAttempt;
-
-    function hideUnsavedGate() {
-      pendingNavigationHref = null;
-      document.getElementById('unsavedGate').classList.add('hidden');
-      document.body.classList.remove('lock-active');
-    }
+    
 
     function renderTopForms() {
       document.getElementById('wellInfoForm').innerHTML = [
@@ -1538,8 +1890,8 @@
     function inferInputType(key, value) {
       if (typeof value === 'boolean') return 'checkbox';
       if (['visible','annotationEnabled','showLithology','showAnnotations','showPlotLogo','showDepthTop','showDepthBase','calloutHaloEnabled'].includes(key)) return 'checkbox';
-      if (key === 'fillColor' || key === 'color' || key === 'lineColor' || key === 'calloutLineColor' || key === 'calloutHaloColor' || key === 'plotBgDay' || key === 'plotBgNight') return 'color';
-      if (/MD$|Depth|Tick|In$|Deg$|spf|phase|rkbM|waterDepthM|Width|Length/.test(key)) return 'number';
+      if (key === 'fillColor' || key === 'color' || key === 'lineColor' || key === 'wireLineColor' || key === 'textColor' || key === 'calloutLineColor' || key === 'calloutHaloColor' || key === 'plotBgDay' || key === 'plotBgNight') return 'color';
+      if (/MD$|Depth|Tick|In$|Deg$|spf|phase|rkbM|waterDepthM|Width|Length|Rotation/.test(key)) return 'number';
       if (key === 'date') return 'date';
       return 'text';
     }
@@ -1768,12 +2120,15 @@
     }
 
     function addDialogFieldHtml(field, value) {
-      const label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+      let label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+      if (field === 'showDepthTop' && pendingAddDialog?.collection === 'components' && pendingAddDialog?.draft?.type === 'downhole_device_circle') {
+        label = 'Label Suffix: Depth';
+      }
       if (field === 'fillColor') {
         const color = colorInputValue(value, defaultFillColorForItem(pendingAddDialog?.collection, pendingAddDialog?.draft));
         return `<label>${esc(label)}<input data-add-field="${field}" type="color" value="${esc(color)}"></label>`;
       }
-      if (field === 'lineColor') {
+      if (field === 'lineColor' || field === 'wireLineColor') {
         const color = colorInputValue(value, '#210d2a');
         return `<label>${esc(label)}<input data-add-field="${field}" type="color" value="${esc(color)}"></label>`;
       }
@@ -1785,7 +2140,7 @@
         const options = ['top', 'middle', 'bottom'];
         return `<label>${esc(label)}<select data-add-field="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'top') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
       }
-      if (field === 'lineType') {
+      if (field === 'lineType' || field === 'wireLineType') {
         const options = ['dashed', 'solid'];
         return `<label>${esc(label)}<select data-add-field="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'dashed') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
       }
@@ -1913,6 +2268,42 @@
         if (!draft.lineColor) draft.lineColor = '#210d2a';
         if (!(num(draft.lineWidth, 0) > 0)) draft.lineWidth = 1;
       }
+      if (draft.type === 'downhole_device_circle') {
+        if (draft.md === undefined || draft.md === null || draft.md === '') draft.md = 0;
+        if (!(num(draft.diameterIn, 0) > 0)) draft.diameterIn = 2;
+        if (!draft.fillColor) draft.fillColor = '#ffffff';
+        if (!draft.lineColor) draft.lineColor = '#210d2a';
+        if (!(num(draft.lineWidth, 0) > 0)) draft.lineWidth = 1.2;
+        draft.lineType = String(draft.lineType || 'solid').toLowerCase() === 'dashed' ? 'dashed' : 'solid';
+        draft.wireToSurface = draft.wireToSurface === true;
+        if (!draft.wireLineColor) draft.wireLineColor = '#210d2a';
+        if (!(num(draft.wireLineWidth, 0) > 0)) draft.wireLineWidth = 1;
+        draft.wireLineType = String(draft.wireLineType || 'solid').toLowerCase() === 'dashed' ? 'dashed' : 'solid';
+        if (draft.text === undefined || draft.text === null) draft.text = '';
+        if (!draft.textColor) draft.textColor = '#210d2a';
+        if (!Number.isFinite(num(draft.textRotationDeg, NaN))) draft.textRotationDeg = 0;
+      }
+      if (draft.type === 'downhole_device_rectangle') {
+        if (draft.md !== undefined && (draft.topMD === undefined || draft.topMD === null || draft.topMD === '')) {
+          draft.topMD = num(draft.md) - 50;
+          draft.bottomMD = num(draft.md) + 50;
+        }
+        delete draft.md;
+        if (draft.topMD === undefined || draft.topMD === null) draft.topMD = 0;
+        if (draft.bottomMD === undefined || draft.bottomMD === null) draft.bottomMD = num(draft.topMD) + 100;
+        if (!(num(draft.diameterIn, 0) > 0)) draft.diameterIn = 2;
+        if (!draft.fillColor) draft.fillColor = '#ffffff';
+        if (!draft.lineColor) draft.lineColor = '#210d2a';
+        if (!(num(draft.lineWidth, 0) > 0)) draft.lineWidth = 1.2;
+        draft.lineType = String(draft.lineType || 'solid').toLowerCase() === 'dashed' ? 'dashed' : 'solid';
+        draft.wireToSurface = draft.wireToSurface === true;
+        if (!draft.wireLineColor) draft.wireLineColor = '#210d2a';
+        if (!(num(draft.wireLineWidth, 0) > 0)) draft.wireLineWidth = 1;
+        draft.wireLineType = String(draft.wireLineType || 'solid').toLowerCase() === 'dashed' ? 'dashed' : 'solid';
+        if (draft.text === undefined || draft.text === null) draft.text = '';
+        if (!draft.textColor) draft.textColor = '#210d2a';
+        if (!Number.isFinite(num(draft.textRotationDeg, NaN))) draft.textRotationDeg = 0;
+      }
       return draft;
     }
 
@@ -1923,6 +2314,8 @@
       if (draft.type === 'section_mill') return [...common, 'topMD','bottomMD','diameterIn','host','labelPosition','showDepthTop','showDepthBase','fillColor','visible'];
       if (draft.type === 'bridge_plug') return [...common, 'topMD','bottomMD','host','labelPosition','showDepthTop','showDepthBase','fillColor','lineColor','visible'];
       if (draft.type === 'perforations') return [...common, 'topMD','bottomMD','host','showDepthTop','showDepthBase','status','perfLength','fillColor','lineColor','lineWidth','visible'];
+      if (draft.type === 'downhole_device_circle') return [...common, 'md','diameterIn','host','showDepthTop','lineColor','lineWidth','lineType','fillColor','text','textColor','wireToSurface','wireLineColor','wireLineWidth','wireLineType','visible'];
+      if (draft.type === 'downhole_device_rectangle') return [...common, 'topMD','bottomMD','diameterIn','host','showDepthTop','showDepthBase','lineColor','lineWidth','lineType','fillColor','text','textColor','textRotationDeg','wireToSurface','wireLineColor','wireLineWidth','wireLineType','visible'];
       if (draft.type === 'td') return [...common, 'md','showDepthTop','showDepthBase','fillColor','visible'];
       if (['pbtd','cut_point','packer','mechanical_plug','tubing_plug','dhsv','sleeve','mandrel','nipple'].includes(draft.type)) {
         return [...common, 'md','host','showDepthTop','showDepthBase','fillColor','visible'];
@@ -1997,13 +2390,17 @@
     }
 
     function propertyFieldHtml(field, value) {
-      const label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+      let label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+      if (field === 'showDepthTop' && selected?.collection === 'components') {
+        const currentItem = findItem(selected.collection, selected.id);
+        if (currentItem?.type === 'downhole_device_circle') label = 'Label Suffix: Depth';
+      }
       if (field === 'fillColor') {
         const item = selected ? findItem(selected.collection, selected.id) : null;
         const color = colorInputValue(value, defaultFillColorForItem(selected?.collection, item));
         return `<label>${esc(label)}<input data-prop="${field}" type="color" value="${esc(color)}"></label>`;
       }
-      if (field === 'lineColor') {
+      if (field === 'lineColor' || field === 'wireLineColor') {
         const color = colorInputValue(value, '#210d2a');
         return `<label>${esc(label)}<input data-prop="${field}" type="color" value="${esc(color)}"></label>`;
       }
@@ -2015,7 +2412,7 @@
         const options = ['top', 'middle', 'bottom'];
         return `<label>${esc(label)}<select data-prop="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'top') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
       }
-      if (field === 'lineType') {
+      if (field === 'lineType' || field === 'wireLineType') {
         const options = ['dashed', 'solid'];
         return `<label>${esc(label)}<select data-prop="${field}">${options.map(opt => `<option value="${opt}" ${String(value || 'dashed') === opt ? 'selected' : ''}>${esc(opt[0].toUpperCase() + opt.slice(1))}</option>`).join('')}</select></label>`;
       }
@@ -2118,13 +2515,14 @@
     }
 
     function adjustVerticalScale(multiplier) {
-      const current = Math.max(0.45, num(schematic.plotSettings.verticalScale, 1));
-      const next = Math.max(0.45, current * multiplier);
+      const current = clampVerticalScale(schematic.plotSettings.verticalScale);
+      const next = clampVerticalScale(current * multiplier);
       schematic.plotSettings.verticalScale = Math.round(next * 1000) / 1000;
       const top = num(schematic.plotSettings.topDepth);
       const bottom = num(schematic.plotSettings.bottomDepth, 5000);
       const span = Math.max(MIN_VIEW_SPAN, bottom - top);
-      const estimatedPlotHeight = Math.max(760 * schematic.plotSettings.verticalScale, span * 0.18 * schematic.plotSettings.verticalScale);
+      const estimatedPlotHeightRaw = Math.max(760 * schematic.plotSettings.verticalScale, span * 0.18 * schematic.plotSettings.verticalScale);
+      const estimatedPlotHeight = Math.min(MAX_PLOT_HEIGHT, estimatedPlotHeightRaw);
       const ticks = resolveDepthTicks(top, bottom, true, estimatedPlotHeight);
       schematic.plotSettings.minorTick = ticks.minor;
       schematic.plotSettings.majorTick = ticks.major;
@@ -2163,9 +2561,10 @@
       const basePlotHeight = Math.max(760, span * 0.18);
       const plotAreaWidth = Math.max(1, (wrapWidth - 40) - 98);
       const targetPlotHeight = plotAreaWidth * targetHeightToWidth;
-      const nextScale = Math.max(0.45, targetPlotHeight / basePlotHeight);
+      const nextScale = clampVerticalScale(targetPlotHeight / basePlotHeight);
       schematic.plotSettings.verticalScale = Math.round(nextScale * 1000) / 1000;
-      const estimatedPlotHeight = Math.max(760 * schematic.plotSettings.verticalScale, span * 0.18 * schematic.plotSettings.verticalScale);
+      const estimatedPlotHeightRaw = Math.max(760 * schematic.plotSettings.verticalScale, span * 0.18 * schematic.plotSettings.verticalScale);
+      const estimatedPlotHeight = Math.min(MAX_PLOT_HEIGHT, estimatedPlotHeightRaw);
       const ticks = resolveDepthTicks(top, bottom, true, estimatedPlotHeight);
       schematic.plotSettings.minorTick = ticks.minor;
       schematic.plotSettings.majorTick = ticks.major;
@@ -2173,36 +2572,27 @@
       markUnsavedChanges();
     }
 
+    function autoPlaceAnnotations() {
+      const clearManualPlacement = (item) => {
+        if (!item || typeof item !== 'object') return;
+        delete item.manualLabelY;
+        item.labelLocked = false;
+      };
+      (schematic.strings || []).forEach(clearManualPlacement);
+      (schematic.completion || []).forEach(clearManualPlacement);
+      (schematic.components || []).forEach(clearManualPlacement);
+      (schematic.cement || []).forEach(clearManualPlacement);
+      (schematic.annotations || []).forEach(clearManualPlacement);
+      renderSchematic();
+      renderCollectionPanels();
+      renderProperties();
+      renderValidation();
+      markUnsavedChanges();
+    }
+
     function applyTemplate(name) {
-      const next = defaultSchematic();
-      if (name === 'exploration') {
-        next.wellInfo.status = 'exploration';
-        next.completion = [];
-        next.components = next.components.filter(c => ['td','pbtd'].includes(c.type));
-      }
-      if (name === 'production') {
-        next.wellInfo.status = 'as-built';
-        next.strings = next.strings.filter(s => s.type !== 'liner');
-        next.holeSections = next.holeSections.filter(h => h.bottomMD <= 4200);
-        next.plotSettings.bottomDepth = 4300;
-      }
-      if (name === 'pa') {
-        next.wellInfo.status = 'P&A';
-        next.components.push(
-          { id:'pa_bridge_plug', type:'bridge_plug', label:'P&A bridge plug', topMD:4260, bottomMD:4300, host:'production_casing', labelPosition:'middle', visible:true },
-          { id:'pa_cement_plug_1', type:'cement_plug', label:'Reservoir cement plug', topMD:4200, bottomMD:4450, diameterIn:8.5, host:'production_casing', material:'cement', labelPosition:'top', visible:true },
-          { id:'cut_point_1', type:'cut_point', label:'Casing cut point', md:1200, host:'surface_casing', visible:true }
-        );
-        next.notes = 'P&A mode: original construction retained with abandonment plugs added.';
-      }
-      if (name === 'intervention') {
-        next.wellInfo.status = 'intervention';
-        next.components.push(
-          { id:'tt_plug', type:'tubing_plug', label:'Through-tubing plug', md:4020, host:'prod_tubing', visible:true },
-          { id:'sleeve_1', type:'sleeve', label:'Sliding sleeve', md:3600, host:'prod_tubing', visible:true }
-        );
-      }
-      schematic = next;
+      if (name !== 'rocksolid_alpha') return;
+      schematic = clone(ROCKSOLID_TEMPLATE_ALPHA);
       selected = null;
       renderAll();
     }
@@ -2240,6 +2630,7 @@
 
     function renderSchematic() {
       closeInlineAnnotationEditor();
+      depthCompressionCache = null;
       const svg = document.getElementById('schematicSvg');
       const svgWrap = svg.parentElement;
       const ps = schematic.plotSettings;
@@ -2249,8 +2640,9 @@
       const selectedBottom = num(ps.bottomDepth, 5000);
       const depthSpan = Math.max(MIN_VIEW_SPAN, selectedBottom - top);
       const bottom = selectedBottom + Math.min(RENDER_BOTTOM_BUFFER_MAX, depthSpan * RENDER_BOTTOM_BUFFER_FACTOR);
-      const verticalScale = Math.max(0.45, num(ps.verticalScale, 1));
-      const plotHeight = Math.max(760 * verticalScale, (bottom - top) * 0.18 * verticalScale);
+      const verticalScale = clampVerticalScale(ps.verticalScale);
+      const plotHeightRaw = Math.max(760 * verticalScale, (bottom - top) * 0.18 * verticalScale);
+      const plotHeight = Math.min(MAX_PLOT_HEIGHT, plotHeightRaw);
       const margin = { top: 62, right: Math.min(280, Math.max(170, Math.floor(width * 0.24))), bottom: 44, left: 98 };
       lastRenderDepthContext = { top, bottom, margin, plotHeight };
       const height = margin.top + plotHeight + margin.bottom;
@@ -2298,8 +2690,9 @@
       const layerComponents = el('g', { id:'layer-components-pre-mill' });
       const layerComponentsPostMill = el('g', { id:'layer-components-post-mill' });
       const layerOverlay = el('g', { id:'layer-overlays' });
+      const layerTopDevices = el('g', { id:'layer-top-devices' });
       const layerCursor = el('g', { id:'layer-cursor-guide' });
-      [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill, layerOverlay].forEach(layer => svg.appendChild(layer));
+      [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill, layerOverlay, layerTopDevices].forEach(layer => svg.appendChild(layer));
       applyPlotAreaClip(svg, [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill], margin, width, plotHeight);
       applySectionMillMasks(svg, [layerFill, layerTubular, layerComponents], cx, width, height, top, bottom, margin, plotHeight);
 
@@ -2310,9 +2703,15 @@
       schematic.completion.filter(viz).forEach(item => drawTubing(layerTubular, item, cx, top, bottom, margin, plotHeight));
       const lastSectionMillIndex = (schematic.components || []).reduce((last, item, index) => (viz(item) && item.type === 'section_mill' ? index : last), -1);
       const occupiedLabelBands = [];
+      const deferredTopDevices = [];
       (schematic.components || []).forEach((item, index) => {
         if (!viz(item)) return;
         if (item.type === 'section_mill') return;
+        const isDownholeDevice = item.type === 'downhole_device_circle' || item.type === 'downhole_device_rectangle';
+        if (isDownholeDevice) {
+          deferredTopDevices.push(item);
+          return;
+        }
         const targetLayer = index > lastSectionMillIndex ? layerComponentsPostMill : layerComponents;
         if (item.type === 'perforations') drawPerforations(targetLayer, item, cx, top, bottom, margin, plotHeight);
         else drawComponent(targetLayer, item, cx, top, bottom, margin, plotHeight, occupiedLabelBands);
@@ -2322,11 +2721,12 @@
       drawDepthScale(layerOverlay, margin, plotHeight, top, bottom);
       if (ps.showLithology) drawFormationTrack(layerOverlay, lithX, margin, plotHeight, top, bottom, formationTrackWidth);
       schematic.components.filter(viz).filter(item => item.type === 'section_mill').forEach(item => drawSectionMill(layerOverlay, item, cx, top, bottom, margin, plotHeight, occupiedLabelBands));
+      deferredTopDevices.forEach(item => drawComponent(layerTopDevices, item, cx, top, bottom, margin, plotHeight, occupiedLabelBands));
       drawHiddenSections(layerOverlay, cx, margin, width, top, bottom, plotHeight);
       if (ps.showAnnotations) drawAutoLabels(layerOverlay, cx, lithX, width, margin, plotHeight, top, bottom, occupiedLabelBands);
       drawAnnularFillLabels(layerOverlay, cx, lithX, width, margin, plotHeight, top, bottom, occupiedLabelBands);
       if (ps.showAnnotations) drawAnnotations(layerOverlay, cx, lithX, width, top, bottom, margin, plotHeight, occupiedLabelBands);
-      drawSelectedDepthHandles(layerOverlay, cx, top, bottom, margin, plotHeight, lithX, formationTrackWidth);
+      drawSelectedDepthHandles(layerTopDevices, cx, top, bottom, margin, plotHeight, lithX, formationTrackWidth);
       svg.appendChild(layerCursor);
 
       let hoveringElement = false;
@@ -2485,21 +2885,27 @@
         layerCursor.style.display = 'none';
       };
       svg.onwheel = (event) => {
-        if (event.altKey) {
+        if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
-          scheduleWheelInteraction(event.deltaY, true);
           return;
         }
-        const bounds = dataDepthBounds();
-        const topNow = num(schematic.plotSettings.topDepth);
-        const bottomNow = num(schematic.plotSettings.bottomDepth, 5000);
-        const spanNow = Math.max(MIN_VIEW_SPAN, bottomNow - topNow);
-        const totalSpan = Math.max(1, bounds.max - bounds.min);
-        const canDepthPan = spanNow < totalSpan - 0.001;
-        if (canDepthPan) {
-          event.preventDefault();
-          scheduleWheelInteraction(event.deltaY, false);
+        event.preventDefault();
+        wheelPanVelocity = 0;
+        if (wheelPanAnimFrame !== null) {
+          cancelAnimationFrame(wheelPanAnimFrame);
+          wheelPanAnimFrame = null;
+          wheelLastTs = 0;
         }
+        const lineHeight = 16;
+        const pageHeight = Math.max(1, window.innerHeight || 800);
+        const factor = event.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? lineHeight
+          : (event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? pageHeight : 1);
+        window.scrollBy({
+          top: event.deltaY * factor,
+          left: event.deltaX * factor,
+          behavior: 'auto'
+        });
       };
       svg.oncontextmenu = (event) => {
         event.preventDefault();
@@ -2529,6 +2935,21 @@
           event.stopPropagation();
           beginDepthDrag(event, depthHandle.dataset.edge);
           return;
+        }
+        const hit = event.target.closest('.element-hit');
+        if (hit && event.button === 0) {
+          const collection = hit.getAttribute('data-collection');
+          const id = hit.getAttribute('data-id');
+          if (collection === 'components' && id) {
+            const component = findItem('components', id);
+            if (component?.type === 'downhole_device_circle') {
+              event.preventDefault();
+              event.stopPropagation();
+              selectItem('components', id);
+              beginComponentMdDrag(event, id);
+              return;
+            }
+          }
         }
         if (event.button !== 2) return;
         event.preventDefault();
@@ -2624,12 +3045,18 @@
       if (item.topMD === undefined || item.bottomMD === undefined) return;
       const yTop = mdToY(item.topMD, top, bottom, margin, plotHeight);
       const yBottom = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+      const yMid = (yTop + yBottom) / 2;
       const x = selected.collection === 'formations' && Number.isFinite(lithX)
         ? lithX + Math.max(12, Math.min(formationTrackWidth - 12, formationTrackWidth * 0.5))
         : cx + 10;
       const handleStyle = { fill:'#def359', stroke:'#210d2a', 'stroke-width':1.2, class:'depth-handle', 'data-collection':selected.collection, 'data-id':selected.id };
       svg.appendChild(el('circle', { ...handleStyle, cx:x, cy:yTop, r:6, 'data-edge':'top' }));
       svg.appendChild(el('circle', { ...handleStyle, cx:x, cy:yBottom, r:6, 'data-edge':'bottom' }));
+      if (selected.collection === 'components' && item.type === 'downhole_device_rectangle') {
+        const rectW = Math.max(4, Math.max(0.1, num(item.diameterIn, 2)) * renderWidthPerInch);
+        const xMidHandle = (cx - rectW / 2);
+        svg.appendChild(el('circle', { ...handleStyle, cx:xMidHandle, cy:yMid, r:6, 'data-edge':'middle' }));
+      }
     }
 
     function beginAnnotationDrag(event, noteId) {
@@ -2755,7 +3182,13 @@
       if (!selected || !lastRenderDepthContext) return;
       const item = findItem(selected.collection, selected.id);
       if (!item) return;
-      depthDragState = { collection:selected.collection, id:selected.id, edge };
+      depthDragState = {
+        collection:selected.collection,
+        id:selected.id,
+        edge,
+        startTop: item.topMD !== undefined ? num(item.topMD) : null,
+        startBottom: item.bottomMD !== undefined ? num(item.bottomMD) : null
+      };
       updateDepthDrag(event.clientY, event.clientX);
       const move = (e) => updateDepthDrag(e.clientY, e.clientX);
       const up = () => {
@@ -2763,6 +3196,40 @@
         window.removeEventListener('mouseup', up);
         depthDragState = null;
         hideDepthDragBadge();
+        renderCollectionPanels();
+        renderProperties();
+        renderValidation();
+        markUnsavedChanges();
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+    }
+
+    function beginComponentMdDrag(event, id) {
+      if (!lastRenderDepthContext) return;
+      const item = findItem('components', id);
+      if (!item) return;
+      componentMdDragState = { id, moved: false, startY: event.clientY };
+      const move = (e) => {
+        if (!componentMdDragState || !lastRenderDepthContext) return;
+        const active = findItem('components', componentMdDragState.id);
+        if (!active) return;
+        const ctx = lastRenderDepthContext;
+        const rect = document.getElementById('schematicSvg').getBoundingClientRect();
+        const y = Math.max(ctx.margin.top, Math.min(ctx.margin.top + ctx.plotHeight, e.clientY - rect.top));
+        const md = Math.round(mdFromY(y, ctx.top, ctx.bottom, ctx.margin, ctx.plotHeight) * 10) / 10;
+        if (Math.abs(e.clientY - componentMdDragState.startY) > 2) componentMdDragState.moved = true;
+        active.md = md;
+        showDepthDragBadge(e.clientX, e.clientY, `${formatDepthOneDecimal(active.md)} ${schematic.plotSettings.depthUnit} TVD`);
+        renderSchematic();
+      };
+      const up = () => {
+        const moved = componentMdDragState?.moved === true;
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', up);
+        componentMdDragState = null;
+        hideDepthDragBadge();
+        if (moved) suppressNextSvgClick = true;
         renderCollectionPanels();
         renderProperties();
         renderValidation();
@@ -2784,13 +3251,24 @@
       if (depthDragState.collection === 'formations') {
         applyFormationBoundaryDrag(item, depthDragState.edge, md, minGap);
       } else {
-        if (depthDragState.edge === 'top') {
+        if (depthDragState.edge === 'middle') {
+          const startTop = num(depthDragState.startTop, num(item.topMD));
+          const startBottom = num(depthDragState.startBottom, num(item.bottomMD));
+          const span = Math.max(minGap, startBottom - startTop);
+          const startMid = (startTop + startBottom) / 2;
+          const delta = md - startMid;
+          item.topMD = startTop + delta;
+          item.bottomMD = item.topMD + span;
+        } else if (depthDragState.edge === 'top') {
           item.topMD = Math.min(md, num(item.bottomMD) - minGap);
         } else {
           item.bottomMD = Math.max(md, num(item.topMD) + minGap);
         }
       }
-      showDepthDragBadge(clientX, clientY, `${formatDepthOneDecimal(depthDragState.edge === 'top' ? item.topMD : item.bottomMD)} ${schematic.plotSettings.depthUnit} TVD`);
+      const badgeText = depthDragState.edge === 'middle'
+        ? `${formatDepthOneDecimal(item.topMD)}-${formatDepthOneDecimal(item.bottomMD)} ${schematic.plotSettings.depthUnit} TVD`
+        : `${formatDepthOneDecimal(depthDragState.edge === 'top' ? item.topMD : item.bottomMD)} ${schematic.plotSettings.depthUnit} TVD`;
+      showDepthDragBadge(clientX, clientY, badgeText);
       renderSchematic();
     }
 
@@ -2875,13 +3353,24 @@
       return merged;
     }
     function buildDepthCompression(top, bottom, plotHeight) {
+      const cached = depthCompressionCache;
+      if (
+        cached
+        && cached.top === top
+        && cached.bottom === bottom
+        && cached.plotHeight === plotHeight
+      ) {
+        return cached.value;
+      }
       const sections = effectiveHiddenSections(top, bottom);
       const hiddenSpan = sections.reduce((sum, section) => sum + (section.bottomMD - section.topMD), 0);
       const visibleSpan = Math.max(0.001, (bottom - top) - hiddenSpan);
       const totalGap = sections.length * HIDDEN_BREAK_GAP_PX;
       const drawableHeight = Math.max(1, plotHeight - totalGap);
       const pxPerMd = drawableHeight / visibleSpan;
-      return { sections, pxPerMd };
+      const value = { sections, pxPerMd };
+      depthCompressionCache = { top, bottom, plotHeight, value };
+      return value;
     }
     function mdToY(md, top, bottom, margin, plotHeight) {
       const v = num(md, top);
@@ -3178,7 +3667,8 @@
       const hiddenSpan = effectiveHiddenSections(top, bottom).reduce((sum, section) => sum + (section.bottomMD - section.topMD), 0);
       const span = Math.max(1, (bottom - top) - hiddenSpan);
       const targetMinorCount = plotHeightPx ? Math.max(8, Math.min(60, Math.round(plotHeightPx / 42))) : 18;
-      const targetMajorCount = plotHeightPx ? Math.max(4, Math.min(20, Math.round(plotHeightPx / 120))) : 7;
+      // Keep major labels denser at high vertical zoom so scale annotations do not look sparse.
+      const targetMajorCount = plotHeightPx ? Math.max(5, Math.min(36, Math.round(plotHeightPx / 88))) : 7;
       const recommendedMinor = niceTickStep(span / targetMinorCount);
       const recommendedMajor = niceTickStep(span / targetMajorCount);
       const userMinor = Math.max(0, num(schematic.plotSettings.minorTick, 0));
@@ -3543,6 +4033,135 @@
       } else if (item.type === 'dhsv' || item.type === 'sleeve' || item.type === 'mandrel' || item.type === 'nipple') {
         g.appendChild(el('rect', { x:cx - w/2, y:y - 10, width:w, height:20, fill:'none', stroke:fill, 'stroke-width':3 }));
         g.appendChild(el('line', { x1:cx - w/2, y1:y, x2:cx + w/2, y2:y, stroke:fill, 'stroke-width':2 }));
+      } else if (item.type === 'downhole_device_circle') {
+        const diameterIn = Math.max(0.1, num(item.diameterIn, 2));
+        const diameterPx = Math.max(4, diameterIn * renderWidthPerInch);
+        const r = diameterPx / 2;
+        const selectedCircle = isSelected('components', item.id);
+        const stroke = selectedCircle ? '#def359' : colorInputValue(item.lineColor, '#210d2a');
+        const strokeWidth = Math.max(0.4, num(item.lineWidth, 1.2));
+        const dashArray = String(item.lineType || 'solid').toLowerCase() === 'dashed' ? '5 4' : null;
+        const circleFill = itemFillColor('components', item, '#ffffff');
+        if (item.wireToSurface === true) {
+          const wireStroke = selectedCircle ? '#def359' : colorInputValue(item.wireLineColor, '#210d2a');
+          const wireWidth = Math.max(0.4, num(item.wireLineWidth, 1));
+          const wireDash = String(item.wireLineType || 'solid').toLowerCase() === 'dashed' ? '5 4' : null;
+          const wireTopY = mdToY(0, top, bottom, margin, plotHeight);
+          const wireBottomY = y - r;
+          const span = Math.abs(wireBottomY - wireTopY);
+          if (span >= 1) {
+            const amp = Math.max(1.2, Math.min(3.2, r * 0.16));
+            const wavelength = 46;
+            const dir = wireBottomY >= wireTopY ? 1 : -1;
+            // Guard against extreme zoom values creating very large SVG paths.
+            const targetStepPx = span > 6000 ? 12 : 8;
+            const steps = Math.max(12, Math.min(520, Math.ceil(span / targetStepPx)));
+            const points = [];
+            for (let i = 0; i <= steps; i += 1) {
+              const t = i / steps;
+              const py = wireTopY + (span * t * dir);
+              const px = cx + Math.sin((py - wireTopY) * (Math.PI * 2 / wavelength)) * amp;
+              points.push(`${i === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
+            }
+            g.appendChild(el('path', {
+              d: points.join(' '),
+              fill: 'none',
+              stroke: wireStroke,
+              'stroke-width': selectedCircle ? Math.max(wireWidth + 0.8, 1.8) : wireWidth,
+              'stroke-dasharray': wireDash,
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round'
+            }));
+          }
+        }
+        g.appendChild(el('circle', {
+          cx,
+          cy:y,
+          r,
+          fill:circleFill,
+          stroke,
+          'stroke-width': selectedCircle ? Math.max(strokeWidth + 0.8, 2) : strokeWidth,
+          'stroke-dasharray': dashArray
+        }));
+        const insideText = String(item.text ?? '').trim();
+        if (insideText) {
+          const textSize = Math.max(8, Math.min(12, r * 0.9));
+          g.appendChild(el('text', {
+            x:cx,
+            y:y + (textSize * 0.07),
+            fill:colorInputValue(item.textColor, '#210d2a'),
+            'font-size':textSize,
+            'font-weight':600,
+            'text-anchor':'middle',
+            'dominant-baseline':'middle'
+          }, insideText));
+        }
+      } else if (item.type === 'downhole_device_rectangle') {
+        const rectW = Math.max(4, Math.max(0.1, num(item.diameterIn, 2)) * renderWidthPerInch);
+        const y1 = Math.min(yTop, yTop + h);
+        const y2 = Math.max(yTop, yTop + h);
+        const rectH = Math.max(8, y2 - y1);
+        const selectedRect = isSelected('components', item.id);
+        const stroke = selectedRect ? '#def359' : colorInputValue(item.lineColor, '#210d2a');
+        const strokeWidth = Math.max(0.4, num(item.lineWidth, 1.2));
+        const dashArray = String(item.lineType || 'solid').toLowerCase() === 'dashed' ? '5 4' : null;
+        const rectFill = itemFillColor('components', item, '#ffffff');
+        if (item.wireToSurface === true) {
+          const wireStroke = selectedRect ? '#def359' : colorInputValue(item.wireLineColor, '#210d2a');
+          const wireWidth = Math.max(0.4, num(item.wireLineWidth, 1));
+          const wireDash = String(item.wireLineType || 'solid').toLowerCase() === 'dashed' ? '5 4' : null;
+          const wireTopY = mdToY(0, top, bottom, margin, plotHeight);
+          const wireBottomY = y1;
+          const span = Math.abs(wireBottomY - wireTopY);
+          if (span >= 1) {
+            const amp = Math.max(1.2, Math.min(3.2, (rectW / 2) * 0.16));
+            const wavelength = 46;
+            const dir = wireBottomY >= wireTopY ? 1 : -1;
+            const targetStepPx = span > 6000 ? 12 : 8;
+            const steps = Math.max(12, Math.min(520, Math.ceil(span / targetStepPx)));
+            const points = [];
+            for (let i = 0; i <= steps; i += 1) {
+              const t = i / steps;
+              const py = wireTopY + (span * t * dir);
+              const px = cx + Math.sin((py - wireTopY) * (Math.PI * 2 / wavelength)) * amp;
+              points.push(`${i === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
+            }
+            g.appendChild(el('path', {
+              d: points.join(' '),
+              fill: 'none',
+              stroke: wireStroke,
+              'stroke-width': selectedRect ? Math.max(wireWidth + 0.8, 1.8) : wireWidth,
+              'stroke-dasharray': wireDash,
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round'
+            }));
+          }
+        }
+        g.appendChild(el('rect', {
+          x:cx - rectW / 2,
+          y:y1,
+          width:rectW,
+          height:rectH,
+          fill:rectFill,
+          stroke,
+          'stroke-width': selectedRect ? Math.max(strokeWidth + 0.8, 2) : strokeWidth,
+          'stroke-dasharray': dashArray
+        }));
+        const insideText = String(item.text ?? '').trim();
+        if (insideText) {
+          const textSize = Math.max(8, Math.min(12, Math.min(rectW * 0.9, rectH * 0.45)));
+          const textAngle = num(item.textRotationDeg, 0);
+          g.appendChild(el('text', {
+            x:cx,
+            y:y1 + rectH / 2 + (textSize * 0.05),
+            fill:colorInputValue(item.textColor, '#210d2a'),
+            'font-size':textSize,
+            'font-weight':600,
+            'text-anchor':'middle',
+            'dominant-baseline':'middle',
+            transform: textAngle ? `rotate(${textAngle} ${cx} ${y1 + rectH / 2})` : null
+          }, insideText));
+        }
       } else {
         g.appendChild(el('rect', { x:cx - w/2, y:yTop, width:w, height:h, rx:2, fill, stroke:'#210d2a', 'stroke-width':1 }));
       }
@@ -3680,6 +4299,26 @@
       return 86;
     }
 
+    function componentCalloutAnchorOffset(item) {
+      if (item?.type === 'downhole_device_circle') {
+        const diameterIn = Math.max(0.1, num(item.diameterIn, 2));
+        const radiusPx = Math.max(2, (diameterIn * renderWidthPerInch) / 2);
+        return radiusPx;
+      }
+      if (item?.type === 'downhole_device_rectangle') {
+        const widthPx = Math.max(4, Math.max(0.1, num(item.diameterIn, 2)) * renderWidthPerInch);
+        return widthPx / 2;
+      }
+      if (item?.type === 'perforations') {
+        const hostInnerW = hostInnerWidth(item);
+        const hostIdWidth = Number.isFinite(hostInnerW) ? hostInnerW : componentWidth(item);
+        const half = Math.max(6, hostIdWidth / 2);
+        const triDepth = Math.max(4, num(item.perfLength, 18));
+        return half + triDepth;
+      }
+      return componentWidth(item) / 2 + 14;
+    }
+
     function hostInnerWidth(item) {
       if (!item?.host) return null;
       const host = [...schematic.strings, ...schematic.completion].find(s => s.id === item.host);
@@ -3694,6 +4333,8 @@
       if (type === 'section_mill') return '#b0294a';
       if (type === 'bridge_plug' || type === 'mechanical_plug' || type === 'tubing_plug') return '#302711';
       if (type === 'packer') return '#210d2a';
+      if (type === 'downhole_device_circle') return '#210d2a';
+      if (type === 'downhole_device_rectangle') return '#210d2a';
       return '#574064';
     }
 
@@ -3814,15 +4455,22 @@
     }
 
     function drawFormationTrack(svg, lithX, margin, plotHeight, top, bottom, trackW = 50) {
+      const plotTop = margin.top;
+      const plotBottom = margin.top + plotHeight;
       svg.appendChild(el('rect', { x:lithX, y:margin.top, width:trackW, height:plotHeight, fill:'#e4ebd7', opacity:.35, stroke:'currentColor', 'stroke-width':1, 'stroke-opacity':.18 }));
       svg.appendChild(el('text', { x:lithX + trackW - 6, y:margin.top - 12, fill:'currentColor', 'font-size':10, 'font-weight':700, 'text-anchor':'end' }, 'Formations'));
       schematic.formations.filter(viz).forEach(item => {
-        const y1 = mdToY(item.topMD, top, bottom, margin, plotHeight);
-        const y2 = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+        const y1Raw = mdToY(item.topMD, top, bottom, margin, plotHeight);
+        const y2Raw = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
+        const rawTop = Math.min(y1Raw, y2Raw);
+        const rawBottom = Math.max(y1Raw, y2Raw);
+        if (rawBottom <= plotTop || rawTop >= plotBottom) return;
+        const y1 = Math.max(plotTop, rawTop);
+        const y2 = Math.min(plotBottom, rawBottom);
         const g = makeGroup('formations', item);
         const fill = itemFillColor('formations', item, lithologyColor(item.lithology));
-        g.appendChild(el('rect', { x:lithX, y:y1, width:trackW, height:Math.max(1, y2-y1), fill, opacity:.62, stroke:isSelected('formations', item.id) ? '#def359' : 'currentColor', 'stroke-width':isSelected('formations', item.id) ? 3 : .6, 'stroke-opacity':.45 }));
-        g.appendChild(el('text', { x:lithX + trackW + 6, y:y1 + 13, fill:'#210d2a', 'font-size':10, 'font-weight':700, 'text-anchor':'start' }, labelWithDepthSuffix(item, item.name || item.id)));
+        g.appendChild(el('rect', { x:lithX, y:y1, width:trackW, height:Math.max(1, y2-y1), fill, opacity:1, stroke:isSelected('formations', item.id) ? '#def359' : 'currentColor', 'stroke-width':isSelected('formations', item.id) ? 3 : .6, 'stroke-opacity':.45 }));
+        g.appendChild(el('text', { x:lithX + trackW + 6, y:Math.min(plotBottom - 4, y1 + 13), fill:'#210d2a', 'font-size':10, 'font-weight':700, 'text-anchor':'start' }, labelWithDepthSuffix(item, item.name || item.id)));
         svg.appendChild(g);
       });
     }
@@ -3963,7 +4611,7 @@
         const md = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === ''
           ? (item.md !== undefined ? item.md : (num(item.topMD) + num(item.bottomMD)) / 2)
           : num(item.annotationMD);
-        add('components', item, labelWithDepthSuffix(item, item.label || item.type || item.id), md, componentWidth(item) / 2 + 14);
+        add('components', item, labelWithDepthSuffix(item, item.label || item.type || item.id), md, componentCalloutAnchorOffset(item));
       });
       return labels;
     }
@@ -4231,30 +4879,37 @@
     }
 
     async function exportSvg() {
-      const source = await getSerializedSvg();
+      const source = await getSerializedSvg(true);
       downloadBlob(source, filenameBase() + '_well_schematic.svg', 'image/svg+xml');
       markSavedChanges();
     }
 
     async function exportPng() {
-      const source = await getSerializedSvg();
+      const source = await getSerializedSvg(true);
       const svg = document.getElementById('schematicSvg');
       const viewBox = svg.viewBox.baseVal;
       const img = new Image();
       const url = URL.createObjectURL(new Blob([source], { type:'image/svg+xml' }));
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.ceil(viewBox.width * 2);
-        canvas.height = Math.ceil(viewBox.height * 2);
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--plot-bg').trim() || '#fff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(url);
-        canvas.toBlob(blob => {
-          if (blob) downloadBlob(blob, filenameBase() + '_well_schematic.png', 'image/png');
-          markSavedChanges();
-        }, 'image/png');
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.ceil(viewBox.width * 2);
+          canvas.height = Math.ceil(viewBox.height * 2);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Canvas context unavailable');
+          ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--plot-bg').trim() || '#fff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          canvas.toBlob(blob => {
+            if (blob) downloadBlob(blob, filenameBase() + '_well_schematic.png', 'image/png');
+            else alert('PNG export failed: browser could not encode canvas. Try SVG export.');
+            markSavedChanges();
+          }, 'image/png');
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          alert(`PNG export failed: ${err?.message || err}`);
+        }
       };
       img.onerror = () => {
         URL.revokeObjectURL(url);
@@ -4432,3 +5087,4 @@
   <script src="search-ui.js" defer></script>
 </body>
 </html>
+
