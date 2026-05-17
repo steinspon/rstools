@@ -547,7 +547,7 @@
     .access-error { margin: 0 0 12px; line-height: 1.4; }
     .element-hit { cursor: pointer; }
     .element-hit:hover { filter: drop-shadow(0 0 4px rgba(222,243,89,.75)); }
-    .annotation-label,
+    .annotation-label { cursor: ns-resize; }
     .editable-item-label { cursor: text; }
     .depth-handle { cursor: ns-resize; }
     @media (max-width: 1180px) {
@@ -766,6 +766,10 @@
     let inlineAnnotationEditor = null;
     let depthDragState = null;
     let depthDragBadge = null;
+    let annotationDragState = null;
+    let calloutDragState = null;
+    let calloutAnchorDragState = null;
+    let suppressNextSvgClick = false;
     let lastRenderDepthContext = null;
     let wheelDeltaAccumulator = 0;
     let wheelAltMode = false;
@@ -793,11 +797,11 @@
     const collectionDefs = {
       holeSections: { title: 'Hole Sections', singular: 'Hole Section', fields: ['id','label','diameterIn','topMD','bottomMD','fillColor','visible'] },
       strings: { title: 'Casing / Liners', singular: 'String', fields: ['id','type','label','odIn','weight','topMD','bottomMD','shoeMD','annotationEnabled','annotationMD','showDepthTop','showDepthBase','fillColor','visible'] },
-      cement: { title: 'Annular Fill', singular: 'Annular Fill Interval', fields: ['id','label','material','insideStringId','outsideStringId','topMD','bottomMD','fillColor','visible'] },
+      cement: { title: 'Annular Fill', singular: 'Annular Fill Interval', fields: ['id','label','material','insideStringId','outsideStringId','topMD','bottomMD','annotationMD','fillColor','visible'] },
       completion: { title: 'Tubing / Completion', singular: 'Completion', fields: ['id','type','label','odIn','topMD','bottomMD','annotationEnabled','annotationMD','showDepthTop','showDepthBase','fillColor','visible'] },
-      components: { title: 'Components', singular: 'Component', fields: ['id','type','label','md','topMD','bottomMD','diameterIn','host','material','labelPosition','showDepthTop','showDepthBase','spf','phase','status','fillColor','visible'] },
+      components: { title: 'Components', singular: 'Component', fields: ['id','type','label','md','topMD','bottomMD','diameterIn','host','material','labelPosition','showDepthTop','showDepthBase','status','fillColor','visible'] },
       hiddenSections: { title: 'Hidden Sections', singular: 'Hidden Section', fields: ['id','label','topMD','bottomMD','lineType','lineColor','lineWidth','visible'] },
-      formations: { title: 'Formations', singular: 'Formation', fields: ['id','name','topMD','bottomMD','lithology','fillColor','visible'] },
+      formations: { title: 'Formations', singular: 'Formation', fields: ['id','name','topMD','bottomMD','showDepthTop','showDepthBase','lithology','fillColor','visible'] },
       annotations: { title: 'Annotations', singular: 'Annotation', fields: ['id','targetType','targetId','text','side'] }
     };
 
@@ -812,7 +816,8 @@
       annotationEnabled: 'Show Annotation', annotationMD: 'Annotation Depth', md: 'Depth TVD',
       showDepthTop: 'Label Suffix: Top Depth', showDepthBase: 'Label Suffix: Base Depth',
       lineWidth: 'Line Width',
-      lineType: 'Line Type'
+      lineType: 'Line Type',
+      perfLength: 'Perforation Length'
     };
 
     const quickAddActions = {
@@ -828,7 +833,7 @@
       cement_plug: () => openAddDialog('components', { type:'cement_plug', label:'Cement plug', topMD:4300, bottomMD:4450, diameterIn:8.5, host:'production_casing', material:'cement', labelPosition:'top' }),
       section_mill: () => openAddDialog('components', { type:'section_mill', label:'Section mill', topMD:1800, bottomMD:1950, diameterIn:12.25, host:'production_casing', labelPosition:'top' }),
       dhsv: () => openAddDialog('components', { type:'dhsv', label:'DHSV', md:250, host:'prod_tubing' }),
-      perforations: () => openAddDialog('components', { type:'perforations', label:'Perforations', topMD:4550, bottomMD:4750, spf:6, phase:60, status:'open' }),
+      perforations: () => openAddDialog('components', { type:'perforations', label:'Perforations', topMD:4550, bottomMD:4750, status:'open', perfLength:18, fillColor:'#ffffff', lineColor:'#210d2a', lineWidth:1 }),
       formation_top: () => openAddDialog('formations', { name:'Formation Top', topMD:3500, bottomMD:3900, lithology:'shale' }),
       td_pbtd: () => { addItem('components', { type:'td', label:'TD', md:5000 }); addItem('components', { type:'pbtd', label:'PBTD', md:4900 }); }
     };
@@ -1016,6 +1021,7 @@
       next.completion = (next.completion || []).map(item => ({ annotationEnabled:true, annotationMD:null, showDepthTop:false, showDepthBase:false, ...item }));
       next.cement = (next.cement || []).map(item => normalizeAnnularFill(item, next));
       next.components = (next.components || []).map(item => normalizeComponentDraft({ showDepthTop:false, showDepthBase:false, ...item }));
+      next.formations = (next.formations || []).map(item => ({ showDepthTop:true, showDepthBase:false, ...item }));
       return next;
     }
 
@@ -1037,7 +1043,7 @@
     }
 
     function normalizeAnnularFill(item, model = schematic) {
-      const normalized = { ...item };
+      const normalized = { annotationMD:null, ...item };
       if (!normalized.material) normalized.material = 'cement';
       delete normalized.quality;
 
@@ -1533,7 +1539,7 @@
       if (typeof value === 'boolean') return 'checkbox';
       if (['visible','annotationEnabled','showLithology','showAnnotations','showPlotLogo','showDepthTop','showDepthBase','calloutHaloEnabled'].includes(key)) return 'checkbox';
       if (key === 'fillColor' || key === 'color' || key === 'lineColor' || key === 'calloutLineColor' || key === 'calloutHaloColor' || key === 'plotBgDay' || key === 'plotBgNight') return 'color';
-      if (/MD$|Depth|Tick|In$|Deg$|spf|phase|rkbM|waterDepthM|Width/.test(key)) return 'number';
+      if (/MD$|Depth|Tick|In$|Deg$|spf|phase|rkbM|waterDepthM|Width|Length/.test(key)) return 'number';
       if (key === 'date') return 'date';
       return 'text';
     }
@@ -1692,11 +1698,11 @@
       const id = makeId(collection.replace(/s$/, ''));
       if (collection === 'holeSections') return { id, label:'New hole section', diameterIn:12.25, topMD:0, bottomMD:1000, visible:true };
       if (collection === 'strings') return { id, type:'casing', label:'New casing', odIn:9.625, weight:'', topMD:0, bottomMD:1000, shoeMD:1000, annotationEnabled:true, annotationMD:null, showDepthTop:false, showDepthBase:false, color:null, visible:true };
-      if (collection === 'cement') return { id, label:'New annular fill', material:'cement', insideStringId:null, outsideStringId:'', topMD:0, bottomMD:1000, visible:true };
+      if (collection === 'cement') return { id, label:'New annular fill', material:'cement', insideStringId:null, outsideStringId:'', topMD:0, bottomMD:1000, annotationMD:null, visible:true };
       if (collection === 'completion') return { id, type:'tubing', odIn:5.5, label:'New tubing', topMD:0, bottomMD:1000, annotationEnabled:true, annotationMD:null, showDepthTop:false, showDepthBase:false, visible:true };
       if (collection === 'components') return { id, type:'packer', label:'New component', md:1000, host:'', labelPosition:'top', showDepthTop:false, showDepthBase:false, visible:true };
       if (collection === 'hiddenSections') return { id, label:'Hidden section', topMD:1000, bottomMD:1200, lineType:'dashed', lineColor:'#b3b3b3', lineWidth:1, visible:true };
-      if (collection === 'formations') return { id, name:'New formation', topMD:1000, bottomMD:1500, lithology:'sandstone', color:null, visible:true };
+      if (collection === 'formations') return { id, name:'New formation', topMD:1000, bottomMD:1500, showDepthTop:true, showDepthBase:false, lithology:'sandstone', color:null, visible:true };
       return { id, targetType:'component', targetId:'', text:'New annotation', side:'right' };
     }
 
@@ -1901,6 +1907,12 @@
         if (!draft.fillColor) draft.fillColor = '#ffffff';
         if (!draft.lineColor) draft.lineColor = '#210d2a';
       }
+      if (draft.type === 'perforations') {
+        if (!(num(draft.perfLength, 0) > 0)) draft.perfLength = 18;
+        if (!draft.fillColor) draft.fillColor = '#ffffff';
+        if (!draft.lineColor) draft.lineColor = '#210d2a';
+        if (!(num(draft.lineWidth, 0) > 0)) draft.lineWidth = 1;
+      }
       return draft;
     }
 
@@ -1910,7 +1922,7 @@
       if (draft.type === 'cement_plug') return [...common, 'topMD','bottomMD','diameterIn','host','material','labelPosition','showDepthTop','showDepthBase','fillColor','visible'];
       if (draft.type === 'section_mill') return [...common, 'topMD','bottomMD','diameterIn','host','labelPosition','showDepthTop','showDepthBase','fillColor','visible'];
       if (draft.type === 'bridge_plug') return [...common, 'topMD','bottomMD','host','labelPosition','showDepthTop','showDepthBase','fillColor','lineColor','visible'];
-      if (draft.type === 'perforations') return [...common, 'topMD','bottomMD','host','showDepthTop','showDepthBase','spf','phase','status','fillColor','visible'];
+      if (draft.type === 'perforations') return [...common, 'topMD','bottomMD','host','showDepthTop','showDepthBase','status','perfLength','fillColor','lineColor','lineWidth','visible'];
       if (draft.type === 'td') return [...common, 'md','showDepthTop','showDepthBase','fillColor','visible'];
       if (['pbtd','cut_point','packer','mechanical_plug','tubing_plug','dhsv','sleeve','mandrel','nipple'].includes(draft.type)) {
         return [...common, 'md','host','showDepthTop','showDepthBase','fillColor','visible'];
@@ -2242,7 +2254,7 @@
       const margin = { top: 62, right: Math.min(280, Math.max(170, Math.floor(width * 0.24))), bottom: 44, left: 98 };
       lastRenderDepthContext = { top, bottom, margin, plotHeight };
       const height = margin.top + plotHeight + margin.bottom;
-      const formationTrackWidth = width < 900 ? 108 : 150;
+      const formationTrackWidth = width < 900 ? 36 : 50;
       const preferredCx = margin.left + (width < 900 ? 132 : 152);
       const cxMax = width - margin.right - 210;
       let cx = Math.max(margin.left + 118, Math.min(preferredCx, cxMax));
@@ -2252,8 +2264,13 @@
       const widestHalf = getMaxRenderedHalfWidth();
       const minCxForLeftFit = margin.left + widestHalf + 8;
       cx = Math.max(minCxForLeftFit, Math.min(cx, cxMax));
-      const lithX = Math.min(width - formationTrackWidth - 92, Math.max(cx + 176, cx + 160));
-      renderCalloutTextX = computeCalloutLabelX(cx, lithX, width);
+      let lithX = Math.min(width - formationTrackWidth - 92, Math.max(cx + 176, cx + 160));
+      renderCalloutTextX = computeCalloutLabelX(cx, lithX, width, widestHalf);
+      // Keep formation track to the right of annotation/callout text.
+      const minLithXFromCallouts = renderCalloutTextX + 230;
+      lithX = Math.min(width - formationTrackWidth - 32, Math.max(lithX, minLithXFromCallouts));
+      // Recompute callout anchors after final formation-track placement so all label systems align.
+      renderCalloutTextX = computeCalloutLabelX(cx, lithX, width, widestHalf);
       renderCalloutLineEndX = renderCalloutTextX - 8;
       const holeScaleRightBound = Math.max(cx + 130, lithX - 92);
       updateRenderRadialScale(cx, holeScaleRightBound);
@@ -2286,6 +2303,7 @@
       applyPlotAreaClip(svg, [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill], margin, width, plotHeight);
       applySectionMillMasks(svg, [layerFill, layerTubular, layerComponents], cx, width, height, top, bottom, margin, plotHeight);
 
+      if (ps.showLithology) drawFormationGuideLines(layerHole, margin, width, top, bottom, plotHeight);
       schematic.holeSections.filter(viz).forEach(item => drawHoleSection(layerHole, item, cx, top, bottom, margin, plotHeight));
       schematic.cement.filter(viz).forEach(item => drawCement(layerFill, item, cx, top, bottom, margin, plotHeight));
       schematic.strings.filter(viz).forEach(item => item.type === 'liner' ? drawLiner(layerTubular, item, cx, top, bottom, margin, plotHeight) : drawCasingString(layerTubular, item, cx, top, bottom, margin, plotHeight));
@@ -2308,7 +2326,7 @@
       if (ps.showAnnotations) drawAutoLabels(layerOverlay, cx, lithX, width, margin, plotHeight, top, bottom, occupiedLabelBands);
       drawAnnularFillLabels(layerOverlay, cx, lithX, width, margin, plotHeight, top, bottom, occupiedLabelBands);
       if (ps.showAnnotations) drawAnnotations(layerOverlay, cx, lithX, width, top, bottom, margin, plotHeight, occupiedLabelBands);
-      drawSelectedDepthHandles(layerOverlay, cx, top, bottom, margin, plotHeight);
+      drawSelectedDepthHandles(layerOverlay, cx, top, bottom, margin, plotHeight, lithX, formationTrackWidth);
       svg.appendChild(layerCursor);
 
       let hoveringElement = false;
@@ -2378,7 +2396,7 @@
         }
         const rect = svg.getBoundingClientRect();
         const y = Math.max(margin.top, Math.min(margin.top + plotHeight, clientY - rect.top));
-        const md = top + ((y - margin.top) / Math.max(1, plotHeight)) * (bottom - top);
+        const md = yToMd(y);
         guideLine.setAttribute('y1', String(y));
         guideLine.setAttribute('y2', String(y));
         guideBadge.setAttribute('y', String(y - 9));
@@ -2487,6 +2505,24 @@
         event.preventDefault();
       };
       svg.onmousedown = (event) => {
+        const anchorHandle = event.target.closest('.callout-anchor-handle,[data-callout-anchor-id]');
+        if (anchorHandle && event.button === 0) {
+          event.preventDefault();
+          event.stopPropagation();
+          const calloutId = anchorHandle.getAttribute('data-callout-anchor-id');
+          const calloutCollection = anchorHandle.getAttribute('data-callout-anchor-collection');
+          if (calloutId && calloutCollection) beginCalloutAnchorDrag(event, calloutCollection, calloutId);
+          return;
+        }
+        const calloutHandle = event.target.closest('.callout-drag-handle,[data-callout-drag-id]');
+        if (calloutHandle && event.button === 0) {
+          event.preventDefault();
+          event.stopPropagation();
+          const calloutId = calloutHandle.getAttribute('data-callout-drag-id');
+          const calloutCollection = calloutHandle.getAttribute('data-callout-drag-collection');
+          if (calloutId && calloutCollection) beginCalloutDrag(event, calloutCollection, calloutId);
+          return;
+        }
         const depthHandle = event.target.closest('.depth-handle');
         if (depthHandle && event.button === 0) {
           event.preventDefault();
@@ -2535,6 +2571,12 @@
         hoveringElement = false;
       };
       svg.onclick = (event) => {
+        if (suppressNextSvgClick) {
+          suppressNextSvgClick = false;
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         const hit = event.target.closest('.element-hit');
         if (hit) {
           selectItem(hit.dataset.collection, hit.dataset.id);
@@ -2575,17 +2617,138 @@
       updateDepthPanControl();
     }
 
-    function drawSelectedDepthHandles(svg, cx, top, bottom, margin, plotHeight) {
+    function drawSelectedDepthHandles(svg, cx, top, bottom, margin, plotHeight, lithX = null, formationTrackWidth = 50) {
       if (!selected) return;
       const item = findItem(selected.collection, selected.id);
       if (!item) return;
       if (item.topMD === undefined || item.bottomMD === undefined) return;
       const yTop = mdToY(item.topMD, top, bottom, margin, plotHeight);
       const yBottom = mdToY(item.bottomMD, top, bottom, margin, plotHeight);
-      const x = cx + 10;
+      const x = selected.collection === 'formations' && Number.isFinite(lithX)
+        ? lithX + Math.max(12, Math.min(formationTrackWidth - 12, formationTrackWidth * 0.5))
+        : cx + 10;
       const handleStyle = { fill:'#def359', stroke:'#210d2a', 'stroke-width':1.2, class:'depth-handle', 'data-collection':selected.collection, 'data-id':selected.id };
       svg.appendChild(el('circle', { ...handleStyle, cx:x, cy:yTop, r:6, 'data-edge':'top' }));
       svg.appendChild(el('circle', { ...handleStyle, cx:x, cy:yBottom, r:6, 'data-edge':'bottom' }));
+    }
+
+    function beginAnnotationDrag(event, noteId) {
+      const note = (schematic.annotations || []).find(a => a.id === noteId);
+      if (!note) return;
+      const svgNode = document.getElementById('schematicSvg');
+      const ctx = lastRenderDepthContext;
+      if (!svgNode || !ctx) return;
+      annotationDragState = {
+        id: noteId,
+        startY: event.clientY,
+        startOffset: num(note.labelOffsetY, 0),
+        moved: false
+      };
+      const move = (e) => {
+        if (!annotationDragState) return;
+        const active = (schematic.annotations || []).find(a => a.id === annotationDragState.id);
+        if (!active) return;
+        const rect = svgNode.getBoundingClientRect();
+        const y = Math.max(ctx.margin.top + 12, Math.min(ctx.margin.top + ctx.plotHeight - 10, e.clientY - rect.top));
+        const dy = e.clientY - annotationDragState.startY;
+        if (Math.abs(dy) > 2) annotationDragState.moved = true;
+        active.manualLabelY = Math.round(y * 10) / 10;
+        active.labelLocked = true;
+        renderSchematic();
+      };
+      const up = () => {
+        const moved = annotationDragState?.moved === true;
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', up);
+        annotationDragState = null;
+        if (moved) suppressNextSvgClick = true;
+        if (selected && selected.collection === 'annotations') renderProperties();
+        markUnsavedChanges();
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+    }
+
+    function findCalloutTarget(collection, id) {
+      if (!id) return null;
+      if (collection === 'annotations') return (schematic.annotations || []).find(a => a.id === id) || null;
+      if (collection === 'strings') return (schematic.strings || []).find(a => a.id === id) || null;
+      if (collection === 'completion') return (schematic.completion || []).find(a => a.id === id) || null;
+      if (collection === 'components') return (schematic.components || []).find(a => a.id === id) || null;
+      if (collection === 'cement') return (schematic.cement || []).find(a => a.id === id) || null;
+      return null;
+    }
+
+    function beginCalloutDrag(event, collection, id) {
+      const target = findCalloutTarget(collection, id);
+      if (!target) return;
+      const svgNode = document.getElementById('schematicSvg');
+      const ctx = lastRenderDepthContext;
+      if (!svgNode || !ctx) return;
+      calloutDragState = {
+        collection,
+        id,
+        startY: event.clientY,
+        moved: false
+      };
+      const move = (e) => {
+        if (!calloutDragState) return;
+        const active = findCalloutTarget(calloutDragState.collection, calloutDragState.id);
+        if (!active) return;
+        const rect = svgNode.getBoundingClientRect();
+        const y = Math.max(ctx.margin.top + 12, Math.min(ctx.margin.top + ctx.plotHeight - 10, e.clientY - rect.top));
+        if (Math.abs(e.clientY - calloutDragState.startY) > 2) calloutDragState.moved = true;
+        active.manualLabelY = Math.round(y * 10) / 10;
+        active.labelLocked = true;
+        renderSchematic();
+      };
+      const up = () => {
+        const moved = calloutDragState?.moved === true;
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', up);
+        calloutDragState = null;
+        if (moved) suppressNextSvgClick = true;
+        if (selected) renderProperties();
+        markUnsavedChanges();
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
+    }
+
+    function beginCalloutAnchorDrag(event, collection, id) {
+      const target = findCalloutTarget(collection, id);
+      if (!target) return;
+      const svgNode = document.getElementById('schematicSvg');
+      const ctx = lastRenderDepthContext;
+      if (!svgNode || !ctx) return;
+      const startClientY = event.clientY;
+      calloutAnchorDragState = { collection, id, moved: false };
+      const move = (e) => {
+        if (!calloutAnchorDragState) return;
+        const active = findCalloutTarget(calloutAnchorDragState.collection, calloutAnchorDragState.id);
+        if (!active) return;
+        const rect = svgNode.getBoundingClientRect();
+        const y = Math.max(ctx.margin.top, Math.min(ctx.margin.top + ctx.plotHeight, e.clientY - rect.top));
+        const md = Math.round(mdFromY(y, ctx.top, ctx.bottom, ctx.margin, ctx.plotHeight) * 10) / 10;
+        if (Math.abs(e.clientY - startClientY) > 2) calloutAnchorDragState.moved = true;
+        if (calloutAnchorDragState.collection === 'annotations') {
+          active.anchorMD = md;
+        } else {
+          active.annotationMD = md;
+        }
+        renderSchematic();
+      };
+      const up = () => {
+        const moved = calloutAnchorDragState?.moved === true;
+        window.removeEventListener('mousemove', move);
+        window.removeEventListener('mouseup', up);
+        calloutAnchorDragState = null;
+        if (moved) suppressNextSvgClick = true;
+        if (selected) renderProperties();
+        markUnsavedChanges();
+      };
+      window.addEventListener('mousemove', move);
+      window.addEventListener('mouseup', up);
     }
 
     function beginDepthDrag(event, edge) {
@@ -2618,13 +2781,49 @@
       const y = Math.max(ctx.margin.top, Math.min(ctx.margin.top + ctx.plotHeight, clientY - rect.top));
       const md = mdFromY(y, ctx.top, ctx.bottom, ctx.margin, ctx.plotHeight);
       const minGap = 0.1;
-      if (depthDragState.edge === 'top') {
-        item.topMD = Math.min(md, num(item.bottomMD) - minGap);
+      if (depthDragState.collection === 'formations') {
+        applyFormationBoundaryDrag(item, depthDragState.edge, md, minGap);
       } else {
-        item.bottomMD = Math.max(md, num(item.topMD) + minGap);
+        if (depthDragState.edge === 'top') {
+          item.topMD = Math.min(md, num(item.bottomMD) - minGap);
+        } else {
+          item.bottomMD = Math.max(md, num(item.topMD) + minGap);
+        }
       }
       showDepthDragBadge(clientX, clientY, `${formatDepthOneDecimal(depthDragState.edge === 'top' ? item.topMD : item.bottomMD)} ${schematic.plotSettings.depthUnit} TVD`);
       renderSchematic();
+    }
+
+    function applyFormationBoundaryDrag(target, edge, md, minGap = 0.1) {
+      const formations = (schematic.formations || []).filter(Boolean);
+      if (!formations.length) return;
+      const sorted = [...formations].sort((a, b) => num(a.topMD) - num(b.topMD));
+      const idx = sorted.findIndex(f => f.id === target.id);
+      if (idx < 0) return;
+      const current = sorted[idx];
+      if (edge === 'top') {
+        const nextTop = Math.min(md, num(current.bottomMD) - minGap);
+        current.topMD = nextTop;
+        // Eat into the formation above by moving its bottom boundary.
+        const above = sorted[idx - 1];
+        if (above && num(above.bottomMD) > nextTop) {
+          above.bottomMD = nextTop;
+          if (num(above.topMD) > num(above.bottomMD) - minGap) {
+            above.topMD = above.bottomMD - minGap;
+          }
+        }
+      } else {
+        const nextBottom = Math.max(md, num(current.topMD) + minGap);
+        current.bottomMD = nextBottom;
+        // Eat into the formation below by moving its top boundary.
+        const below = sorted[idx + 1];
+        if (below && num(below.topMD) < nextBottom) {
+          below.topMD = nextBottom;
+          if (num(below.bottomMD) < num(below.topMD) + minGap) {
+            below.bottomMD = below.topMD + minGap;
+          }
+        }
+      }
     }
 
     function showDepthDragBadge(clientX, clientY, text) {
@@ -2717,6 +2916,56 @@
     function isMdHidden(md, top, bottom) {
       const v = num(md);
       return effectiveHiddenSections(top, bottom).some(section => v > section.topMD && v < section.bottomMD);
+    }
+    function subtractHiddenFromInterval(startMd, endMd, hiddenSections) {
+      let visible = [{ start: startMd, end: endMd }];
+      hiddenSections.forEach(section => {
+        const next = [];
+        visible.forEach(seg => {
+          if (section.bottomMD <= seg.start || section.topMD >= seg.end) {
+            next.push(seg);
+            return;
+          }
+          if (section.topMD > seg.start) next.push({ start: seg.start, end: section.topMD });
+          if (section.bottomMD < seg.end) next.push({ start: section.bottomMD, end: seg.end });
+        });
+        visible = next.filter(seg => seg.end > seg.start);
+      });
+      return visible;
+    }
+    function resolveCalloutAnchorMd(item, preferredMd, top, bottom) {
+      const hidden = effectiveHiddenSections(top, bottom);
+      const hasInterval = item?.topMD !== undefined && item?.topMD !== null && item?.bottomMD !== undefined && item?.bottomMD !== null;
+      if (hasInterval) {
+        const rawTop = num(item.topMD);
+        const rawBottom = num(item.bottomMD);
+        const itemTop = Math.min(rawTop, rawBottom);
+        const itemBottom = Math.max(rawTop, rawBottom);
+        const start = Math.max(top, itemTop);
+        const end = Math.min(bottom, itemBottom);
+        if (!(end > start)) return null;
+        const visibleSegments = subtractHiddenFromInterval(start, end, hidden);
+        if (!visibleSegments.length) return null;
+        const pref = Math.max(start, Math.min(end, num(preferredMd, start)));
+        for (const seg of visibleSegments) {
+          if (pref >= seg.start && pref <= seg.end) return pref;
+        }
+        const candidates = visibleSegments.flatMap(seg => [seg.start, seg.end]);
+        let best = candidates[0];
+        let bestDist = Math.abs(best - pref);
+        for (let i = 1; i < candidates.length; i += 1) {
+          const d = Math.abs(candidates[i] - pref);
+          if (d < bestDist) {
+            bestDist = d;
+            best = candidates[i];
+          }
+        }
+        return best;
+      }
+      const md = num(preferredMd, num(item?.md));
+      if (!(md >= top && md <= bottom)) return null;
+      if (isMdHidden(md, top, bottom)) return null;
+      return md;
     }
     function diameterToWidth(inches) {
       // Telescopic nesting should stay visible; use indicative, compressed scaling.
@@ -3010,8 +3259,9 @@
 
     function drawAnnularFillLabels(svg, cx, lithX, width, margin, plotHeight, top, bottom, occupied = []) {
       const labels = schematic.cement.filter(viz).map(item => {
-        const md = num(item.topMD);
-        if (md < top || md > bottom) return null;
+        const preferredMd = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === '' ? num(item.topMD) : num(item.annotationMD);
+        const md = resolveCalloutAnchorMd(item, preferredMd, top, bottom);
+        if (!Number.isFinite(md)) return null;
         const bounds = annularFillBounds(item);
         const y = mdToY(md, top, bottom, margin, plotHeight);
         const materialText = String(item.material || 'cement').toLowerCase();
@@ -3019,7 +3269,8 @@
           item,
           anchorX: cx + bounds.outerW / 2 + 4,
           anchorY: y,
-          labelY: y,
+          preferredY: Number.isFinite(num(item.manualLabelY, NaN)) ? num(item.manualLabelY) : y,
+          locked: item.labelLocked === true,
           text: `TOF ${item.label || 'Annular fill'} (${materialText})`
         };
       }).filter(Boolean).sort((a, b) => a.anchorY - b.anchorY);
@@ -3036,8 +3287,10 @@
         const stroke = calloutStroke(selected);
         const kneeX = Math.max(label.anchorX + 24, lineEndX - 120);
         const g = makeGroup('cement', label.item);
+        g.setAttribute('data-callout-drag-id', label.item.id);
+        g.setAttribute('data-callout-drag-collection', 'cement');
         appendCalloutPath(g, routedLabelPath(label.anchorX, label.anchorY, label.labelY, kneeX, lineEndX), stroke, selected ? 1.7 : .8, selected ? .9 : .62);
-        g.appendChild(el('circle', { cx:label.anchorX, cy:label.anchorY, r:selected ? 3 : 2, fill:stroke, opacity:selected ? 1 : .65 }));
+        g.appendChild(el('circle', { cx:label.anchorX, cy:label.anchorY, r:selected ? 3 : 2, fill:stroke, opacity:selected ? 1 : .65, class:'callout-drag-handle', 'data-callout-drag-id':label.item.id, 'data-callout-drag-collection':'cement' }));
         g.appendChild(el('text', {
           x: textX,
           y: label.labelY,
@@ -3045,8 +3298,35 @@
           'font-size': 10,
           'font-weight': 600,
           'text-anchor': 'start',
-          'dominant-baseline': 'middle'
+          'dominant-baseline': 'middle',
+          class: 'callout-drag-handle',
+          'data-callout-drag-id': label.item.id,
+          'data-callout-drag-collection': 'cement'
         }, label.text));
+        if (selected) {
+          g.appendChild(el('circle', {
+            cx: label.anchorX,
+            cy: label.anchorY,
+            r: 6,
+            fill: '#def359',
+            stroke: '#210d2a',
+            'stroke-width': 1.2,
+            class: 'callout-anchor-handle',
+            'data-callout-anchor-id': label.item.id,
+            'data-callout-anchor-collection': 'cement'
+          }));
+          g.appendChild(el('circle', {
+            cx: textX - 16,
+            cy: label.labelY,
+            r: 6,
+            fill: '#def359',
+            stroke: '#210d2a',
+            'stroke-width': 1.2,
+            class: 'callout-drag-handle',
+            'data-callout-drag-id': label.item.id,
+            'data-callout-drag-collection': 'cement'
+          }));
+        }
         svg.appendChild(g);
       });
     }
@@ -3228,7 +3508,13 @@
         g.appendChild(el('rect', { x:cx - plugW/2, y:y1, width:plugW, height:plugH, fill:plugFill, stroke, 'stroke-width':1.4 }));
         g.appendChild(el('line', { x1:cx - plugW/2, y1:y1, x2:cx + plugW/2, y2:y1 + plugH, stroke, 'stroke-width':1.4 }));
         g.appendChild(el('line', { x1:cx + plugW/2, y1:y1, x2:cx - plugW/2, y2:y1 + plugH, stroke, 'stroke-width':1.4 }));
-        drawIntervalComponentLabel(g, item, cx + plugW / 2 + 10, y1, y2, occupiedLabelBands, margin, plotHeight);
+        {
+          const preferredMd = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === ''
+            ? (item.labelPosition === 'bottom' ? num(item.bottomMD) : (item.labelPosition === 'middle' ? ((num(item.topMD) + num(item.bottomMD)) / 2) : num(item.topMD)))
+            : num(item.annotationMD);
+          const anchorMd = resolveCalloutAnchorMd(item, preferredMd, top, bottom);
+          if (Number.isFinite(anchorMd)) drawIntervalComponentLabel(g, item, cx + plugW / 2 + 10, y1, y2, occupiedLabelBands, margin, plotHeight, mdToY(anchorMd, top, bottom, margin, plotHeight));
+        }
       } else if (item.type === 'mechanical_plug' || item.type === 'tubing_plug') {
         const plugW = Math.max(34, Math.min(92, w));
         const plugH = 18;
@@ -3240,7 +3526,13 @@
         const plugW = cementPlugWidth(item);
         const plugFill = isSelected('components', item.id) ? '#def359' : itemFillColor('components', item, plugMaterialColor(item.material));
         g.appendChild(el('rect', { x:cx - plugW/2, y:yTop, width:plugW, height:h, rx:1, fill:plugFill, stroke:'#210d2a', 'stroke-width':1 }));
-        drawIntervalComponentLabel(g, item, cx + plugW / 2 + 10, yTop, yTop + h, occupiedLabelBands, margin, plotHeight);
+        {
+          const preferredMd = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === ''
+            ? (item.labelPosition === 'bottom' ? num(item.bottomMD) : (item.labelPosition === 'middle' ? ((num(item.topMD) + num(item.bottomMD)) / 2) : num(item.topMD)))
+            : num(item.annotationMD);
+          const anchorMd = resolveCalloutAnchorMd(item, preferredMd, top, bottom);
+          if (Number.isFinite(anchorMd)) drawIntervalComponentLabel(g, item, cx + plugW / 2 + 10, yTop, yTop + h, occupiedLabelBands, margin, plotHeight, mdToY(anchorMd, top, bottom, margin, plotHeight));
+        }
       } else if (item.type === 'packer') {
         const packerW = Math.max(54, Math.min(120, w));
         const bodyH = 22;
@@ -3281,22 +3573,46 @@
         'stroke-width':selectedMill ? 3 : 1.6,
         'stroke-dasharray':'6 4'
       }));
-      drawIntervalComponentLabel(g, item, cx + w / 2 + 10, y1, y2, occupiedLabelBands, margin, plotHeight);
+      {
+        const preferredMd = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === ''
+          ? (item.labelPosition === 'bottom' ? num(item.bottomMD) : (item.labelPosition === 'middle' ? ((num(item.topMD) + num(item.bottomMD)) / 2) : num(item.topMD)))
+          : num(item.annotationMD);
+        const anchorMd = resolveCalloutAnchorMd(item, preferredMd, top, bottom);
+        if (Number.isFinite(anchorMd)) drawIntervalComponentLabel(g, item, cx + w / 2 + 10, y1, y2, occupiedLabelBands, margin, plotHeight, mdToY(anchorMd, top, bottom, margin, plotHeight));
+      }
       svg.appendChild(g);
     }
 
-    function drawIntervalComponentLabel(group, item, x, yTop, yBottom, occupied = [], margin = null, plotHeight = null) {
+    function drawIntervalComponentLabel(group, item, x, yTop, yBottom, occupied = [], margin = null, plotHeight = null, anchorYOverride = null) {
       const position = String(item.labelPosition || 'top').toLowerCase();
-      const baseY = position === 'bottom' ? yBottom : position === 'middle' ? (yTop + yBottom) / 2 : yTop;
+      const baseY = Number.isFinite(anchorYOverride)
+        ? anchorYOverride
+        : (position === 'bottom' ? yBottom : position === 'middle' ? (yTop + yBottom) / 2 : yTop);
+      const anchorX = x - 10;
       const laneTop = margin ? (margin.top + 10) : 0;
       const laneBottom = (margin && Number.isFinite(plotHeight)) ? (margin.top + plotHeight - 10) : Math.max(baseY + 1, yBottom + 2000);
       if (baseY < laneTop || baseY > laneBottom) return;
-      const y = avoidReservedBands(baseY, 13, occupied, laneBottom, laneTop);
+      const preferredY = Number.isFinite(num(item.manualLabelY, NaN)) ? num(item.manualLabelY) : baseY;
+      const y = item.labelLocked === true
+        ? Math.max(laneTop, Math.min(laneBottom, preferredY))
+        : avoidReservedBands(preferredY, 13, occupied, laneBottom, laneTop);
       occupied.push(y);
       const lineEndX = Number.isFinite(renderCalloutLineEndX) && renderCalloutLineEndX > 0 ? renderCalloutLineEndX : (x + 44);
       const textX = Number.isFinite(renderCalloutTextX) && renderCalloutTextX > 0 ? renderCalloutTextX : (x + 48);
       const kneeX = Math.max(x + 24, lineEndX - 120);
-      appendCalloutPath(group, routedLabelPath(x - 10, baseY, y, kneeX, lineEndX), calloutStroke(isSelected('components', item.id)), .8, .68);
+      const selected = isSelected('components', item.id);
+      const stroke = calloutStroke(selected);
+      appendCalloutPath(group, routedLabelPath(anchorX, baseY, y, kneeX, lineEndX), stroke, .8, .68);
+      group.appendChild(el('circle', {
+        cx:anchorX,
+        cy:baseY,
+        r:selected ? 3 : 2,
+        fill:stroke,
+        opacity:selected ? 1 : .6,
+        class:'callout-drag-handle',
+        'data-callout-drag-id':item.id,
+        'data-callout-drag-collection':'components'
+      }));
       group.appendChild(el('text', {
         x:textX,
         y:y,
@@ -3305,11 +3621,37 @@
         'font-weight':600,
         'text-anchor':'start',
         'dominant-baseline':'middle',
-        class:'editable-item-label',
+        class:'editable-item-label callout-drag-handle',
         'data-collection':'components',
         'data-id':item.id,
-        'data-field':'label'
+        'data-field':'label',
+        'data-callout-drag-id':item.id,
+        'data-callout-drag-collection':'components'
       }, labelWithDepthSuffix(item, item.label || item.type || item.id)));
+      if (selected) {
+        group.appendChild(el('circle', {
+          cx: textX - 16,
+          cy: y,
+          r: 6,
+          fill: '#def359',
+          stroke: '#210d2a',
+          'stroke-width': 1.2,
+          class: 'callout-drag-handle',
+          'data-callout-drag-id': item.id,
+          'data-callout-drag-collection': 'components'
+        }));
+        group.appendChild(el('circle', {
+          cx: anchorX,
+          cy: baseY,
+          r: 6,
+          fill: '#def359',
+          stroke: '#210d2a',
+          'stroke-width': 1.2,
+          class: 'callout-anchor-handle',
+          'data-callout-anchor-id': item.id,
+          'data-callout-anchor-collection': 'components'
+        }));
+      }
     }
 
     function sectionMillWidth(item) {
@@ -3368,12 +3710,14 @@
       const yTop = Math.min(y1, y2);
       const yBottom = Math.max(y1, y2);
       const g = makeGroup('components', item);
-      const fill = itemFillColor('components', item, '#210d2a');
+      const fill = itemFillColor('components', item, '#ffffff');
       const selected = isSelected('components', item.id);
-      const stroke = selected ? '#def359' : '#210d2a';
-      const hostW = item.host ? componentWidth(item) - 18 : componentWidth(item);
-      const half = Math.max(18, hostW / 2);
-      const triDepth = 18;
+      const stroke = selected ? '#def359' : colorInputValue(item.lineColor, '#210d2a');
+      const strokeWidth = Math.max(0.4, num(item.lineWidth, 1));
+      const hostInnerW = hostInnerWidth(item);
+      const hostIdWidth = Number.isFinite(hostInnerW) ? hostInnerW : componentWidth(item);
+      const half = Math.max(6, hostIdWidth / 2);
+      const triDepth = Math.max(4, num(item.perfLength, 18));
       const triHalfH = 4.5;
       const spacing = 12;
       const perforationYs = [];
@@ -3384,17 +3728,17 @@
       }
       perforationYs.forEach(y => {
         g.appendChild(el('polygon', {
-          points:`${cx - half - 1},${y - triHalfH} ${cx - half - 1},${y + triHalfH} ${cx - half - triDepth},${y}`,
+          points:`${cx - half},${y - triHalfH} ${cx - half},${y + triHalfH} ${cx - half - triDepth},${y}`,
           fill,
           stroke,
-          'stroke-width':selected ? 1.2 : .4,
+          'stroke-width': selected ? Math.max(strokeWidth + 0.6, 1.2) : strokeWidth,
           'stroke-linejoin':'round'
         }));
         g.appendChild(el('polygon', {
-          points:`${cx + half + 1},${y - triHalfH} ${cx + half + 1},${y + triHalfH} ${cx + half + triDepth},${y}`,
+          points:`${cx + half},${y - triHalfH} ${cx + half},${y + triHalfH} ${cx + half + triDepth},${y}`,
           fill,
           stroke,
-          'stroke-width':selected ? 1.2 : .4,
+          'stroke-width': selected ? Math.max(strokeWidth + 0.6, 1.2) : strokeWidth,
           'stroke-linejoin':'round'
         }));
       });
@@ -3469,7 +3813,7 @@
       });
     }
 
-    function drawFormationTrack(svg, lithX, margin, plotHeight, top, bottom, trackW = 150) {
+    function drawFormationTrack(svg, lithX, margin, plotHeight, top, bottom, trackW = 50) {
       svg.appendChild(el('rect', { x:lithX, y:margin.top, width:trackW, height:plotHeight, fill:'#e4ebd7', opacity:.35, stroke:'currentColor', 'stroke-width':1, 'stroke-opacity':.18 }));
       svg.appendChild(el('text', { x:lithX + trackW - 6, y:margin.top - 12, fill:'currentColor', 'font-size':10, 'font-weight':700, 'text-anchor':'end' }, 'Formations'));
       schematic.formations.filter(viz).forEach(item => {
@@ -3478,9 +3822,26 @@
         const g = makeGroup('formations', item);
         const fill = itemFillColor('formations', item, lithologyColor(item.lithology));
         g.appendChild(el('rect', { x:lithX, y:y1, width:trackW, height:Math.max(1, y2-y1), fill, opacity:.62, stroke:isSelected('formations', item.id) ? '#def359' : 'currentColor', 'stroke-width':isSelected('formations', item.id) ? 3 : .6, 'stroke-opacity':.45 }));
-        g.appendChild(el('line', { x1:lithX - 210, y1:y1, x2:lithX + trackW, y2:y1, stroke:'currentColor', 'stroke-width':1, 'stroke-dasharray':'3 4', opacity:.42 }));
-        g.appendChild(el('text', { x:lithX + trackW - 6, y:y1 + 13, fill:'#210d2a', 'font-size':10, 'font-weight':700, 'text-anchor':'end' }, item.name || item.id));
+        g.appendChild(el('text', { x:lithX + trackW + 6, y:y1 + 13, fill:'#210d2a', 'font-size':10, 'font-weight':700, 'text-anchor':'start' }, labelWithDepthSuffix(item, item.name || item.id)));
         svg.appendChild(g);
+      });
+    }
+
+    function drawFormationGuideLines(svg, margin, width, top, bottom, plotHeight) {
+      const plotLeft = margin.left;
+      const plotRight = width - 40;
+      schematic.formations.filter(viz).forEach(item => {
+        const y = mdToY(item.topMD, top, bottom, margin, plotHeight);
+        svg.appendChild(el('line', {
+          x1: plotLeft,
+          y1: y,
+          x2: plotRight,
+          y2: y,
+          stroke: 'currentColor',
+          'stroke-width': 1,
+          'stroke-dasharray': '3 4',
+          opacity: 0.28
+        }));
       });
     }
 
@@ -3507,26 +3868,82 @@
       labels.forEach(label => {
         const selected = isSelected(label.collection, label.id);
         const stroke = calloutStroke(selected);
-        const g = el('g', { class:'auto-label', 'data-kind':label.collection, 'data-id':label.id });
+        const g = el('g', {
+          class:'auto-label callout-drag-handle',
+          'data-kind':label.collection,
+          'data-id':label.id,
+          'data-callout-drag-id':label.id,
+          'data-callout-drag-collection':label.collection
+        });
         const kneeX = Math.max(label.anchorX + 28, lineEndX - 120);
         appendCalloutPath(g, routedLabelPath(label.anchorX, label.anchorY, label.labelY, kneeX, lineEndX), stroke, selected ? 1.7 : .8, selected ? .9 : .38);
-        g.appendChild(el('circle', { cx:label.anchorX, cy:label.anchorY, r:selected ? 3 : 2, fill:stroke, opacity:selected ? 1 : .55 }));
-        g.appendChild(el('text', { x:textX, y:label.labelY, fill:'currentColor', 'font-size':10, 'font-weight':600, 'text-anchor':'start', 'dominant-baseline':'middle', class:'editable-item-label', 'data-collection':label.collection, 'data-id':label.id, 'data-field':'label' }, label.text));
+        g.appendChild(el('circle', {
+          cx:label.anchorX,
+          cy:label.anchorY,
+          r:selected ? 3 : 2,
+          fill:stroke,
+          opacity:selected ? 1 : .55,
+          class:'callout-drag-handle',
+          'data-callout-drag-id':label.id,
+          'data-callout-drag-collection':label.collection
+        }));
+        g.appendChild(el('text', {
+          x:textX,
+          y:label.labelY,
+          fill:'currentColor',
+          'font-size':10,
+          'font-weight':600,
+          'text-anchor':'start',
+          'dominant-baseline':'middle',
+          class:'editable-item-label callout-drag-handle',
+          'data-collection':label.collection,
+          'data-id':label.id,
+          'data-field':'label',
+          'data-callout-drag-id':label.id,
+          'data-callout-drag-collection':label.collection
+        }, label.text));
+        if (selected) {
+          g.appendChild(el('circle', {
+            cx:label.anchorX,
+            cy:label.anchorY,
+            r:6,
+            fill:'#def359',
+            stroke:'#210d2a',
+            'stroke-width':1.2,
+            class:'callout-anchor-handle',
+            'data-callout-anchor-id':label.id,
+            'data-callout-anchor-collection':label.collection
+          }));
+          g.appendChild(el('circle', {
+            cx:textX - 16,
+            cy:label.labelY,
+            r:6,
+            fill:'#def359',
+            stroke:'#210d2a',
+            'stroke-width':1.2,
+            class:'callout-drag-handle',
+            'data-callout-drag-id':label.id,
+            'data-callout-drag-collection':label.collection
+          }));
+        }
         svg.appendChild(g);
       });
     }
 
     function collectAutoLabels(cx, top, bottom, margin, plotHeight) {
       const labels = [];
-      const inRange = md => num(md) >= top && num(md) <= bottom;
       const add = (collection, item, text, md, anchorOffset) => {
-        if (!item || !text || !inRange(md)) return;
+        if (!item || !text) return;
+        const anchorMd = resolveCalloutAnchorMd(item, md, top, bottom);
+        if (!Number.isFinite(anchorMd)) return;
         labels.push({
           collection,
           id:item.id,
           text,
-          anchorY:mdToY(md, top, bottom, margin, plotHeight),
-          anchorX:cx + anchorOffset
+          anchorY:mdToY(anchorMd, top, bottom, margin, plotHeight),
+          anchorX:cx + anchorOffset,
+          preferredY: Number.isFinite(num(item.manualLabelY, NaN)) ? num(item.manualLabelY) : mdToY(anchorMd, top, bottom, margin, plotHeight),
+          locked: item.labelLocked === true
         });
       };
       schematic.strings.filter(viz).forEach(item => {
@@ -3543,7 +3960,9 @@
       });
       schematic.components.filter(viz).forEach(item => {
         if (['td', 'pbtd', 'cement_plug', 'section_mill', 'bridge_plug'].includes(item.type)) return;
-        const md = item.md !== undefined ? item.md : (num(item.topMD) + num(item.bottomMD)) / 2;
+        const md = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === ''
+          ? (item.md !== undefined ? item.md : (num(item.topMD) + num(item.bottomMD)) / 2)
+          : num(item.annotationMD);
         add('components', item, labelWithDepthSuffix(item, item.label || item.type || item.id), md, componentWidth(item) / 2 + 14);
       });
       return labels;
@@ -3555,21 +3974,84 @@
       const notes = schematic.annotations.map((note) => {
         const target = findAnnotationTarget(note);
         if (!target) return null;
-        const targetMd = target.md !== undefined ? num(target.md) : ((num(target.topMD) + num(target.bottomMD)) / 2);
-        if (targetMd < top || targetMd > bottom) return null;
+        const preferredMd = Number.isFinite(num(note.anchorMD, NaN))
+          ? num(note.anchorMD)
+          : (target.md !== undefined ? num(target.md) : ((num(target.topMD) + num(target.bottomMD)) / 2));
+        const targetMd = resolveCalloutAnchorMd(target, preferredMd, top, bottom);
+        if (!Number.isFinite(targetMd)) return null;
         const y = mdToY(targetMd, top, bottom, margin, plotHeight);
         return { note, y };
       }).filter(Boolean).sort((a, b) => a.y - b.y);
       const laneTop = margin.top + 12;
       const laneBottom = margin.top + plotHeight - 10;
-      const labelDrafts = notes.map(({ note, y }) => ({ note, anchorY:y }));
+      const labelDrafts = notes.map(({ note, y }) => ({
+        note,
+        anchorY: y,
+        preferredY: Number.isFinite(num(note.manualLabelY, NaN)) ? num(note.manualLabelY) : (y + num(note.labelOffsetY, 0)),
+        locked: note.labelLocked === true
+      }));
       assignLabelLanePositions(labelDrafts, laneTop, laneBottom, 15, occupied);
       labelDrafts.forEach(({ note, anchorY, labelY }) => {
         const g = makeGroup('annotations', note);
+        g.setAttribute('data-callout-drag-id', note.id);
+        g.setAttribute('data-callout-drag-collection', 'annotations');
         const stroke = calloutStroke(isSelected('annotations', note.id));
         appendCalloutPath(g, routedLabelPath(cx + 82, anchorY, labelY, lineEndX - 120, lineEndX), stroke, 1, .72);
-        g.appendChild(el('circle', { cx:cx + 82, cy:anchorY, r:3, fill:stroke }));
-        g.appendChild(el('text', { x:textX, y:labelY, fill:'currentColor', 'font-size':10, 'text-anchor':'start', 'dominant-baseline':'middle', class:'annotation-label', 'data-id':note.id }, note.text || note.id));
+        g.appendChild(el('circle', {
+          cx:cx + 82,
+          cy:anchorY,
+          r:3,
+          fill:stroke,
+          class:'callout-drag-handle',
+          'data-callout-drag-id':note.id,
+          'data-callout-drag-collection':'annotations'
+        }));
+        g.appendChild(el('text', {
+          x:textX,
+          y:labelY,
+          fill:'currentColor',
+          'font-size':10,
+          'text-anchor':'start',
+          'dominant-baseline':'middle',
+          class:'annotation-label callout-drag-handle',
+          'data-id':note.id,
+          'data-callout-drag-id':note.id,
+          'data-callout-drag-collection':'annotations'
+        }, note.text || note.id));
+        if (isSelected('annotations', note.id)) {
+          g.appendChild(el('circle', {
+            cx:cx + 82,
+            cy:anchorY,
+            r:6,
+            fill:'#def359',
+            stroke:'#210d2a',
+            'stroke-width':1.2,
+            class:'callout-anchor-handle',
+            'data-callout-anchor-id':note.id,
+            'data-callout-anchor-collection':'annotations'
+          }));
+          g.appendChild(el('circle', {
+            cx:textX - 16,
+            cy:labelY,
+            r:6,
+            fill:'#def359',
+            stroke:'#210d2a',
+            'stroke-width':1.2,
+            class:'callout-drag-handle',
+            'data-callout-drag-id':note.id,
+            'data-callout-drag-collection':'annotations'
+          }));
+        }
+        g.appendChild(el('rect', {
+          x: Math.min(cx + 82, textX) - 8,
+          y: Math.min(anchorY, labelY) - 8,
+          width: Math.max(24, Math.abs(textX - (cx + 82)) + 16),
+          height: Math.max(18, Math.abs(labelY - anchorY) + 16),
+          fill: 'transparent',
+          class: 'callout-drag-handle',
+          'data-callout-drag-id': note.id,
+          'data-callout-drag-collection': 'annotations'
+        }));
         svg.appendChild(g);
       });
     }
@@ -3659,8 +4141,10 @@
     function assignLabelLanePositions(labels, laneTop, laneBottom, minGap, occupied = []) {
       const occupiedCopy = [...occupied].filter(Number.isFinite);
       labels.forEach(label => {
-        const anchorY = num(label.anchorY);
-        const y = avoidReservedBands(anchorY, minGap, occupiedCopy, laneBottom, laneTop);
+        const preferredY = Number.isFinite(num(label.preferredY, NaN)) ? num(label.preferredY) : num(label.anchorY);
+        const y = label.locked
+          ? Math.max(laneTop, Math.min(laneBottom, preferredY))
+          : avoidReservedBands(preferredY, minGap, occupiedCopy, laneBottom, laneTop);
         label.labelY = Math.max(laneTop, Math.min(laneBottom, y));
         occupiedCopy.push(label.labelY);
       });
@@ -3683,13 +4167,19 @@
     }
 
     function routedLabelPath(anchorX, anchorY, labelY, kneeX, labelX) {
-      if (Math.abs(anchorY - labelY) < 5) return `M ${anchorX} ${anchorY} H ${kneeX} H ${labelX}`;
-      return `M ${anchorX} ${anchorY} L ${kneeX} ${labelY} H ${labelX}`;
+      const left = Math.min(anchorX, labelX);
+      const right = Math.max(anchorX, labelX);
+      const clampedKnee = Math.max(left + 2, Math.min(right - 2, kneeX));
+      if (Math.abs(anchorY - labelY) < 5) return `M ${anchorX} ${anchorY} H ${clampedKnee} H ${labelX}`;
+      return `M ${anchorX} ${anchorY} L ${clampedKnee} ${labelY} H ${labelX}`;
     }
 
-    function computeCalloutLabelX(cx, lithX, width) {
+    function computeCalloutLabelX(cx, lithX, width, widestHalf = null) {
       const maxRight = width - 92;
-      const preferred = cx + Math.max(210, Math.min(300, (lithX - cx) + 64));
+      const half = Number.isFinite(widestHalf) ? widestHalf : getMaxRenderedHalfWidth();
+      const wellRight = cx + Math.max(half, 24);
+      const dynamicGap = Math.max(22, Math.min(72, half * 0.28));
+      const preferred = wellRight + dynamicGap;
       return Math.min(maxRight, preferred);
     }
 
