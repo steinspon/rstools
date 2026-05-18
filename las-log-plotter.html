@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interwell LAS Log Plotter</title>
+  <link rel="stylesheet" href="brand/brand-tokens.css">
+  <link rel="stylesheet" href="search-ui.css">
+  <link rel="stylesheet" href="night-toggle.css">
+  <style>
+    @font-face {
+      font-family: "formular-interwell";
+      src: url("https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/builds/a19def66-5676-4784-9eec-7904ef2cc995/artifacts/build/assets/Formular_Interwell-regular-eAm2gA_L.otf");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "formular-interwell";
+      src: url("https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/builds/a19def66-5676-4784-9eec-7904ef2cc995/artifacts/build/assets/Formular_Interwell-medium-Ddm9_fCE.otf");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "formular-interwell";
+      src: url("https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/builds/a19def66-5676-4784-9eec-7904ef2cc995/artifacts/build/assets/Formular_Interwell-bold-CntqEvi7.otf");
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+    :root {
+      --bg: #f4f0f7;
+      --surface: rgba(255, 255, 255, 0.88);
+      --surface-alt: rgba(255, 255, 255, 0.72);
+      --border: rgba(33, 13, 42, 0.16);
+      --text: #22122d;
+      --muted: #685774;
+      --primary: #210d2a;
+      --primary-strong: #13081a;
+      --lime: #def359;
+      --field-bg: #ffffff;
+      --field-border: #c8bdd0;
+      --plot-bg: #ffffff;
+      --track-bg: #fcfbfe;
+      --track-head: #f3edf7;
+      --grid: #ded6e8;
+      --major-grid: #c6bbd3;
+      --shadow: 0 10px 24px rgba(33, 13, 42, 0.08);
+      --radius: 6px;
+      --control-height: 24px;
+      --control-font: 10px;
+    }
+    body.night-mode {
+      --bg: #110b16;
+      --surface: rgba(30, 20, 40, 0.94);
+      --surface-alt: rgba(25, 17, 34, 0.9);
+      --border: rgba(227, 223, 235, 0.22);
+      --text: #f2eaf8;
+      --muted: #b8a6c4;
+      --primary: #f2eaf8;
+      --primary-strong: #ffffff;
+      --field-bg: #171022;
+      --field-border: #493955;
+      --plot-bg: #171022;
+      --track-bg: #1a1324;
+      --track-head: #2a1f35;
+      --grid: #3e314c;
+      --major-grid: #58456b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "formular-interwell", Arial, sans-serif;
+      font-size: 11px;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-text-size-adjust: 100%;
+      overflow: hidden;
+    }
+    button, input, select { font: inherit; font-variant-numeric: tabular-nums; }
+    button, .btn {
+      min-height: var(--control-height);
+      border: 1px solid color-mix(in srgb, var(--field-border) 88%, var(--border));
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--surface-alt) 82%, #fff 18%);
+      color: var(--text);
+      padding: 3px 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    button.primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+    body.night-mode button.primary { background: var(--lime); border-color: var(--lime); color: #210d2a; }
+    input, select {
+      min-height: var(--control-height);
+      border: 1px solid var(--field-border);
+      border-radius: 4px;
+      background: var(--field-bg);
+      color: var(--text);
+      padding: 3px 6px;
+    }
+    input[type="checkbox"] { width: 14px; height: 14px; min-height: 14px; padding: 0; accent-color: var(--primary); }
+    input[type="range"] { padding: 0; accent-color: var(--primary); }
+    label { display: grid; gap: 3px; color: var(--muted); font-size: 10px; }
+    .wrap.app-shell {
+      height: 100vh;
+      padding: 6px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 6px;
+    }
+    .app-header {
+      position: relative;
+      z-index: 20;
+      display: grid;
+      gap: 4px;
+      padding: 5px 7px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .app-header-top, .header-actions, .menu-bar, .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+    .app-header-top { justify-content: space-between; }
+    .app-brand { display: flex; align-items: center; min-width: 0; gap: 0; }
+    .app-logo { height: 18px; width: auto; flex: 0 0 auto; margin-right: 6px; }
+    body.night-mode .app-logo { filter: brightness(0) invert(1) saturate(0); }
+    .nav-icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 0;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--brand-dark-purple, var(--primary));
+      cursor: pointer;
+      text-decoration: none;
+    }
+    body.night-mode .nav-icon-btn { color: #f2eaf8; }
+    .nav-icon-btn svg { width: 18px; height: 18px; fill: currentColor; display: block; }
+    .app-brand .nav-icon-btn + .nav-icon-btn { margin-left: 6px; }
+    .app-title h1 { margin: 0; font-size: 0.82rem; line-height: 1.2; }
+    .app-title p { margin: 1px 0 0; color: var(--muted); font-size: 10px; }
+    .app-meta { color: var(--muted); text-align: right; line-height: 1.35; white-space: nowrap; font-size: 10px; }
+    .header-actions {
+      justify-content: space-between;
+      flex-wrap: wrap;
+      padding-top: 4px;
+      border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+    }
+    .menu-popover { display: none; }
+    .workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 332px minmax(0, 1fr);
+      gap: 6px;
+    }
+    .workspace.focus { grid-template-columns: minmax(0, 1fr); }
+    .workspace.focus .left-panel { display: none; }
+    .panel, .plot-shell {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .panel { overflow: auto; padding: 8px; }
+    .left-panel { display: grid; gap: 8px; align-content: start; }
+    .section {
+      display: grid;
+      gap: 6px;
+      padding: 7px;
+      border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--surface-alt) 86%, transparent);
+    }
+    .section-title { margin: 0; font-size: 11px; font-weight: 700; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .field-grid input, .field-grid select { width: 100%; }
+    .curve-search { width: 100%; }
+    .curve-list { display: grid; gap: 5px; max-height: 42vh; overflow: auto; padding-right: 2px; }
+    .curve-card {
+      display: grid;
+      grid-template-columns: 14px minmax(0, 1fr);
+      gap: 7px;
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--field-bg);
+    }
+    .curve-card.dragging { opacity: .55; }
+    .curve-main { display: grid; gap: 5px; min-width: 0; }
+    .curve-name-row { display: flex; justify-content: space-between; gap: 6px; min-width: 0; }
+    .curve-name { font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .curve-family { color: var(--muted); font-size: 10px; }
+    .curve-description { color: var(--muted); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .curve-controls { display: grid; grid-template-columns: 52px 1fr 38px; gap: 5px; align-items: end; }
+    .curve-controls input, .curve-controls select { width: 100%; min-width: 0; }
+    .track-list { display: grid; gap: 6px; }
+    .track-row {
+      display: grid;
+      grid-template-columns: 20px minmax(0, 1fr) 42px;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      border: 1px dashed var(--border);
+      border-radius: 6px;
+      background: var(--field-bg);
+    }
+    .track-row.drop-target { border-color: var(--primary); background: color-mix(in srgb, var(--lime) 18%, var(--field-bg)); }
+    .track-swatch { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); }
+    .track-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .plot-shell { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
+    .plot-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .plot-toolbar .toolbar-row { flex-wrap: wrap; }
+    .plot-scroll {
+      min-height: 0;
+      overflow: auto;
+      background: var(--plot-bg);
+      cursor: grab;
+      position: relative;
+    }
+    .plot-scroll.dragging { cursor: grabbing; }
+    #plotSvg { display: block; width: auto; height: auto; max-width: none; }
+    .hover-readout {
+      position: absolute;
+      z-index: 5;
+      min-width: 170px;
+      max-width: 320px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      box-shadow: var(--shadow);
+      font-size: 10px;
+      display: none;
+      pointer-events: none;
+      backdrop-filter: blur(6px);
+      white-space: nowrap;
+    }
+    .hover-readout.active { display: grid; gap: 2px; }
+    .hover-readout .head { font-weight: 700; color: var(--text); }
+    .hover-readout .line { color: var(--muted); }
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 5px 8px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)); gap: 4px; }
+    .tab-btn[aria-selected="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+    body.night-mode .tab-btn[aria-selected="true"] { background: var(--lime); color: #210d2a; border-color: var(--lime); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: grid; gap: 8px; }
+    .table { display: grid; gap: 3px; font-size: 10px; }
+    .table-row { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 5px; }
+    .table-row span:first-child { color: var(--muted); }
+    @media (max-width: 1100px) {
+      body { overflow: auto; }
+      .wrap.app-shell { height: auto; min-height: 100vh; }
+      .workspace { grid-template-columns: 1fr; }
+      .left-panel { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap app-shell">
+    <header class="app-header">
+      <div class="app-header-top">
+        <div class="app-brand">
+          <img class="app-logo" src="https://cdn.craft.cloud/eefb662a-81d2-4c81-a4e3-3430f73d17d0/assets/assets/Interwell_Logo_Symbol_Dark_Purple-2.png" alt="Interwell">
+          <a class="nav-icon-btn" href="index.html" aria-label="Home" title="Home">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </a>
+          <button class="nav-icon-btn" id="backNavBtn" type="button" aria-label="Back" title="Back">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.8l5.6-5.6L12 4 4 12l8 8 1.4-1.4L7.8 13H20v-2z"/></svg>
+          </button>
+          <button class="nav-icon-btn" id="forwardNavBtn" type="button" aria-label="Forward" title="Forward">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h12.2l-5.6 5.6L12 20l8-8-8-8-1.4 1.4 5.6 5.6H4v2z"/></svg>
+          </button>
+          <div class="app-title">
+            <h1>LAS Log Plotter</h1>
+            <p>Depth-aligned multi-track well log viewer</p>
+          </div>
+        </div>
+        <div class="app-meta">
+          <div>By Darren Wilkinson</div>
+          <div>Updated: 18.05.2026</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="menu-bar">
+          <input id="fileInput" type="file" accept=".las,.LAS,text/plain" hidden>
+          <button type="button" id="openFileBtn">Open LAS</button>
+          <button type="button" id="addTrackBtn">Add Track</button>
+          <button type="button" id="fitDepthBtn">Fit Depth</button>
+          <button type="button" id="focusBtn">Focus Plot</button>
+        </div>
+        <div class="toolbar-row">
+          <span class="status-line" id="saveStatus">No LAS loaded</span>
+          <div class="toggle-switch" title="Night Mode">
+            <label class="switch-label" for="nightMode">
+              <input id="nightMode" class="checkbox" type="checkbox">
+              <span class="slider"></span>
+              <span class="toggle-text">Night Mode</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace" id="workspace">
+      <aside class="panel left-panel">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn" type="button" data-tab="window" aria-selected="true">Window</button>
+          <button class="tab-btn" type="button" data-tab="curves" aria-selected="false">Curves</button>
+          <button class="tab-btn" type="button" data-tab="tracks" aria-selected="false">Tracks</button>
+          <button class="tab-btn" type="button" data-tab="header" aria-selected="false">Header</button>
+          <button class="tab-btn" type="button" data-tab="stats" aria-selected="false">Stats</button>
+        </div>
+        <section class="tab-panel active" id="tab-window">
+          <div class="section">
+            <h2 class="section-title">Depth Window</h2>
+            <div class="field-grid">
+              <label>Top<input id="topDepth" type="number" step="any"></label>
+              <label>Bottom<input id="bottomDepth" type="number" step="any"></label>
+              <label>Major Tick<input id="depthTick" type="number" step="any" value="100"></label>
+              <label>Vertical Scale<input id="verticalScale" type="range" min="0.7" max="5" step="0.1" value="1.9"></label>
+            </div>
+          </div>
+        </section>
+        <section class="tab-panel" id="tab-curves">
+          <div class="section">
+            <h2 class="section-title">Curves</h2>
+            <input class="curve-search" id="curveSearch" type="search" placeholder="Filter curves">
+            <div class="curve-list" id="curveList"></div>
+          </div>
+        </section>
+        <section class="tab-panel" id="tab-tracks">
+          <div class="section">
+            <h2 class="section-title">Track Layout</h2>
+            <button type="button" id="addTrackInlineBtn">Add Track</button>
+            <div class="track-list" id="trackList"></div>
+          </div>
+        </section>
+        <section class="tab-panel" id="tab-header">
+          <div class="section">
+            <h2 class="section-title">LAS Header</h2>
+            <div class="table" id="headerTable"></div>
+          </div>
+        </section>
+        <section class="tab-panel" id="tab-stats">
+          <div class="section">
+            <h2 class="section-title">Curve Stats</h2>
+            <div class="table" id="statsTable"></div>
+          </div>
+        </section>
+      </aside>
+
+      <section class="plot-shell">
+        <div class="plot-toolbar">
+          <div class="toolbar-row">
+            <label>Track Width<input id="trackWidth" type="number" step="1" min="80" value="180"></label>
+            <label>Layout<select id="layoutMode"><option value="fill">Fill width</option><option value="fixed">Fixed width</option></select></label>
+            <label>Render<select id="renderMode"><option value="svg">SVG</option><option value="fast">Fast SVG</option></select></label>
+          </div>
+          <div class="toolbar-row">
+            <button type="button" id="zoomInBtn">Zoom +</button>
+            <button type="button" id="zoomOutBtn">Zoom -</button>
+            <button type="button" id="panUpBtn">Pan Up</button>
+            <button type="button" id="panDownBtn">Pan Down</button>
+          </div>
+        </div>
+        <div class="plot-scroll" id="plotScroll">
+          <svg id="plotSvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LAS log plot"></svg>
+          <div class="hover-readout" id="hoverReadout"></div>
+        </div>
+        <div class="status-bar">
+          <span id="plotStatus">Load a LAS file to begin.</span>
+          <span id="cursorStatus">Depth: -</span>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    'use strict';
+    const STORAGE_KEY = 'rstools-las-log-plotter-v1';
+    const COLORS = ['#1f78b4', '#2ca25f', '#f03b20', '#8856a7', '#31a354', '#dd3497', '#756bb1', '#636363', '#3182bd', '#e6550d'];
+    const state = {
+      las: null,
+      curves: [],
+      tracks: [],
+      dragCurveId: null,
+      depthDrag: null,
+      plot: null,
+      hoverLine: null
+    };
+
+    const $ = id => document.getElementById(id);
+    const num = (value, fallback = NaN) => {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : fallback;
+    };
+    const ok = value => Number.isFinite(value);
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+    function el(tag, attrs = {}, text) {
+      const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+      Object.entries(attrs).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) node.setAttribute(key, String(value));
+      });
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+
+    function parseHeaderLine(line) {
+      const t = String(line || '').trim();
+      if (!t || t.startsWith('#')) return null;
+      const [left, ...rest] = t.split(':');
+      const descr = rest.join(':').trim();
+      const dot = left.indexOf('.');
+      let mnemonic = left.trim();
+      let unit = '';
+      let value = '';
+      if (dot >= 0) {
+        mnemonic = left.slice(0, dot).trim();
+        const afterDot = left.slice(dot + 1).trim();
+        const firstSpace = afterDot.search(/\s/);
+        if (firstSpace >= 0) {
+          unit = afterDot.slice(0, firstSpace).trim();
+          value = afterDot.slice(firstSpace + 1).trim();
+        } else {
+          unit = afterDot;
+        }
+      }
+      return { mnemonic, unit, value, descr };
+    }
+
+    function parseLas(text, sourceName = 'Imported LAS') {
+      const sections = {};
+      let current = '';
+      String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').forEach(line => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        if (trimmed.startsWith('~')) {
+          current = trimmed.slice(1).trim().split(/\s+/)[0].toUpperCase();
+          sections[current] = sections[current] || [];
+          return;
+        }
+        if (current) sections[current].push(line);
+      });
+      const curveMeta = (sections.C || sections.CURVE || []).map(parseHeaderLine).filter(v => v && v.mnemonic);
+      if (!curveMeta.length) throw new Error('No curve definitions found in ~C.');
+      const well = (sections.W || sections.WELL || []).map(parseHeaderLine).filter(Boolean);
+      const params = (sections.P || sections.PARAMETER || []).map(parseHeaderLine).filter(Boolean);
+      const nullValue = num((well.find(v => v.mnemonic.toUpperCase() === 'NULL') || {}).value, NaN);
+      const dataLines = (sections.A || sections.ASCII || []).filter(line => line.trim() && !line.trim().startsWith('#'));
+      if (!dataLines.length) throw new Error('No ASCII data section found in ~A.');
+      const tokens = dataLines.flatMap(line => line.trim().split(/[\s,]+/).filter(Boolean));
+      const cols = curveMeta.length;
+      const columns = Array.from({ length: cols }, () => []);
+      for (let i = 0; i + cols - 1 < tokens.length; i += cols) {
+        for (let c = 0; c < cols; c += 1) {
+          let v = num(tokens[i + c], NaN);
+          if (ok(nullValue) && Math.abs(v - nullValue) < 1e-9) v = NaN;
+          columns[c].push(v);
+        }
+      }
+      const depthIndex = Math.max(0, curveMeta.findIndex(c => /^(DEPT|DEPTH|MD)$/i.test(c.mnemonic)));
+      return {
+        sourceName,
+        sections,
+        well,
+        params,
+        depthMnemonic: curveMeta[depthIndex].mnemonic,
+        depthUnit: curveMeta[depthIndex].unit || 'm',
+        depth: columns[depthIndex],
+        curves: curveMeta.map((meta, i) => ({ ...meta, values: columns[i] || [] }))
+      };
+    }
+
+    function familyFor(curve) {
+      const key = `${curve.mnemonic} ${curve.unit} ${curve.descr}`.toUpperCase();
+      if (/(^|[^A-Z])(GR|CGR|SGR)([^A-Z]|$)|\bAPI\b/.test(key)) return 'GR';
+      if (/\b(ILD|ILM|LLD|LLS|MSFL|AT\d+|RES|RT|RDEP|RMED|RSHAL)\b|OHM/.test(key)) return 'RES';
+      if (/\bSP\b|\bMV\b/.test(key)) return 'SP';
+      if (/\bNPHI\b|NEUT/.test(key)) return 'NPHI';
+      if (/\bRHOB\b|\bDENS\b|G\/CC/.test(key)) return 'RHOB';
+      if (/\bDT\b|\bDTC\b|US\/F|US\/FT/.test(key)) return 'DT';
+      if (/\bCALI\b|\bCAL\b/.test(key)) return 'CALI';
+      return 'OTHER';
+    }
+
+    function standardScale(family) {
+      if (family === 'GR') return { min: 0, max: 150, scale: 'linear' };
+      if (family === 'RES') return { min: 0.2, max: 2000, scale: 'log' };
+      if (family === 'SP') return { min: -100, max: 100, scale: 'linear' };
+      if (family === 'NPHI') return { min: 0.45, max: -0.15, scale: 'linear' };
+      if (family === 'RHOB') return { min: 1.95, max: 2.95, scale: 'linear' };
+      if (family === 'DT') return { min: 40, max: 140, scale: 'linear' };
+      if (family === 'CALI') return { min: 6, max: 20, scale: 'linear' };
+      return { min: NaN, max: NaN, scale: 'linear' };
+    }
+
+    function percentile(values, p) {
+      const sorted = values.filter(ok).sort((a, b) => a - b);
+      if (!sorted.length) return NaN;
+      const idx = (sorted.length - 1) * p;
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      return lo === hi ? sorted[lo] : sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+    }
+
+    function createCurveState(las) {
+      return las.curves.map((curve, index) => {
+        const family = familyFor(curve);
+        const standard = standardScale(family);
+        const values = curve.values.filter(ok);
+        let min = ok(standard.min) ? standard.min : percentile(values, 0.01);
+        let max = ok(standard.max) ? standard.max : percentile(values, 0.99);
+        if (!ok(min) || !ok(max) || min === max) {
+          min = Math.min(...values);
+          max = Math.max(...values);
+        }
+        if (standard.scale === 'log') {
+          min = Math.max(1e-6, min);
+          max = Math.max(min * 1.001, max);
+        }
+        return {
+          id: `curve_${index}`,
+          index,
+          mnemonic: curve.mnemonic,
+          unit: curve.unit,
+          descr: curve.descr,
+          values: curve.values,
+          family,
+          visible: true,
+          color: COLORS[index % COLORS.length],
+          trackId: 'other',
+          scale: standard.scale,
+          min,
+          max
+        };
+      });
+    }
+
+    function initialiseDefaultTracks() {
+      if (!state.curves.length) return;
+      state.tracks = [
+        { id: 'track1', title: 'GR / SP / CALI' },
+        { id: 'track2', title: 'Resistivity' },
+        { id: 'track3', title: 'Density-Neutron' },
+        { id: 'track4', title: 'Sonic' },
+        { id: 'other', title: 'Other' }
+      ];
+      const map = { GR: 'track1', SP: 'track1', CALI: 'track1', RES: 'track2', RHOB: 'track3', NPHI: 'track3', DT: 'track4', OTHER: 'other' };
+      state.curves.forEach(curve => {
+        curve.trackId = map[curve.family] || 'other';
+      });
+    }
+
+    function syncTrackTitles() {
+      state.tracks.forEach((track, index) => {
+        const mnemonics = state.curves
+          .filter(curve => curve.visible && curve.trackId === track.id)
+          .map(curve => curve.mnemonic)
+          .filter(Boolean);
+        if (!mnemonics.length) {
+          track.title = `Track ${index + 1}`;
+          return;
+        }
+        const sample = mnemonics.slice(0, 4).join(' / ');
+        track.title = mnemonics.length > 4 ? `${sample} +${mnemonics.length - 4}` : sample;
+      });
+    }
+
+    function ensureTracks() {
+      if (!state.tracks.length) state.tracks = [{ id: 'other', title: 'Other' }];
+      const known = new Set(state.tracks.map(t => t.id));
+      state.curves.forEach(curve => {
+        if (!known.has(curve.trackId)) curve.trackId = state.tracks[0].id;
+      });
+    }
+
+    function fitDepth() {
+      if (!state.las) return;
+      const depths = state.las.depth.filter(ok);
+      if (!depths.length) return;
+      $('topDepth').value = roundDepth(Math.min(...depths));
+      $('bottomDepth').value = roundDepth(Math.max(...depths));
+    }
+
+    function format(value) {
+      if (!ok(value)) return '';
+      if (Math.abs(value) >= 1000 || (Math.abs(value) > 0 && Math.abs(value) < 0.01)) return value.toExponential(1);
+      return String(Math.round(value * 1000) / 1000);
+    }
+
+    function formatPlain(value, decimals = 3) {
+      if (!ok(value)) return '';
+      const factor = 10 ** decimals;
+      const rounded = Math.round(value * factor) / factor;
+      const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(decimals);
+      return text.replace(/\.?0+$/, '');
+    }
+
+    function formatDepth(value) {
+      if (!ok(value)) return '';
+      const rounded = Math.round(value * 100) / 100;
+      if (Number.isInteger(rounded)) return String(rounded);
+      return rounded.toFixed(2).replace(/\.?0+$/, '');
+    }
+
+    function roundDepth(value) {
+      if (!ok(value)) return value;
+      return Math.round(value * 100) / 100;
+    }
+
+    function renderCurveList() {
+      const root = $('curveList');
+      const query = String($('curveSearch').value || '').trim().toLowerCase();
+      root.innerHTML = '';
+      state.curves
+        .filter(curve => !query || `${curve.mnemonic} ${curve.unit} ${curve.descr} ${curve.family}`.toLowerCase().includes(query))
+        .forEach(curve => {
+          const card = document.createElement('div');
+          card.className = 'curve-card';
+          card.draggable = true;
+          card.dataset.curveId = curve.id;
+          card.innerHTML = `
+            <input type="checkbox" data-action="visible" data-id="${curve.id}" ${curve.visible ? 'checked' : ''}>
+            <div class="curve-main">
+              <div class="curve-name-row">
+                <span class="curve-name">${escapeHtml(curve.mnemonic)} <span class="curve-family">${escapeHtml(curve.unit || '-')}</span></span>
+                <span class="curve-family">${escapeHtml(curve.family)}</span>
+              </div>
+              <div class="curve-description">${escapeHtml(curve.descr || '')}</div>
+              <div class="curve-controls">
+                <label>Track<select data-action="track" data-id="${curve.id}">${state.tracks.map(track => `<option value="${track.id}" ${track.id === curve.trackId ? 'selected' : ''}>${escapeHtml(track.title)}</option>`).join('')}</select></label>
+                <label>Scale<select data-action="scale" data-id="${curve.id}"><option value="linear" ${curve.scale === 'linear' ? 'selected' : ''}>Linear</option><option value="log" ${curve.scale === 'log' ? 'selected' : ''}>Log</option></select></label>
+                <label>Color<input type="color" data-action="color" data-id="${curve.id}" value="${curve.color}"></label>
+              </div>
+              <div class="field-grid">
+                <label>X Min<input type="number" step="any" data-action="min" data-id="${curve.id}" value="${formatPlain(curve.min)}"></label>
+                <label>X Max<input type="number" step="any" data-action="max" data-id="${curve.id}" value="${formatPlain(curve.max)}"></label>
+              </div>
+            </div>`;
+          root.appendChild(card);
+        });
+    }
+
+    function renderTracks() {
+      const root = $('trackList');
+      root.innerHTML = '';
+      state.tracks.forEach((track, index) => {
+        const count = state.curves.filter(curve => curve.visible && curve.trackId === track.id).length;
+        const row = document.createElement('div');
+        row.className = 'track-row';
+        row.dataset.trackId = track.id;
+        row.innerHTML = `<span class="track-swatch"></span><span class="track-name">${escapeHtml(track.title)}</span><span>${count}</span>`;
+        row.addEventListener('dragover', event => {
+          event.preventDefault();
+          row.classList.add('drop-target');
+        });
+        row.addEventListener('dragleave', () => row.classList.remove('drop-target'));
+        row.addEventListener('drop', event => {
+          event.preventDefault();
+          row.classList.remove('drop-target');
+          if (!state.dragCurveId) return;
+          const curve = state.curves.find(item => item.id === state.dragCurveId);
+          if (curve) curve.trackId = track.id;
+          state.dragCurveId = null;
+          renderAll();
+        });
+        row.querySelector('.track-swatch').style.background = COLORS[index % COLORS.length];
+        root.appendChild(row);
+      });
+    }
+
+    function renderHeaderTable() {
+      const root = $('headerTable');
+      if (!state.las) {
+        root.innerHTML = '';
+        return;
+      }
+      const rows = [
+        ['File', state.las.sourceName],
+        ['Depth', `${state.las.depthMnemonic} (${state.las.depthUnit})`],
+        ['Curves', state.las.curves.length],
+        ['Samples', state.las.depth.length],
+        ...state.las.well.slice(0, 12).map(item => [item.mnemonic, item.value || item.descr])
+      ];
+      root.innerHTML = rows.map(row => `<div class="table-row"><span>${escapeHtml(row[0])}</span><span>${escapeHtml(row[1])}</span></div>`).join('');
+    }
+
+    function renderStats() {
+      const root = $('statsTable');
+      root.innerHTML = state.curves.map(curve => {
+        const values = curve.values.filter(ok);
+        const min = values.length ? Math.min(...values) : NaN;
+        const max = values.length ? Math.max(...values) : NaN;
+        return `<div class="table-row"><span>${escapeHtml(curve.mnemonic)}</span><span>${format(min)} to ${format(max)} ${escapeHtml(curve.unit || '')}</span></div>`;
+      }).join('');
+    }
+
+    function valueToX(value, curve, x, width) {
+      const min = num(curve.min);
+      const max = num(curve.max);
+      if (!ok(min) || !ok(max) || min === max) return NaN;
+      if (curve.scale === 'log') {
+        if (value <= 0 || min <= 0 || max <= min) return NaN;
+        return x + ((Math.log10(value) - Math.log10(min)) / (Math.log10(max) - Math.log10(min))) * width;
+      }
+      return x + ((value - min) / (max - min)) * width;
+    }
+
+    function depthToY(depth, top, bottom, y, height) {
+      return y + ((depth - top) / Math.max(1e-9, bottom - top)) * height;
+    }
+
+    function drawPlot() {
+      const svg = $('plotSvg');
+      svg.innerHTML = '';
+      if (!state.las) {
+        svg.setAttribute('viewBox', '0 0 1100 700');
+        svg.setAttribute('width', '1100');
+        svg.setAttribute('height', '700');
+        svg.appendChild(el('rect', { x: 0, y: 0, width: 1100, height: 700, fill: 'var(--plot-bg)' }));
+        svg.appendChild(el('text', { x: 28, y: 42, fill: 'currentColor', 'font-size': 18, 'font-weight': 700 }, 'Open a LAS file to start plotting.'));
+        return;
+      }
+      ensureTracks();
+      const top = num($('topDepth').value);
+      const bottom = num($('bottomDepth').value);
+      if (!ok(top) || !ok(bottom) || bottom <= top) return;
+      const tick = Math.max(0.000001, num($('depthTick').value, 100));
+      const verticalScale = clamp(num($('verticalScale').value, 1.9), 0.7, 5);
+      const requestedTrackWidth = Math.max(90, num($('trackWidth').value, 180));
+      const activeTracks = state.tracks
+        .map(track => ({ ...track, curves: state.curves.filter(curve => curve.visible && curve.trackId === track.id) }))
+        .filter(track => track.curves.length);
+      const plotScroll = $('plotScroll');
+      const margin = { left: 74, top: 82, right: 18, bottom: 28 };
+      const depthWidth = 58;
+      const available = Math.max(760, plotScroll.clientWidth - margin.left - depthWidth - margin.right - 2);
+      const trackWidth = $('layoutMode').value === 'fill' && activeTracks.length
+        ? Math.max(requestedTrackWidth, Math.floor(available / activeTracks.length))
+        : requestedTrackWidth;
+      const trackAreaWidth = Math.max(available, activeTracks.length * trackWidth);
+      const plotHeight = Math.max(2200, Math.min(16000, (bottom - top) * 1.45 * verticalScale));
+      const width = margin.left + depthWidth + trackAreaWidth + margin.right;
+      const height = margin.top + plotHeight + margin.bottom;
+      const plotLeft = margin.left + depthWidth;
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.setAttribute('width', String(width));
+      svg.setAttribute('height', String(height));
+      state.plot = {
+        top,
+        bottom,
+        y: margin.top,
+        height: plotHeight,
+        xMin: margin.left,
+        xMax: margin.left + depthWidth + trackAreaWidth,
+        plotLeft,
+        trackWidth,
+        tracks: activeTracks.map((track, index) => ({
+          ...track,
+          x0: plotLeft + index * trackWidth,
+          x1: plotLeft + (index + 1) * trackWidth
+        }))
+      };
+      svg.appendChild(el('rect', { x: 0, y: 0, width, height, fill: 'var(--plot-bg)' }));
+      svg.appendChild(el('text', { x: margin.left, y: 24, fill: 'currentColor', 'font-size': 16, 'font-weight': 700 }, state.las.sourceName));
+      svg.appendChild(el('text', { x: margin.left, y: 42, fill: 'currentColor', 'font-size': 10 }, `${state.las.depthMnemonic} (${state.las.depthUnit}) | ${state.las.curves.length} curves | ${state.las.depth.length} samples`));
+      svg.appendChild(el('rect', { x: margin.left, y: margin.top, width: depthWidth + trackAreaWidth, height: plotHeight, fill: 'var(--track-bg)', stroke: 'var(--border)' }));
+      const minorStep = tick / 5;
+      if (minorStep > 0) {
+        for (let d = Math.ceil(top / minorStep) * minorStep; d <= bottom + minorStep * 0.0001; d += minorStep) {
+          const ratio = d / tick;
+          const isMajor = Math.abs(ratio - Math.round(ratio)) < 1e-6;
+          if (isMajor) continue;
+          const y = depthToY(d, top, bottom, margin.top, plotHeight);
+          svg.appendChild(el('line', {
+            x1: margin.left + depthWidth - 8,
+            y1: y,
+            x2: margin.left + depthWidth,
+            y2: y,
+            stroke: 'var(--grid)',
+            'stroke-width': 1
+          }));
+        }
+      }
+      for (let d = Math.ceil(top / tick) * tick; d <= bottom + tick * 0.0001; d += tick) {
+        const y = depthToY(d, top, bottom, margin.top, plotHeight);
+        svg.appendChild(el('line', { x1: margin.left, y1: y, x2: margin.left + depthWidth + trackAreaWidth, y2: y, stroke: 'var(--major-grid)', 'stroke-width': 1 }));
+        svg.appendChild(el('line', {
+          x1: margin.left + depthWidth - 14,
+          y1: y,
+          x2: margin.left + depthWidth,
+          y2: y,
+          stroke: 'currentColor',
+          'stroke-width': 1.2
+        }));
+        svg.appendChild(el('text', { x: margin.left + depthWidth - 5, y: y - 2, fill: 'currentColor', 'font-size': 10, 'text-anchor': 'end' }, formatDepth(d)));
+      }
+      svg.appendChild(el('text', { x: margin.left + 6, y: margin.top - 10, fill: 'currentColor', 'font-size': 10, 'font-weight': 700 }, `Depth (${state.las.depthUnit})`));
+      activeTracks.forEach((track, index) => {
+        const x = plotLeft + index * trackWidth;
+        svg.appendChild(el('rect', { x, y: margin.top - 32, width: trackWidth, height: 32, fill: 'var(--track-head)', stroke: 'var(--border)' }));
+        svg.appendChild(el('rect', { x, y: margin.top, width: trackWidth, height: plotHeight, fill: 'none', stroke: 'var(--border)' }));
+        svg.appendChild(el('text', { x: x + trackWidth / 2, y: margin.top - 18, fill: 'currentColor', 'font-size': 10, 'font-weight': 700, 'text-anchor': 'middle' }, track.title));
+        track.curves.forEach((curve, curveIndex) => {
+          svg.appendChild(el('text', { x: x + 5, y: margin.top - 4 + curveIndex * 10, fill: curve.color, 'font-size': 8 }, `${curve.mnemonic} ${curve.scale === 'log' ? 'log' : ''}`));
+          if (curveIndex === 0) {
+            svg.appendChild(el('text', { x: x + 4, y: margin.top - 20, fill: 'currentColor', 'font-size': 8 }, formatPlain(curve.min)));
+            svg.appendChild(el('text', { x: x + trackWidth - 4, y: margin.top - 20, fill: 'currentColor', 'font-size': 8, 'text-anchor': 'end' }, formatPlain(curve.max)));
+          }
+          let d = '';
+          let lastY = null;
+          for (let i = 0; i < state.las.depth.length; i += 1) {
+            const md = state.las.depth[i];
+            const value = curve.values[i];
+            if (!ok(md) || !ok(value) || md < top || md > bottom) continue;
+            const y = depthToY(md, top, bottom, margin.top, plotHeight);
+            const rawX = valueToX(value, curve, x, trackWidth);
+            if (!ok(rawX)) continue;
+            if ($('renderMode').value === 'fast' && lastY !== null && Math.abs(y - lastY) < 0.7) continue;
+            lastY = y;
+            const px = clamp(rawX, x, x + trackWidth);
+            d += d ? ` L ${px.toFixed(2)} ${y.toFixed(2)}` : `M ${px.toFixed(2)} ${y.toFixed(2)}`;
+          }
+          svg.appendChild(el('path', { d, fill: 'none', stroke: curve.color, 'stroke-width': 1.15, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+        });
+      });
+      state.hoverLine = el('line', {
+        x1: margin.left,
+        x2: margin.left + depthWidth + trackAreaWidth,
+        y1: margin.top,
+        y2: margin.top,
+        stroke: 'var(--primary)',
+        'stroke-width': 1,
+        'stroke-dasharray': '4 3',
+        'pointer-events': 'none',
+        visibility: 'hidden'
+      });
+      svg.appendChild(state.hoverLine);
+      $('plotStatus').textContent = `${activeTracks.length} tracks visible`;
+    }
+
+    function renderAll() {
+      ensureTracks();
+      syncTrackTitles();
+      renderCurveList();
+      renderTracks();
+      renderHeaderTable();
+      renderStats();
+      drawPlot();
+      updateStatus();
+    }
+
+    function updateStatus() {
+      $('saveStatus').textContent = state.las ? `${state.las.sourceName}` : 'No LAS loaded';
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    async function importLasFile(file) {
+      const text = await file.text();
+      state.las = parseLas(text, file.name || 'Imported LAS');
+      state.curves = createCurveState(state.las);
+      initialiseDefaultTracks();
+      fitDepth();
+      renderAll();
+    }
+
+    function depthAtClientY(clientY) {
+      if (!state.plot) return NaN;
+      const rect = $('plotSvg').getBoundingClientRect();
+      const svgY = (clientY - rect.top) * ($('plotSvg').viewBox.baseVal.height / Math.max(1, rect.height));
+      return state.plot.top + ((svgY - state.plot.y) / state.plot.height) * (state.plot.bottom - state.plot.top);
+    }
+
+    function svgPointFromClient(clientX, clientY) {
+      const rect = $('plotSvg').getBoundingClientRect();
+      const vb = $('plotSvg').viewBox.baseVal;
+      const scaleX = vb.width / Math.max(1, rect.width);
+      const scaleY = vb.height / Math.max(1, rect.height);
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function nearestDepthIndex(depth) {
+      if (!state.las || !ok(depth)) return -1;
+      let bestIndex = -1;
+      let bestDelta = Infinity;
+      for (let i = 0; i < state.las.depth.length; i += 1) {
+        const md = state.las.depth[i];
+        if (!ok(md)) continue;
+        const delta = Math.abs(md - depth);
+        if (delta < bestDelta) {
+          bestDelta = delta;
+          bestIndex = i;
+        }
+      }
+      return bestIndex;
+    }
+
+    function updateHoverReadout(clientX, clientY) {
+      const readout = $('hoverReadout');
+      if (!state.las || !state.plot) {
+        readout.classList.remove('active');
+        if (state.hoverLine) state.hoverLine.setAttribute('visibility', 'hidden');
+        return;
+      }
+      const p = svgPointFromClient(clientX, clientY);
+      const inY = p.y >= state.plot.y && p.y <= state.plot.y + state.plot.height;
+      const inX = p.x >= state.plot.xMin && p.x <= state.plot.xMax;
+      if (!inX || !inY) {
+        readout.classList.remove('active');
+        if (state.hoverLine) state.hoverLine.setAttribute('visibility', 'hidden');
+        return;
+      }
+      const depth = depthAtClientY(clientY);
+      const index = nearestDepthIndex(depth);
+      if (!ok(depth) || index < 0) {
+        readout.classList.remove('active');
+        if (state.hoverLine) state.hoverLine.setAttribute('visibility', 'hidden');
+        return;
+      }
+      const y = depthToY(state.las.depth[index], state.plot.top, state.plot.bottom, state.plot.y, state.plot.height);
+      if (state.hoverLine) {
+        state.hoverLine.setAttribute('y1', String(y));
+        state.hoverLine.setAttribute('y2', String(y));
+        state.hoverLine.setAttribute('visibility', 'visible');
+      }
+      const md = state.las.depth[index];
+      const hoveredTrack = (state.plot.tracks || []).find(track => p.x >= track.x0 && p.x <= track.x1) || null;
+      const curves = hoveredTrack ? hoveredTrack.curves : [];
+      const preview = curves.slice(0, 8).map(curve => {
+        const value = curve.values[index];
+        return `<div class="line">${escapeHtml(curve.mnemonic)}: ${ok(value) ? format(value) : '-'} ${escapeHtml(curve.unit || '')}</div>`;
+      });
+      if (curves.length > 8) preview.push(`<div class="line">+${curves.length - 8} more curves</div>`);
+      const title = hoveredTrack ? `${hoveredTrack.title} | Depth: ${formatDepth(md)} ${escapeHtml(state.las.depthUnit || '')}` : `Depth: ${formatDepth(md)} ${escapeHtml(state.las.depthUnit || '')}`;
+      readout.innerHTML = `<div class="head">${title}</div>${preview.join('')}`;
+      readout.classList.add('active');
+      const host = $('plotScroll').getBoundingClientRect();
+      const localX = clientX - host.left;
+      const localY = clientY - host.top;
+      const maxX = Math.max(10, $('plotScroll').clientWidth - 240);
+      const maxY = Math.max(10, $('plotScroll').clientHeight - 140);
+      readout.style.left = `${clamp(localX + 12, 6, maxX)}px`;
+      readout.style.top = `${clamp(localY + 12, 6, maxY)}px`;
+      $('cursorStatus').textContent = `Depth: ${formatDepth(md)} ${state.las?.depthUnit || ''}`;
+    }
+
+    function setDepthWindow(top, bottom) {
+      let nextTop = Number(top);
+      let nextBottom = Number(bottom);
+      if (!ok(nextTop) || !ok(nextBottom)) return;
+      if (nextBottom <= nextTop) nextBottom = nextTop + 0.01;
+      if (nextTop < 0) {
+        const span = nextBottom - nextTop;
+        nextTop = 0;
+        nextBottom = Math.max(0.01, span);
+      }
+      if (nextBottom < 0.01) nextBottom = 0.01;
+      $('topDepth').value = roundDepth(nextTop);
+      $('bottomDepth').value = roundDepth(nextBottom);
+      drawPlot();
+    }
+
+    function zoomDepth(factor, anchorClientY = null) {
+      if (!state.las) return;
+      const top = num($('topDepth').value);
+      const bottom = num($('bottomDepth').value);
+      const span = bottom - top;
+      const anchor = ok(anchorClientY) ? depthAtClientY(anchorClientY) : top + span / 2;
+      const ratio = clamp((anchor - top) / Math.max(1e-9, span), 0, 1);
+      const nextSpan = clamp(span * factor, 0.1, 1e8);
+      const nextTop = anchor - nextSpan * ratio;
+      setDepthWindow(nextTop, nextTop + nextSpan);
+    }
+
+    function panDepth(ratio) {
+      const top = num($('topDepth').value);
+      const bottom = num($('bottomDepth').value);
+      const delta = (bottom - top) * ratio;
+      setDepthWindow(top + delta, bottom + delta);
+    }
+
+    function setNightMode(enabled) {
+      document.body.classList.toggle('night-mode', Boolean(enabled));
+      $('nightMode').checked = Boolean(enabled);
+      try { localStorage.setItem('rstools-theme-override-v1', JSON.stringify({ enabled: Boolean(enabled), expiresAt: Date.now() + 86400000 })); } catch (err) {}
+      drawPlot();
+    }
+
+    function bindEvents() {
+      $('openFileBtn').addEventListener('click', () => $('fileInput').click());
+      $('fileInput').addEventListener('change', async event => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        try { await importLasFile(file); }
+        catch (err) { alert(`LAS import failed: ${err.message || err}`); }
+        finally { event.target.value = ''; }
+      });
+      $('addTrackBtn').addEventListener('click', () => {
+        const next = state.tracks.length + 1;
+        state.tracks.push({ id: `custom_${Date.now()}`, title: `Track ${next}` });
+        renderAll();
+      });
+      $('addTrackInlineBtn').addEventListener('click', () => {
+        const next = state.tracks.length + 1;
+        state.tracks.push({ id: `custom_${Date.now()}_${next}`, title: `Track ${next}` });
+        renderAll();
+      });
+      $('fitDepthBtn').addEventListener('click', () => { fitDepth(); drawPlot(); });
+      $('focusBtn').addEventListener('click', () => {
+        $('workspace').classList.toggle('focus');
+        $('focusBtn').textContent = $('workspace').classList.contains('focus') ? 'Show Panels' : 'Focus Plot';
+        drawPlot();
+      });
+      $('zoomInBtn').addEventListener('click', () => zoomDepth(0.82));
+      $('zoomOutBtn').addEventListener('click', () => zoomDepth(1.22));
+      $('panUpBtn').addEventListener('click', () => panDepth(-0.12));
+      $('panDownBtn').addEventListener('click', () => panDepth(0.12));
+      ['topDepth', 'bottomDepth', 'depthTick', 'verticalScale', 'trackWidth', 'layoutMode', 'renderMode'].forEach(id => $(id).addEventListener('input', drawPlot));
+      $('curveSearch').addEventListener('input', renderCurveList);
+      $('curveList').addEventListener('input', event => {
+        const id = event.target.dataset.id;
+        const action = event.target.dataset.action;
+        const curve = state.curves.find(item => item.id === id);
+        if (!curve) return;
+        if (action === 'visible') curve.visible = event.target.checked;
+        if (action === 'track') curve.trackId = event.target.value;
+        if (action === 'scale') curve.scale = event.target.value === 'log' ? 'log' : 'linear';
+        if (action === 'color') curve.color = event.target.value;
+        if (action === 'min') curve.min = num(event.target.value, curve.min);
+        if (action === 'max') curve.max = num(event.target.value, curve.max);
+        syncTrackTitles();
+        renderTracks();
+        renderStats();
+        drawPlot();
+      });
+      $('curveList').addEventListener('dragstart', event => {
+        const card = event.target.closest('.curve-card');
+        if (!card) return;
+        state.dragCurveId = card.dataset.curveId;
+        card.classList.add('dragging');
+      });
+      $('curveList').addEventListener('dragend', event => {
+        const card = event.target.closest('.curve-card');
+        if (card) card.classList.remove('dragging');
+      });
+      $('plotScroll').addEventListener('wheel', event => {
+        if (!state.las) return;
+        event.preventDefault();
+        if (event.ctrlKey || event.metaKey) {
+          zoomDepth(event.deltaY > 0 ? 1.12 : 0.89, event.clientY);
+        } else {
+          const viewport = Math.max(1, $('plotScroll').clientHeight);
+          const rawRatio = (event.deltaY / viewport) * 0.28;
+          const smoothRatio = clamp(rawRatio, -0.03, 0.03);
+          panDepth(smoothRatio);
+        }
+      }, { passive: false });
+      $('plotScroll').addEventListener('pointerdown', event => {
+        if (!state.las) return;
+        state.depthDrag = { y: event.clientY };
+        $('plotScroll').classList.add('dragging');
+        $('plotScroll').setPointerCapture(event.pointerId);
+      });
+      $('plotScroll').addEventListener('pointermove', event => {
+        if (state.depthDrag) {
+          const dy = event.clientY - state.depthDrag.y;
+          state.depthDrag.y = event.clientY;
+          const ratio = dy / Math.max(1, $('plotScroll').clientHeight);
+          panDepth(ratio);
+        }
+        updateHoverReadout(event.clientX, event.clientY);
+      });
+      const stopDrag = event => {
+        state.depthDrag = null;
+        $('plotScroll').classList.remove('dragging');
+        try { $('plotScroll').releasePointerCapture(event.pointerId); } catch (err) {}
+      };
+      $('plotScroll').addEventListener('pointerup', stopDrag);
+      $('plotScroll').addEventListener('pointercancel', stopDrag);
+      $('plotScroll').addEventListener('pointerleave', () => {
+        $('hoverReadout').classList.remove('active');
+        if (state.hoverLine) state.hoverLine.setAttribute('visibility', 'hidden');
+        $('cursorStatus').textContent = `Depth: -`;
+      });
+      $('nightMode').addEventListener('change', event => setNightMode(event.target.checked));
+      $('backNavBtn').addEventListener('click', () => history.back());
+      $('forwardNavBtn').addEventListener('click', () => history.forward());
+      document.querySelectorAll('.tab-btn').forEach(button => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn').forEach(btn => btn.setAttribute('aria-selected', String(btn === button)));
+          document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+          $(`tab-${button.dataset.tab}`).classList.add('active');
+        });
+      });
+      window.addEventListener('resize', drawPlot);
+    }
+
+    function initialise() {
+      bindEvents();
+      try {
+        const pref = JSON.parse(localStorage.getItem('rstools-theme-override-v1') || 'null');
+        setNightMode(Boolean(pref?.enabled));
+      } catch (err) {
+        setNightMode(false);
+      }
+      drawPlot();
+    }
+
+    initialise();
+  </script>
+  <script src="search-ui.js" defer></script>
+</body>
+</html>

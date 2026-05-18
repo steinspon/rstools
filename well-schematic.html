@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -745,6 +745,7 @@
     const MIN_VERTICAL_SCALE = 0.45;
     const MAX_VERTICAL_SCALE = 14;
     const MAX_PLOT_HEIGHT = 18000;
+    const MAX_LOCAL_DRAFT_BYTES = 2_000_000;
     const FIT_DEPTH_PAD_FACTOR = 0;
     const FIT_DEPTH_PAD_MAX = 0;
     const RENDER_BOTTOM_BUFFER_FACTOR = 0;
@@ -818,7 +819,8 @@
       wireToSurface: 'Wire to Surface',
       wireLineColor: 'Wireline Colour',
       wireLineWidth: 'Wireline Width',
-      wireLineType: 'Wireline Type'
+      wireLineType: 'Wireline Type',
+      restrictionIdIn: 'Restriction ID (in)'
     };
 
     const quickAddActions = {
@@ -830,10 +832,10 @@
       tubing: () => openAddDialog('completion', { type:'tubing', label:'5-1/2 in Tubing', odIn:5.5, topMD:0, bottomMD:4050 }),
       cement_sheath: () => openAddDialog('cement', { label:'Annular fill', material:'cement', insideStringId:'production_casing', outsideStringId:'hole:hole_12_25', topMD:1800, bottomMD:4200 }),
       production_packer: () => openAddDialog('components', { type:'annular_packer', label:'Packer', md:3980, insideStringId:'production_casing', outsideStringId:'hole:hole_12_25' }),
+      restriction_general: () => openAddDialog('components', { type:'restriction_general', label:'Restriction, General', topMD:3960, bottomMD:4000, host:'production_casing', restrictionIdIn:3.5, labelPosition:'top' }),
       bridge_plug: () => openAddDialog('components', { type:'bridge_plug', label:'Bridge plug', topMD:4450, bottomMD:4500, host:'production_casing', labelPosition:'middle' }),
       cement_plug: () => openAddDialog('components', { type:'cement_plug', label:'Liquid Cast Plug', topMD:4300, bottomMD:4450, host:'production_casing', material:'cement', labelPosition:'top' }),
       section_mill: () => openAddDialog('components', { type:'section_mill', label:'Section mill', topMD:1800, bottomMD:1950, host:'production_casing', labelPosition:'top' }),
-      dhsv: () => openAddDialog('components', { type:'dhsv', label:'DHSV', md:250, host:'prod_tubing' }),
       perforations: () => openAddDialog('components', { type:'perforations', label:'Perforations', topMD:4550, bottomMD:4750, status:'open', perfLength:18, fillColor:'#ffffff', lineColor:'#210d2a', lineWidth:1 }),
       downhole_device_circle: () => openAddDialog('components', { type:'downhole_device_circle', label:'Circle', md:2500, diameterIn:2, lineColor:'#210d2a', lineWidth:1.2, lineType:'solid', fillColor:'#ffffff', text:'', textColor:'#210d2a', wireToSurface:false, wireLineColor:'#210d2a', wireLineWidth:1, wireLineType:'solid', host:'' }),
       downhole_device_rectangle: () => openAddDialog('components', { type:'downhole_device_rectangle', label:'Rectangle', topMD:2450, bottomMD:2550, diameterIn:2, lineColor:'#210d2a', lineWidth:1.2, lineType:'solid', fillColor:'#ffffff', text:'', textColor:'#210d2a', textRotationDeg:0, wireToSurface:false, wireLineColor:'#210d2a', wireLineWidth:1, wireLineType:'solid', host:'' }),
@@ -845,7 +847,7 @@
     const quickAddGroups = [
       { label:'Templates', items:[['template_rocksolid_alpha','RockSolid Example (alpha)']] },
       { label:'Well Structure', items:[['open_hole','Open hole section'],['surface_casing','Surface casing'],['intermediate_casing','Intermediate casing'],['production_casing','Production casing'],['production_liner','Production liner']] },
-      { label:'Completion', items:[['tubing','Tubing'],['production_packer','Packer'],['dhsv','DHSV']] },
+      { label:'Completion', items:[['tubing','Tubing'],['production_packer','Packer'],['restriction_general','Restriction, General']] },
       { label:'Barriers', items:[['cement_sheath','Annular fill'],['bridge_plug','Bridge plug'],['cement_plug','Liquid Cast Plugs (e.g., Cement)'],['section_mill','Section mill']] },
       {
         label:'Bottom Hole Assemblies (BHAs)',
@@ -883,7 +885,7 @@
     "calloutLineColor": "#000000",
     "calloutHaloEnabled": true,
     "calloutHaloColor": "#ffffff",
-    "verticalScale": 0.957,
+    "verticalScale": 0.665,
     "plotBgDay": "#ffffff",
     "plotBgNight": "#242424",
     "showPlotLogo": true,
@@ -1000,6 +1002,23 @@
       "labelLocked": false
     },
     {
+      "showDepthTop": false,
+      "showDepthBase": false,
+      "id": "component_mpbpzlqc_c94w",
+      "type": "restriction_general",
+      "label": "Restriction",
+      "host": "string_mp8n34uy_93eg",
+      "labelPosition": "middle",
+      "visible": true,
+      "topMD": 494.8900554184159,
+      "bottomMD": 497.23640817747656,
+      "restrictionIdIn": 3.5,
+      "fillColor": "#000000",
+      "lineColor": "#210d2a",
+      "annotationMD": 496,
+      "labelLocked": false
+    },
+    {
       "showDepthTop": true,
       "showDepthBase": false,
       "id": "component_mp9rmbaj_p078",
@@ -1029,8 +1048,8 @@
       "host": "",
       "labelPosition": "top",
       "visible": true,
-      "topMD": 1695.1449696626066,
-      "bottomMD": 1698.2352879306377,
+      "topMD": 1695.2749251034236,
+      "bottomMD": 1698.3652433714547,
       "diameterIn": 1.5,
       "lineColor": "#210d2a",
       "lineWidth": 1.2,
@@ -1257,63 +1276,7 @@
 };
 
     function defaultSchematic() {
-      return {
-        schemaVersion: '1.0',
-        wellInfo: {
-          operator: 'Interwell', wellName: 'Example Well A-01', field: 'Example Field', country: '',
-          wellType: 'Producer', datum: 'RKB', rkbM: 0, waterDepthM: null, status: 'as-built',
-          revision: 'Rev A', date: new Date().toISOString().slice(0, 10),
-          inclinationDeg: 0, azimuthDeg: 0
-        },
-        plotSettings: {
-          depthUnit: 'm', topDepth: 0, bottomDepth: 5000, majorTick: 500, minorTick: 100, calloutLineColor: '#AB4CE4',
-          calloutHaloEnabled: true, calloutHaloColor: '#ffffff', verticalScale: 1,
-          plotBgDay: '#ffffff', plotBgNight: '#6b6b6b',
-          showPlotLogo: true,
-          showLithology: true, showAnnotations: true, theme: 'day'
-        },
-        holeSections: [
-          { id:'hole_36', label:'36 in conductor hole', diameterIn:36, topMD:0, bottomMD:150, visible:true },
-          { id:'hole_26', label:'26 in surface hole', diameterIn:26, topMD:0, bottomMD:700, visible:true },
-          { id:'hole_17_5', label:'17-1/2 in intermediate hole', diameterIn:17.5, topMD:700, bottomMD:2200, visible:true },
-          { id:'hole_12_25', label:'12-1/4 in production hole', diameterIn:12.25, topMD:2200, bottomMD:4200, visible:true },
-          { id:'hole_8_5', label:'8-1/2 in liner hole', diameterIn:8.5, topMD:4200, bottomMD:5000, visible:true }
-        ],
-        strings: [
-          { id:'conductor', type:'casing', label:'30 in Conductor', odIn:30, weight:'', wallThickness:8, topMD:0, bottomMD:150, shoeMD:150, annotationEnabled:true, annotationMD:null, color:null, visible:true },
-          { id:'surface_casing', type:'casing', label:'20 in Surface Casing', odIn:20, weight:'', wallThickness:8, topMD:0, bottomMD:700, shoeMD:700, annotationEnabled:true, annotationMD:null, color:null, visible:true },
-          { id:'intermediate_casing', type:'casing', label:'13-3/8 in Intermediate Casing', odIn:13.375, weight:'', wallThickness:8, topMD:0, bottomMD:2200, shoeMD:2200, annotationEnabled:true, annotationMD:null, color:null, visible:true },
-          { id:'production_casing', type:'casing', label:'9-5/8 in Production Casing', odIn:9.625, weight:'', wallThickness:8, topMD:0, bottomMD:4200, shoeMD:4200, annotationEnabled:true, annotationMD:null, color:null, visible:true },
-          { id:'production_liner', type:'liner', label:'7 in Production Liner', odIn:7, weight:'', wallThickness:8, topMD:3900, bottomMD:5000, shoeMD:5000, annotationEnabled:true, annotationMD:null, color:null, visible:true }
-        ],
-        cement: [
-          { id:'cement_conductor', label:'Conductor cement', material:'cement', insideStringId:'conductor', outsideStringId:'hole:hole_36', topMD:0, bottomMD:150, visible:true },
-          { id:'cement_surface', label:'Surface casing cement', material:'cement', insideStringId:'surface_casing', outsideStringId:'hole:hole_26', topMD:0, bottomMD:700, visible:true },
-          { id:'cement_intermediate', label:'Intermediate casing cement', material:'cement', insideStringId:'intermediate_casing', outsideStringId:'hole:hole_17_5', topMD:650, bottomMD:2200, visible:true },
-          { id:'cement_production', label:'Production casing cement', material:'cement', insideStringId:'production_casing', outsideStringId:'hole:hole_12_25', topMD:1850, bottomMD:4200, visible:true },
-          { id:'cement_liner', label:'Liner cement', material:'cement', insideStringId:'production_liner', outsideStringId:'hole:hole_8_5', topMD:3900, bottomMD:5000, visible:true }
-        ],
-        completion: [
-          { id:'prod_tubing', type:'tubing', label:'5-1/2 in Tubing', odIn:5.5, wallThickness:8, topMD:0, bottomMD:4050, annotationEnabled:true, annotationMD:null, visible:true }
-        ],
-        components: [
-          { id:'packer_1', type:'packer', label:'Production packer', md:3980, host:'production_casing', visible:true },
-          { id:'perfs_1', type:'perforations', label:'Perforations', topMD:4550, bottomMD:4750, spf:6, phase:60, status:'open', visible:true },
-          { id:'pbtd_1', type:'pbtd', label:'PBTD', md:4900, host:'production_liner', visible:true },
-          { id:'td_1', type:'td', label:'TD', md:5000, host:'production_liner', visible:true }
-        ],
-        hiddenSections: [],
-        formations: [
-          { id:'formation_1', name:'Top Chalk', topMD:3200, bottomMD:3800, lithology:'chalk', color:null, visible:true },
-          { id:'formation_2', name:'Reservoir A', topMD:4050, bottomMD:4550, lithology:'sandstone', color:null, visible:true },
-          { id:'formation_3', name:'Reservoir B', topMD:4550, bottomMD:4900, lithology:'sandstone', color:null, visible:true }
-        ],
-        annotations: [
-          { id:'note_1', targetType:'component', targetId:'packer_1', text:'Check packer envelope', side:'right' },
-          { id:'note_2', targetType:'component', targetId:'perfs_1', text:'Open perforations 4550-4750 m', side:'right' }
-        ],
-        notes: 'Default engineering example for a nested production well with liner and completion.'
-      };
+      return clone(ROCKSOLID_TEMPLATE_ALPHA);
     }
 
     function emptySchematic() {
@@ -1367,6 +1330,15 @@
     function depthSuffixText(item) {
       const showTop = item?.showDepthTop === true;
       const showBase = item?.showDepthBase === true;
+      if (item?.type === 'restriction_general' && String(item?.labelPosition || 'top').toLowerCase() === 'middle') {
+        if (!showTop) return '';
+        const unit = schematic?.plotSettings?.depthUnit || 'm';
+        const topValRaw = num(item?.topMD, NaN);
+        const bottomValRaw = num(item?.bottomMD, NaN);
+        if (!Number.isFinite(topValRaw) || !Number.isFinite(bottomValRaw)) return '';
+        const midVal = formatDepthOneDecimal((topValRaw + bottomValRaw) / 2);
+        return midVal ? ` (${midVal} ${unit})` : '';
+      }
       if (item?.type === 'downhole_device_circle') {
         if (!showTop) return '';
         const unit = schematic?.plotSettings?.depthUnit || 'm';
@@ -1391,26 +1363,48 @@
     }
 
     function initialise() {
+      safeBootIfRequested();
       schematic = normalizeSchematic(loadLocal() || defaultSchematic());
+      applyFitDepthWindowToPlotSettings();
       selected = null;
       buildStaticUi();
       bindEvents();
       setNightMode(resolveNightModePreference());
       scheduleThemeBoundarySync();
-      renderAll(false);
+      try {
+        renderAll(false);
+      } catch (err) {
+        // Recovery path for corrupted/unsafe saved view state.
+        schematic = normalizeSchematic(defaultSchematic());
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(schematic)); } catch (storageErr) {}
+        renderAll(false);
+      }
       markSavedChanges();
       historyManager.isReady = true;
       captureHistorySnapshot();
       updateHistoryButtons();
     }
 
+    function safeBootIfRequested() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('safe') !== '1') return;
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (err) {}
+    }
+
     function loadLocal() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return null;
+        if (raw.length > MAX_LOCAL_DRAFT_BYTES) {
+          try { localStorage.removeItem(STORAGE_KEY); } catch (removeErr) {}
+          return null;
+        }
         const parsed = JSON.parse(raw);
         return parsed && parsed.schemaVersion === '1.0' ? parsed : null;
       } catch (err) {
+        try { localStorage.removeItem(STORAGE_KEY); } catch (removeErr) {}
         return null;
       }
     }
@@ -2160,7 +2154,7 @@
     function renderAddDialogFields() {
       if (!pendingAddDialog) return;
       const { collection, draft } = pendingAddDialog;
-      const fields = fieldsForDialog(collection, draft).filter(field => field !== 'id');
+      const fields = fieldsForDialog(collection, draft).filter(field => field !== 'id' && field !== 'type');
       const rows = [];
       if ((collection === 'strings' || collection === 'completion') && draft.odIn !== undefined) {
         rows.push(`<label>Typical Size<select data-add-field="_typicalSize">${typicalSizeOptions(draft).map(opt => `<option value="${esc(opt.value)}" ${opt.selected ? 'selected' : ''}>${esc(opt.label)}</option>`).join('')}</select></label>`);
@@ -2173,6 +2167,9 @@
       let label = fieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
       if (field === 'showDepthTop' && pendingAddDialog?.collection === 'components' && pendingAddDialog?.draft?.type === 'downhole_device_circle') {
         label = 'Label Suffix: Depth';
+      }
+      if (field === 'showDepthTop' && pendingAddDialog?.collection === 'components' && pendingAddDialog?.draft?.type === 'restriction_general' && String(pendingAddDialog?.draft?.labelPosition || 'top').toLowerCase() === 'middle') {
+        label = 'Label Suffix: Mid Depth';
       }
       if (field === 'fillColor') {
         const color = colorInputValue(value, defaultFillColorForItem(pendingAddDialog?.collection, pendingAddDialog?.draft));
@@ -2290,7 +2287,7 @@
       if (!draft || !draft.type) return draft;
       if (draft.showDepthTop === undefined) draft.showDepthTop = false;
       if (draft.showDepthBase === undefined) draft.showDepthBase = false;
-      const intervalTypes = ['cement_plug', 'perforations', 'section_mill', 'bridge_plug'];
+      const intervalTypes = ['cement_plug', 'perforations', 'section_mill', 'bridge_plug', 'restriction_general'];
       if (intervalTypes.includes(draft.type)) {
         if (draft.md !== undefined && (draft.topMD === undefined || draft.topMD === null || draft.topMD === '')) {
           draft.topMD = num(draft.md) - 25;
@@ -2311,6 +2308,14 @@
       }
       if (draft.type === 'bridge_plug') {
         if (!draft.labelPosition) draft.labelPosition = 'middle';
+        if (!draft.fillColor) draft.fillColor = '#ffffff';
+        if (!draft.lineColor) draft.lineColor = '#210d2a';
+      }
+      if (draft.type === 'restriction_general') {
+        if (!draft.labelPosition) draft.labelPosition = 'top';
+        if (!draft.host) draft.host = '';
+        if (!(num(draft.restrictionIdIn, 0) > 0)) draft.restrictionIdIn = 2;
+        if (String(draft.labelPosition || 'top').toLowerCase() === 'middle') draft.showDepthBase = false;
         if (!draft.fillColor) draft.fillColor = '#ffffff';
         if (!draft.lineColor) draft.lineColor = '#210d2a';
       }
@@ -2372,6 +2377,12 @@
       if (draft.type === 'cement_plug') return [...common, 'topMD','bottomMD','host','material','labelPosition','showDepthTop','showDepthBase','fillColor','visible'];
       if (draft.type === 'section_mill') return [...common, 'topMD','bottomMD','host','labelPosition','showDepthTop','showDepthBase','fillColor','visible'];
       if (draft.type === 'bridge_plug') return [...common, 'topMD','bottomMD','host','labelPosition','showDepthTop','showDepthBase','fillColor','lineColor','visible'];
+      if (draft.type === 'restriction_general') {
+        const isMiddle = String(draft.labelPosition || 'top').toLowerCase() === 'middle';
+        return isMiddle
+          ? [...common, 'topMD','bottomMD','host','restrictionIdIn','labelPosition','showDepthTop','fillColor','lineColor','visible']
+          : [...common, 'topMD','bottomMD','host','restrictionIdIn','labelPosition','showDepthTop','showDepthBase','fillColor','lineColor','visible'];
+      }
       if (draft.type === 'annular_packer') return [...common, 'md','insideStringId','outsideStringId','showDepthTop','fillColor','lineColor','visible'];
       if (draft.type === 'perforations') return [...common, 'topMD','bottomMD','host','showDepthTop','showDepthBase','status','perfLength','fillColor','lineColor','lineWidth','visible'];
       if (draft.type === 'downhole_device_circle') return [...common, 'md','diameterIn','host','showDepthTop','lineColor','lineWidth','lineType','fillColor','text','textColor','wireToSurface','wireLineColor','wireLineWidth','wireLineType','visible'];
@@ -2438,7 +2449,9 @@
       const item = findItem(selected.collection, selected.id);
       if (!item) { selected = null; renderProperties(); return; }
       document.getElementById('selectionStatus').textContent = `${collectionDefs[selected.collection].singular}: ${itemTitle(item)}`;
-      const fields = fieldsForDialog(selected.collection, item).filter(field => item[field] !== undefined || ['id','label','name','visible'].includes(field));
+      const fields = fieldsForDialog(selected.collection, item)
+        .filter(field => field !== 'id' && field !== 'type')
+        .filter(field => item[field] !== undefined || ['label','name','visible'].includes(field));
       panel.innerHTML = `
         <p class="selected-path">${esc(collectionDefs[selected.collection].title)} / ${esc(itemTitle(item))}</p>
         <div class="form-grid">${fields.map(field => propertyFieldHtml(field, item[field])).join('')}</div>
@@ -2454,6 +2467,7 @@
       if (field === 'showDepthTop' && selected?.collection === 'components') {
         const currentItem = findItem(selected.collection, selected.id);
         if (currentItem?.type === 'downhole_device_circle') label = 'Label Suffix: Depth';
+        if (currentItem?.type === 'restriction_general' && String(currentItem?.labelPosition || 'top').toLowerCase() === 'middle') label = 'Label Suffix: Mid Depth';
       }
       if (field === 'fillColor') {
         const item = selected ? findItem(selected.collection, selected.id) : null;
@@ -2541,7 +2555,7 @@
       const type = String(componentDraft?.type || '').toLowerCase();
       const tubularHostTypes = new Set([
         'cement_plug', 'section_mill', 'bridge_plug', 'packer', 'mechanical_plug',
-        'tubing_plug', 'dhsv', 'sleeve', 'mandrel', 'nipple', 'perforations',
+        'tubing_plug', 'dhsv', 'sleeve', 'mandrel', 'nipple', 'perforations', 'restriction_general',
         'downhole_device_circle', 'downhole_device_rectangle'
       ]);
       const boreHostTypes = new Set(['cement_plug', 'section_mill', 'bridge_plug']);
@@ -2595,11 +2609,16 @@
     function depthStart(item) { return num(item.topMD, num(item.md, 0)); }
 
     function fitDepthRange() {
+      if (!applyFitDepthWindowToPlotSettings()) return;
+      renderAll();
+    }
+
+    function applyFitDepthWindowToPlotSettings() {
       const all = ['holeSections','strings','cement','completion','components','formations']
         .flatMap(key => (schematic[key] || []).filter(viz));
       const tops = all.map(depthStart).filter(Number.isFinite);
       const bottoms = all.map(item => num(item.bottomMD, num(item.md, 0))).filter(Number.isFinite);
-      if (!tops.length || !bottoms.length) return;
+      if (!tops.length || !bottoms.length) return false;
       const minTop = Math.min(...tops);
       const maxBottom = Math.max(...bottoms);
       const span = Math.max(MIN_VIEW_SPAN, maxBottom - minTop);
@@ -2609,7 +2628,7 @@
       const ticks = resolveDepthTicks(num(schematic.plotSettings.topDepth), num(schematic.plotSettings.bottomDepth), true);
       schematic.plotSettings.minorTick = ticks.minor;
       schematic.plotSettings.majorTick = ticks.major;
-      renderAll();
+      return true;
     }
 
     function adjustVerticalScale(multiplier) {
@@ -2727,6 +2746,16 @@
             warnings.push(`${itemTitle(item)}: host must reference a tubular (string/completion) or open hole section (hole:...).`);
           }
         }
+        if (type === 'restriction_general') {
+          if (!item.host) {
+            warnings.push(`${itemTitle(item)}: host must be set to a tubular for restriction components.`);
+          } else if (!tubularIds.has(String(item.host))) {
+            warnings.push(`${itemTitle(item)}: host must reference a tubular (string/completion).`);
+          }
+          if (!(num(item.restrictionIdIn, 0) > 0)) {
+            warnings.push(`${itemTitle(item)}: restriction ID must be greater than zero.`);
+          }
+        }
       });
       return warnings;
     }
@@ -2803,7 +2832,7 @@
       const layerTopDevices = el('g', { id:'layer-top-devices' });
       const layerCursor = el('g', { id:'layer-cursor-guide' });
       [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill, layerOverlay, layerTopDevices].forEach(layer => svg.appendChild(layer));
-      applyPlotAreaClip(svg, [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill], margin, width, plotHeight);
+      applyPlotAreaClip(svg, [layerHole, layerFill, layerTubular, layerComponents, layerComponentsPostMill, layerTopDevices], margin, width, plotHeight);
       applySectionMillMasks(svg, [layerFill, layerTubular, layerComponents], cx, width, height, top, bottom, margin, plotHeight);
 
       if (ps.showLithology) drawFormationGuideLines(layerHole, margin, width, top, bottom, plotHeight);
@@ -3544,6 +3573,51 @@
       });
       return visible;
     }
+
+    function drawWireToSurface(g, cx, startMdRaw, endMdRaw, top, bottom, margin, plotHeight, options = {}) {
+      const startMd = num(startMdRaw, NaN);
+      const endMd = num(endMdRaw, NaN);
+      if (!Number.isFinite(startMd) || !Number.isFinite(endMd)) return;
+      const a = Math.max(top, Math.min(startMd, endMd));
+      const b = Math.min(bottom, Math.max(startMd, endMd));
+      if (!(b > a)) return;
+      const hidden = effectiveHiddenSections(top, bottom);
+      const visibleSegments = subtractHiddenFromInterval(a, b, hidden);
+      if (!visibleSegments.length) return;
+
+      const amp = Math.max(0.8, num(options.amp, 2));
+      const wavelength = Math.max(16, num(options.wavelength, 46));
+      const stroke = options.stroke || '#210d2a';
+      const strokeWidth = Math.max(0.4, num(options.strokeWidth, 1));
+      const dashArray = options.dashArray || null;
+      const overallTopY = mdToY(a, top, bottom, margin, plotHeight);
+
+      visibleSegments.forEach(seg => {
+        const yTop = mdToY(seg.start, top, bottom, margin, plotHeight);
+        const yBottom = mdToY(seg.end, top, bottom, margin, plotHeight);
+        const span = Math.abs(yBottom - yTop);
+        if (span < 1) return;
+        const dir = yBottom >= yTop ? 1 : -1;
+        const targetStepPx = span > 6000 ? 12 : 8;
+        const steps = Math.max(8, Math.min(420, Math.ceil(span / targetStepPx)));
+        const points = [];
+        for (let i = 0; i <= steps; i += 1) {
+          const t = i / steps;
+          const py = yTop + (span * t * dir);
+          const px = cx + Math.sin((py - overallTopY) * (Math.PI * 2 / wavelength)) * amp;
+          points.push(`${i === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
+        }
+        g.appendChild(el('path', {
+          d: points.join(' '),
+          fill: 'none',
+          stroke,
+          'stroke-width': strokeWidth,
+          'stroke-dasharray': dashArray,
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round'
+        }));
+      });
+    }
     function resolveCalloutAnchorMd(item, preferredMd, top, bottom) {
       const hidden = effectiveHiddenSections(top, bottom);
       const hasInterval = item?.topMD !== undefined && item?.topMD !== null && item?.bottomMD !== undefined && item?.bottomMD !== null;
@@ -3809,12 +3883,22 @@
       const userMajor = Math.max(0, num(schematic.plotSettings.majorTick, 0));
       let minor = forceAuto ? recommendedMinor : (userMinor > 0 ? userMinor : recommendedMinor);
       let major = forceAuto ? recommendedMajor : (userMajor > 0 ? userMajor : recommendedMajor);
+      if (!Number.isFinite(minor) || minor <= 0) minor = recommendedMinor;
+      if (!Number.isFinite(major) || major <= 0) major = recommendedMajor;
       major = Math.max(minor, major);
       if (minor >= major) {
         const subdivided = major / 5;
         minor = niceTickStep(subdivided);
         if (minor >= major) minor = major / 2;
       }
+      // Safety guard: prevent pathological saved tick settings from creating huge render loops.
+      const maxMinorTicks = Math.max(120, Math.round((plotHeightPx || 1600) * 0.8));
+      const maxMajorTicks = Math.max(40, Math.round((plotHeightPx || 1600) * 0.24));
+      const minMinorStep = span / maxMinorTicks;
+      const minMajorStep = span / maxMajorTicks;
+      if (minor < minMinorStep) minor = niceTickStep(minMinorStep);
+      if (major < minMajorStep) major = niceTickStep(minMajorStep);
+      if (major < minor) major = niceTickStep(minor * 2);
       return { minor, major };
     }
 
@@ -4166,6 +4250,29 @@
         const labelX = Number.isFinite(renderCalloutTextX) && renderCalloutTextX > 0 ? renderCalloutTextX : (cx + 114);
         const labelY = y - 7;
         g.appendChild(el('text', { x:labelX, y:labelY, fill:'currentColor', 'font-size':10, 'font-weight':700, 'text-anchor':'start', 'dominant-baseline':'alphabetic', class:'editable-item-label', 'data-collection':'components', 'data-id':item.id, 'data-field':'label' }, labelWithDepthSuffix(item, item.label || item.type.toUpperCase())));
+      } else if (item.type === 'restriction_general') {
+        const hostInnerW = hostInnerWidth(item);
+        const hostIdWidth = Number.isFinite(hostInnerW) ? hostInnerW : Math.max(24, componentWidth(item));
+        const restrictionIdPx = Math.max(2, num(item.restrictionIdIn, 2) * renderWidthPerInch);
+        const bodyGap = Math.min(hostIdWidth - 2, restrictionIdPx);
+        const sideW = Math.max(2, (hostIdWidth - bodyGap) / 2);
+        const y1 = Math.min(yTop, yTop + h);
+        const y2 = Math.max(yTop, yTop + h);
+        const bodyH = Math.max(8, y2 - y1);
+        const bodyFill = colorInputValue(item.fillColor, '#ffffff');
+        const bodyLine = colorInputValue(item.lineColor, '#210d2a');
+        const stroke = isSelected('components', item.id) ? '#def359' : bodyLine;
+        const leftX = cx - (hostIdWidth / 2);
+        const rightX = cx + (hostIdWidth / 2) - sideW;
+        g.appendChild(el('rect', { x:leftX, y:y1, width:sideW, height:bodyH, fill:bodyFill, stroke, 'stroke-width':1.3 }));
+        g.appendChild(el('rect', { x:rightX, y:y1, width:sideW, height:bodyH, fill:bodyFill, stroke, 'stroke-width':1.3 }));
+        {
+          const preferredMd = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === ''
+            ? (item.labelPosition === 'bottom' ? num(item.bottomMD) : (item.labelPosition === 'middle' ? ((num(item.topMD) + num(item.bottomMD)) / 2) : num(item.topMD)))
+            : num(item.annotationMD);
+          const anchorMd = resolveCalloutAnchorMd(item, preferredMd, top, bottom);
+          if (Number.isFinite(anchorMd)) drawIntervalComponentLabel(g, item, cx + (hostIdWidth / 2) + 10, y1, y2, occupiedLabelBands, margin, plotHeight, mdToY(anchorMd, top, bottom, margin, plotHeight));
+        }
       } else if (item.type === 'bridge_plug') {
         const hostInnerW = hostInnerWidth(item);
         const plugW = hostInnerW !== null
@@ -4262,33 +4369,14 @@
           const wireStroke = selectedCircle ? '#def359' : colorInputValue(item.wireLineColor, '#210d2a');
           const wireWidth = Math.max(0.4, num(item.wireLineWidth, 1));
           const wireDash = String(item.wireLineType || 'solid').toLowerCase() === 'dashed' ? '5 4' : null;
-          const wireTopY = mdToY(0, top, bottom, margin, plotHeight);
-          const wireBottomY = y - r;
-          const span = Math.abs(wireBottomY - wireTopY);
-          if (span >= 1) {
-            const amp = Math.max(1.2, Math.min(3.2, r * 0.16));
-            const wavelength = 46;
-            const dir = wireBottomY >= wireTopY ? 1 : -1;
-            // Guard against extreme zoom values creating very large SVG paths.
-            const targetStepPx = span > 6000 ? 12 : 8;
-            const steps = Math.max(12, Math.min(520, Math.ceil(span / targetStepPx)));
-            const points = [];
-            for (let i = 0; i <= steps; i += 1) {
-              const t = i / steps;
-              const py = wireTopY + (span * t * dir);
-              const px = cx + Math.sin((py - wireTopY) * (Math.PI * 2 / wavelength)) * amp;
-              points.push(`${i === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
-            }
-            g.appendChild(el('path', {
-              d: points.join(' '),
-              fill: 'none',
-              stroke: wireStroke,
-              'stroke-width': selectedCircle ? Math.max(wireWidth + 0.8, 1.8) : wireWidth,
-              'stroke-dasharray': wireDash,
-              'stroke-linecap': 'round',
-              'stroke-linejoin': 'round'
-            }));
-          }
+          const wireBottomMd = mdFromY(y - r, top, bottom, margin, plotHeight);
+          drawWireToSurface(g, cx, Math.max(0, top), wireBottomMd, top, bottom, margin, plotHeight, {
+            amp: Math.max(1.2, Math.min(3.2, r * 0.16)),
+            wavelength: 46,
+            stroke: wireStroke,
+            strokeWidth: selectedCircle ? Math.max(wireWidth + 0.8, 1.8) : wireWidth,
+            dashArray: wireDash
+          });
         }
         g.appendChild(el('circle', {
           cx,
@@ -4326,32 +4414,14 @@
           const wireStroke = selectedRect ? '#def359' : colorInputValue(item.wireLineColor, '#210d2a');
           const wireWidth = Math.max(0.4, num(item.wireLineWidth, 1));
           const wireDash = String(item.wireLineType || 'solid').toLowerCase() === 'dashed' ? '5 4' : null;
-          const wireTopY = mdToY(0, top, bottom, margin, plotHeight);
-          const wireBottomY = y1;
-          const span = Math.abs(wireBottomY - wireTopY);
-          if (span >= 1) {
-            const amp = Math.max(1.2, Math.min(3.2, (rectW / 2) * 0.16));
-            const wavelength = 46;
-            const dir = wireBottomY >= wireTopY ? 1 : -1;
-            const targetStepPx = span > 6000 ? 12 : 8;
-            const steps = Math.max(12, Math.min(520, Math.ceil(span / targetStepPx)));
-            const points = [];
-            for (let i = 0; i <= steps; i += 1) {
-              const t = i / steps;
-              const py = wireTopY + (span * t * dir);
-              const px = cx + Math.sin((py - wireTopY) * (Math.PI * 2 / wavelength)) * amp;
-              points.push(`${i === 0 ? 'M' : 'L'} ${px.toFixed(2)} ${py.toFixed(2)}`);
-            }
-            g.appendChild(el('path', {
-              d: points.join(' '),
-              fill: 'none',
-              stroke: wireStroke,
-              'stroke-width': selectedRect ? Math.max(wireWidth + 0.8, 1.8) : wireWidth,
-              'stroke-dasharray': wireDash,
-              'stroke-linecap': 'round',
-              'stroke-linejoin': 'round'
-            }));
-          }
+          const wireBottomMd = mdFromY(y1, top, bottom, margin, plotHeight);
+          drawWireToSurface(g, cx, Math.max(0, top), wireBottomMd, top, bottom, margin, plotHeight, {
+            amp: Math.max(1.2, Math.min(3.2, (rectW / 2) * 0.16)),
+            wavelength: 46,
+            stroke: wireStroke,
+            strokeWidth: selectedRect ? Math.max(wireWidth + 0.8, 1.8) : wireWidth,
+            dashArray: wireDash
+          });
         }
         g.appendChild(el('rect', {
           x:cx - rectW / 2,
@@ -4568,6 +4638,7 @@
       if (type === 'cement_plug') return '#c7b2ea';
       if (type === 'section_mill') return '#b0294a';
       if (type === 'bridge_plug' || type === 'mechanical_plug' || type === 'tubing_plug') return '#302711';
+      if (type === 'restriction_general') return '#302711';
       if (type === 'annular_packer') return '#302711';
       if (type === 'packer') return '#210d2a';
       if (type === 'downhole_device_circle') return '#210d2a';
@@ -4707,7 +4778,7 @@
         const g = makeGroup('formations', item);
         const fill = itemFillColor('formations', item, lithologyColor(item.lithology));
         g.appendChild(el('rect', { x:lithX, y:y1, width:trackW, height:Math.max(1, y2-y1), fill, opacity:1, stroke:isSelected('formations', item.id) ? '#def359' : 'currentColor', 'stroke-width':isSelected('formations', item.id) ? 3 : .6, 'stroke-opacity':.45 }));
-        g.appendChild(el('text', { x:lithX + trackW + 6, y:Math.min(plotBottom - 4, y1 + 13), fill:'#210d2a', 'font-size':10, 'font-weight':700, 'text-anchor':'start' }, labelWithDepthSuffix(item, item.name || item.id)));
+        g.appendChild(el('text', { x:lithX + trackW + 6, y:Math.min(plotBottom - 4, y1 + 13), fill:'currentColor', 'font-size':10, 'font-weight':700, 'text-anchor':'start' }, labelWithDepthSuffix(item, item.name || item.id)));
         svg.appendChild(g);
       });
     }
@@ -4842,7 +4913,7 @@
         add('completion', item, labelWithDepthSuffix(item, item.label || item.id), midMd, width / 2 + 1);
       });
       schematic.components.filter(viz).forEach(item => {
-        if (['td', 'pbtd', 'cement_plug', 'section_mill', 'bridge_plug'].includes(item.type)) return;
+        if (['td', 'pbtd', 'cement_plug', 'section_mill', 'bridge_plug', 'restriction_general'].includes(item.type)) return;
         const md = item.annotationMD === null || item.annotationMD === undefined || item.annotationMD === ''
           ? (item.md !== undefined ? item.md : (num(item.topMD) + num(item.bottomMD)) / 2)
           : num(item.annotationMD);
@@ -5320,5 +5391,6 @@
   <script src="search-ui.js" defer></script>
 </body>
 </html>
+
 
 

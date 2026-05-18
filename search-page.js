@@ -199,6 +199,7 @@
       { kind: "tool", title: "Pressure Converter", body: "pressure converter psi bar mpa", url: "pressure-converter.html", displayUrl: "pressure-converter.html" },
       { kind: "tool", title: "Time Converter", body: "time converter world clocks timezone", url: "time-converter.html", displayUrl: "time-converter.html" },
       { kind: "tool", title: "Well Architecture Plotter", body: "wap well architecture plotter", url: "wap.html", displayUrl: "wap.html" },
+      { kind: "tool", title: "LAS Log Plotter", body: "las well log plotting multi track gamma ray resistivity density neutron sonic", url: "las-log-plotter.html", displayUrl: "las-log-plotter.html" },
       { kind: "tool", title: "Wiki", body: "wiki documentation workflows tools", url: "wiki.html", displayUrl: "wiki.html" }
     ];
 
