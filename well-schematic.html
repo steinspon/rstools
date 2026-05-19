@@ -791,7 +791,7 @@
     const collectionDefs = {
       holeSections: { title: 'Hole Sections', singular: 'Hole Section', fields: ['id','label','diameterIn','topMD','bottomMD','fillColor','visible'] },
       strings: { title: 'Casing / Liners', singular: 'String', fields: ['id','type','label','odIn','weight','wallThickness','topMD','bottomMD','shoeMD','annotationEnabled','annotationMD','showDepthTop','showDepthBase','fillColor','visible'] },
-      cement: { title: 'Annular Fill', singular: 'Annular Fill Interval', fields: ['id','label','material','insideStringId','outsideStringId','topMD','bottomMD','annotationMD','fillColor','visible'] },
+      cement: { title: 'Annular Fill', singular: 'Annular Fill Interval', fields: ['id','label','material','insideStringId','outsideStringId','topMD','bottomMD','annotationMD','showDepthTop','fillColor','visible'] },
       completion: { title: 'Tubing / Completion', singular: 'Completion', fields: ['id','type','label','odIn','wallThickness','topMD','bottomMD','annotationEnabled','annotationMD','showDepthTop','showDepthBase','fillColor','visible'] },
       components: { title: 'Components', singular: 'Component', fields: ['id','type','label','md','topMD','bottomMD','diameterIn','host','material','labelPosition','showDepthTop','showDepthBase','status','fillColor','lineColor','lineWidth','lineType','text','textColor','textRotationDeg','wireToSurface','wireLineColor','wireLineWidth','wireLineType','visible'] },
       hiddenSections: { title: 'Hidden Sections', singular: 'Hidden Section', fields: ['id','label','topMD','bottomMD','lineType','lineColor','lineWidth','visible'] },
@@ -830,7 +830,7 @@
       production_casing: () => openAddDialog('strings', { type:'casing', label:'9-5/8 in Production Casing', odIn:9.625, topMD:0, bottomMD:4200, shoeMD:4200 }),
       production_liner: () => openAddDialog('strings', { type:'liner', label:'7 in Production Liner', odIn:7, topMD:3900, bottomMD:5000, shoeMD:5000 }),
       tubing: () => openAddDialog('completion', { type:'tubing', label:'5-1/2 in Tubing', odIn:5.5, topMD:0, bottomMD:4050 }),
-      cement_sheath: () => openAddDialog('cement', { label:'Annular fill', material:'cement', insideStringId:'production_casing', outsideStringId:'hole:hole_12_25', topMD:1800, bottomMD:4200 }),
+      cement_sheath: () => openAddDialog('cement', { label:'Annular fill', material:'cement', insideStringId:'production_casing', outsideStringId:'hole:hole_12_25', topMD:1800, bottomMD:4200, showDepthTop:true }),
       production_packer: () => openAddDialog('components', { type:'annular_packer', label:'Packer', md:3980, insideStringId:'production_casing', outsideStringId:'hole:hole_12_25' }),
       restriction_general: () => openAddDialog('components', { type:'restriction_general', label:'Restriction, General', topMD:3960, bottomMD:4000, host:'production_casing', restrictionIdIn:3.5, labelPosition:'top' }),
       bridge_plug: () => openAddDialog('components', { type:'bridge_plug', label:'Bridge plug', topMD:4450, bottomMD:4500, host:'production_casing', labelPosition:'middle' }),
@@ -1472,7 +1472,7 @@
     }
 
     function normalizeAnnularFill(item, model = schematic) {
-      const normalized = { annotationMD:null, ...item };
+      const normalized = { annotationMD:null, showDepthTop:true, ...item };
       if (!normalized.material) normalized.material = 'cement';
       delete normalized.quality;
 
@@ -2094,7 +2094,7 @@
       const id = makeId(collection.replace(/s$/, ''));
       if (collection === 'holeSections') return { id, label:'New hole section', diameterIn:12.25, topMD:0, bottomMD:1000, visible:true };
       if (collection === 'strings') return { id, type:'casing', label:'New casing', odIn:9.625, weight:'', wallThickness:8, topMD:0, bottomMD:1000, shoeMD:1000, annotationEnabled:true, annotationMD:null, showDepthTop:false, showDepthBase:false, color:null, visible:true };
-      if (collection === 'cement') return { id, label:'New annular fill', material:'cement', insideStringId:null, outsideStringId:'', topMD:0, bottomMD:1000, annotationMD:null, visible:true };
+      if (collection === 'cement') return { id, label:'New annular fill', material:'cement', insideStringId:null, outsideStringId:'', topMD:0, bottomMD:1000, annotationMD:null, showDepthTop:true, visible:true };
       if (collection === 'completion') return { id, type:'tubing', odIn:5.5, wallThickness:8, label:'New tubing', topMD:0, bottomMD:1000, annotationEnabled:true, annotationMD:null, showDepthTop:false, showDepthBase:false, visible:true };
       if (collection === 'components') return { id, type:'packer', label:'New component', md:1000, host:'', labelPosition:'top', showDepthTop:false, showDepthBase:false, visible:true };
       if (collection === 'hiddenSections') return { id, label:'Hidden section', topMD:1000, bottomMD:1200, lineType:'dashed', lineColor:'#b3b3b3', lineWidth:1, visible:true };
@@ -3972,14 +3972,14 @@
         if (!Number.isFinite(md)) return null;
         const bounds = annularFillBounds(item);
         const y = mdToY(md, top, bottom, margin, plotHeight);
-        const materialText = String(item.material || 'cement').toLowerCase();
+        const baseText = `TOF ${item.label || 'Annular fill'}`;
         return {
           item,
           anchorX: cx + bounds.outerW / 2 + 4,
           anchorY: y,
           preferredY: Number.isFinite(num(item.manualLabelY, NaN)) ? num(item.manualLabelY) : y,
           locked: item.labelLocked === true,
-          text: `TOF ${item.label || 'Annular fill'} (${materialText})`
+          text: labelWithDepthSuffix(item, baseText)
         };
       }).filter(Boolean).sort((a, b) => a.anchorY - b.anchorY);
       if (!labels.length) return;
