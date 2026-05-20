@@ -1430,6 +1430,9 @@
       next.strings = (next.strings || []).map(item => {
         const normalized = { annotationEnabled:true, annotationMD:null, showDepthTop:false, showDepthBase:false, wallThickness:8, ...item };
         normalized.wallThickness = normalizeTubularWallThickness(normalized.wallThickness);
+        if (normalized.shoeMD === undefined || normalized.shoeMD === null || normalized.shoeMD === '') {
+          normalized.shoeMD = normalized.bottomMD;
+        }
         delete normalized.tocMD;
         return normalized;
       });
@@ -4158,7 +4161,14 @@
       const g = makeGroup(collection, item);
       const stroke = itemFillColor(collection, item, color);
       const attrs = isSelected(collection, item.id) ? { stroke:'#def359', 'stroke-width':5 } : { stroke, 'stroke-width':strokeWidth };
-      const shoeDepth = options.shoe ? num(item.shoeMD, num(item.bottomMD)) : null;
+      const shoeDepth = options.shoe
+        ? (() => {
+            const rawShoe = item.shoeMD;
+            if (rawShoe === undefined || rawShoe === null || rawShoe === '') return num(item.bottomMD);
+            const parsedShoe = Number(rawShoe);
+            return Number.isFinite(parsedShoe) ? parsedShoe : num(item.bottomMD);
+          })()
+        : null;
       const shoeY = options.shoe ? mdToY(shoeDepth, top, bottom, margin, plotHeight) : y2;
       const bodyBottomY = options.shoe ? Math.min(y2, shoeY) : y2;
       const wallThickness = resolveTubularWallThickness(item, w);
