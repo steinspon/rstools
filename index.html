@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>RSTools has moved</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f8;
+      --panel: #ffffff;
+      --ink: #172126;
+      --muted: #5f6f78;
+      --line: #d9e1e5;
+      --accent: #007f7a;
+      --accent-dark: #00625f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 18px;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    main {
+      width: min(100%, 720px);
+      padding: clamp(28px, 6vw, 48px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 45px rgba(23, 33, 38, 0.08);
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent-dark);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 1.04rem;
+    }
+
+    a {
+      color: var(--accent-dark);
+      font-weight: 700;
+      text-underline-offset: 0.18em;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+      text-decoration: none;
+    }
+
+    .button.secondary {
+      background: #ffffff;
+      color: var(--accent-dark);
+    }
+
+    .note {
+      margin-top: 28px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      font-size: 0.98rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Repository moved</p>
+    <h1>RSTools has moved to a new home.</h1>
+
+    <p>
+      The current RSTools site is now hosted at
+      <a href="https://happy-wave-0858df303.7.azurestaticapps.net/">https://happy-wave-0858df303.7.azurestaticapps.net/</a>.
+    </p>
+
+    <p>
+      Access is restricted to selected Interwell employees. If you do not have access, request it through the
+      <a href="https://cloud.cegal.com/catalog/product/019e6d6f-76a3-7dc8-8eba-471417f03304">Cegal Cetegra catalog</a>.
+    </p>
+
+    <div class="actions" aria-label="Links">
+      <a class="button" href="https://happy-wave-0858df303.7.azurestaticapps.net/">Open the new RSTools site</a>
+      <a class="button secondary" href="https://cloud.cegal.com/catalog/product/019e6d6f-76a3-7dc8-8eba-471417f03304">Request access</a>
+    </div>
+
+    <p class="note">
+      This page is only a migration notice. The tools and documentation from this repository have been removed from this location.
+    </p>
+  </main>
+</body>
+</html>
